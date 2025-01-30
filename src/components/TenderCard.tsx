@@ -14,7 +14,7 @@ interface TenderCardProps {
   isFavorite?: boolean;
 }
 
-const TenderCard = ({
+export const TenderCard = ({
   id,
   title,
   organization,
@@ -35,7 +35,6 @@ const TenderCard = ({
       "Chemical Supply": "chemical"
     };
     const category = categoryMap[org];
-    // Return the translation if it exists, otherwise return the original value
     return category ? t(`tender.categories.${category}`) : org;
   };
 
@@ -48,7 +47,6 @@ const TenderCard = ({
       "Fourniture et transport d'une quantité minimale de 1300 tonnes et quantité de 2500 tonnes de sulfate d'alumine granulé": "tender5"
     };
     const titleKey = titleMap[title];
-    // Return the translation if it exists, otherwise return the original value
     return titleKey ? t(`tender.titles.${titleKey}`) : title;
   };
 
@@ -61,7 +59,6 @@ const TenderCard = ({
       "Annaba": "annaba"
     };
     const locationKey = locationMap[loc];
-    // Return the translation if it exists, otherwise return the original value
     return locationKey ? t(`tender.locations.${locationKey}`) : loc;
   };
 
@@ -105,5 +102,3 @@ const TenderCard = ({
     </Card>
   );
 };
-
-export default TenderCard;
