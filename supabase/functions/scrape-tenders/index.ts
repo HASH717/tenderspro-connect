@@ -8,7 +8,12 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { 
+      headers: {
+        ...corsHeaders,
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      }
+    })
   }
 
   try {
@@ -25,7 +30,7 @@ Deno.serve(async (req) => {
 
     let totalTenders = 0
     let successCount = 0
-    const totalPages = 667 // Total number of pages to scrape
+    const totalPages = 1 // Reduced for testing, increase later
     
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
@@ -128,11 +133,11 @@ Deno.serve(async (req) => {
           }
 
           // Add a small delay between tender detail requests to avoid rate limiting
-          await new Promise(resolve => setTimeout(resolve, 500))
+          await new Promise(resolve => setTimeout(resolve, 100))
         }
 
         // Add a small delay between pages to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        await new Promise(resolve => setTimeout(resolve, 200))
       } catch (error) {
         console.error(`Error processing page ${page}:`, error)
       }
@@ -142,24 +147,35 @@ Deno.serve(async (req) => {
     console.log(`Total tenders processed: ${totalTenders}`)
     console.log(`Successfully imported: ${successCount}`)
 
-    return new Response(JSON.stringify({
-      success: true,
-      message: 'All tenders fetched and stored successfully',
-      totalProcessed: totalTenders,
-      successCount: successCount
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: 'Tenders fetched and stored successfully',
+        count: successCount
+      }), 
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json'
+        } 
+      }
+    )
 
   } catch (error) {
     console.error('Error in fetch-tenders function:', error)
     
-    return new Response(JSON.stringify({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      }), 
+      {
+        status: 500,
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json'
+        }
+      }
+    )
   }
 })
