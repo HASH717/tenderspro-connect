@@ -18,8 +18,9 @@ export const AdminScraper = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke('scrape-tenders', {
-        options: {
-          timeout: 600000 // 10 minutes timeout
+        body: {}, // Empty body object
+        headers: {
+          'Content-Type': 'application/json',
         }
       });
       
