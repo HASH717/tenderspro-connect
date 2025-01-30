@@ -24,7 +24,7 @@ const Favorites = () => {
         return [];
       }
 
-      return favorites || [];
+      return favorites.map(f => f.tender_id).filter(Boolean);
     }
   });
 
@@ -32,12 +32,12 @@ const Favorites = () => {
     queryKey: ['favorited-tenders', favorites],
     enabled: favorites.length > 0,
     queryFn: async () => {
-      const tenderIds = favorites.map(fav => fav.tender_id);
+      if (!favorites.length) return [];
       
       const { data: tenders, error: tendersError } = await supabase
         .from('tenders')
         .select('*')
-        .in('id', tenderIds);
+        .in('id', favorites);
 
       if (tendersError) {
         console.error('Error fetching tenders:', tendersError);
@@ -49,6 +49,21 @@ const Favorites = () => {
   });
 
   const isLoading = isFavoritesLoading || isTendersLoading;
+
+  if (!session) {
+    return (
+      <div className="min-h-screen pb-20">
+        <div className="p-4">
+          <h1 className="text-2xl font-bold text-primary mb-4">{t("pages.favorites")}</h1>
+          <div className="flex flex-col items-center justify-center mt-20">
+            <Heart className="w-16 h-16 text-gray-300 mb-4" />
+            <p className="text-gray-500">{t("pages.pleaseLogin")}</p>
+          </div>
+        </div>
+        <Navigation />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
