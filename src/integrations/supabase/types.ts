@@ -107,6 +107,48 @@ export type Database = {
         }
         Relationships: []
       }
+      tender_notifications: {
+        Row: {
+          alert_id: string
+          created_at: string
+          id: string
+          processed_at: string | null
+          tender_id: string
+          user_id: string
+        }
+        Insert: {
+          alert_id: string
+          created_at?: string
+          id?: string
+          processed_at?: string | null
+          tender_id: string
+          user_id: string
+        }
+        Update: {
+          alert_id?: string
+          created_at?: string
+          id?: string
+          processed_at?: string | null
+          tender_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tender_notifications_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "alerts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tender_notifications_tender_id_fkey"
+            columns: ["tender_id"]
+            isOneToOne: false
+            referencedRelation: "tenders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenders: {
         Row: {
           category: string | null
@@ -184,7 +226,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_tender_matches_alert: {
+        Args: {
+          tender_record: unknown
+          alert_record: unknown
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

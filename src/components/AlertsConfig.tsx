@@ -234,7 +234,7 @@ export const AlertsConfig = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold">{t("alerts.configuration")}</h2>
+        <h1 className="text-2xl font-bold text-primary">{t("pages.alerts")}</h1>
         <Button
           onClick={() => {
             setShowNewAlert(true);
