@@ -1,4 +1,4 @@
-import { Calendar, MapPin, Building } from "lucide-react";
+import { Calendar, MapPin, Building, Heart } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
 interface TenderCardProps {
