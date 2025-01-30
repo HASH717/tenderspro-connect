@@ -17,8 +17,26 @@ Deno.serve(async (req) => {
       apiKey: Deno.env.get('FIRECRAWL_API_KEY') || '' 
     })
 
-    console.log('Starting crawl of dztenders.com')
-    const crawlResponse = await firecrawlApp.crawlUrl('https://dztenders.com', {
+    // First, authenticate with dztenders.com
+    console.log('Authenticating with dztenders.com')
+    const loginResponse = await firecrawlApp.crawlUrl('https://www.dztenders.com/en/login/', {
+      limit: 1,
+      method: 'POST',
+      formData: {
+        username: Deno.env.get('DZTENDERS_USERNAME') || '',
+        password: Deno.env.get('DZTENDERS_PASSWORD') || '',
+        'remember-me': 'on'
+      },
+      followRedirects: true
+    })
+
+    if (!loginResponse.success) {
+      console.error('Login failed:', loginResponse.error)
+      throw new Error('Failed to authenticate with dztenders.com')
+    }
+
+    console.log('Successfully authenticated, starting crawl of dztenders.com')
+    const crawlResponse = await firecrawlApp.crawlUrl('https://www.dztenders.com/en/tenders/', {
       limit: 5, // Reduced limit to stay within free tier
       scrapeOptions: {
         selectors: {
@@ -30,7 +48,9 @@ Deno.serve(async (req) => {
           specifications: '.tender-specifications',
         },
         formats: ['html', 'markdown']
-      }
+      },
+      // Use the same session from login
+      usePreviousSession: true
     })
 
     if (!crawlResponse.success) {
