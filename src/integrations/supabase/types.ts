@@ -9,6 +9,51 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      alerts: {
+        Row: {
+          announcement_type: string | null
+          announcers: string | null
+          category: string | null
+          created_at: string
+          id: string
+          micro_enterprises: boolean | null
+          name: string
+          price_range: string | null
+          search: string | null
+          tender_type: string | null
+          user_id: string
+          wilaya: string | null
+        }
+        Insert: {
+          announcement_type?: string | null
+          announcers?: string | null
+          category?: string | null
+          created_at?: string
+          id?: string
+          micro_enterprises?: boolean | null
+          name: string
+          price_range?: string | null
+          search?: string | null
+          tender_type?: string | null
+          user_id: string
+          wilaya?: string | null
+        }
+        Update: {
+          announcement_type?: string | null
+          announcers?: string | null
+          category?: string | null
+          created_at?: string
+          id?: string
+          micro_enterprises?: boolean | null
+          name?: string
+          price_range?: string | null
+          search?: string | null
+          tender_type?: string | null
+          user_id?: string
+          wilaya?: string | null
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string
