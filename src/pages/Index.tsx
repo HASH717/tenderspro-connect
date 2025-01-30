@@ -3,7 +3,7 @@ import { NotificationDemo } from "@/components/NotificationDemo";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
 import TenderFilters from "@/components/TenderFilters";
-import TenderList from "@/components/TenderList";
+import { TenderList } from "@/components/TenderList";
 import { TenderFilters as TenderFiltersType } from "@/components/TenderFilters";
 import { useTenders } from "@/hooks/use-tenders";
 
