@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
 
     console.log('Starting crawl of dztenders.com')
     const crawlResponse = await firecrawlApp.crawlUrl('https://dztenders.com', {
-      limit: 100,
+      limit: 5, // Reduced limit to stay within free tier
       scrapeOptions: {
         selectors: {
           title: '.tender-title',
@@ -34,7 +34,8 @@ Deno.serve(async (req) => {
     })
 
     if (!crawlResponse.success) {
-      throw new Error('Crawl failed: ' + crawlResponse.error)
+      console.error('Crawl failed:', crawlResponse.error)
+      throw new Error(crawlResponse.error || 'Crawl failed')
     }
 
     // Initialize Supabase client
@@ -49,6 +50,8 @@ Deno.serve(async (req) => {
 
     // Process and store crawled data
     const { data: crawledData } = crawlResponse
+    let successCount = 0
+
     for (const tender of crawledData) {
       const { error } = await supabase
         .from('tenders')
@@ -65,22 +68,28 @@ Deno.serve(async (req) => {
 
       if (error) {
         console.error('Error inserting tender:', error)
+      } else {
+        successCount++
       }
     }
 
     return new Response(JSON.stringify({
       success: true,
       message: 'Tenders scraped and stored successfully',
-      count: crawledData.length
+      count: successCount
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
 
   } catch (error) {
     console.error('Error in scrape-tenders function:', error)
+    
+    // Format error message for better client-side handling
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+    
     return new Response(JSON.stringify({
       success: false,
-      error: error.message
+      error: errorMessage
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

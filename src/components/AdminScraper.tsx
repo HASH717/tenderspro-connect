@@ -19,7 +19,21 @@ export const AdminScraper = () => {
     try {
       const { data, error } = await supabase.functions.invoke('scrape-tenders')
       
-      if (error) throw error;
+      if (error) {
+        // Parse the error message from the response if available
+        let errorMessage = t("scraper.errorDescription");
+        try {
+          const errorBody = JSON.parse(error.message);
+          if (errorBody.error) {
+            errorMessage = errorBody.error;
+          }
+        } catch {
+          // If parsing fails, use the raw error message
+          errorMessage = error.message;
+        }
+        
+        throw new Error(errorMessage);
+      }
       
       setProgress(100);
       toast({
@@ -30,7 +44,7 @@ export const AdminScraper = () => {
       console.error('Error scraping tenders:', error);
       toast({
         title: t("scraper.error"),
-        description: t("scraper.errorDescription"),
+        description: error instanceof Error ? error.message : t("scraper.errorDescription"),
         variant: "destructive",
       });
     } finally {
