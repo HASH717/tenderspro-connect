@@ -49,6 +49,24 @@ const Navigation = () => {
               <span className="text-xs mt-1">{label}</span>
             </Link>
           ))}
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex flex-col items-center p-2 text-muted-foreground">
+              <Globe className="w-6 h-6" />
+              <span className="text-xs mt-1">
+                {languages.find(lang => lang.code === currentLanguage)?.code.toUpperCase()}
+              </span>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {languages.map((lang) => (
+                <DropdownMenuItem
+                  key={lang.code}
+                  onClick={() => changeLanguage(lang.code as 'en' | 'fr' | 'ar')}
+                >
+                  {lang.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </nav>
     );
