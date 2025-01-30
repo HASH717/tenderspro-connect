@@ -1,5 +1,4 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.0'
-import FirecrawlApp from 'https://esm.sh/@mendable/firecrawl-js@1.0.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,68 +12,38 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const firecrawlApp = new FirecrawlApp({ 
-      apiKey: Deno.env.get('FIRECRAWL_API_KEY') || '' 
+    // First, authenticate with dztenders.com API
+    console.log('Authenticating with dztenders.com API')
+    const loginResponse = await fetch('https://api.dztenders.com/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username: Deno.env.get('DZTENDERS_USERNAME'),
+        password: Deno.env.get('DZTENDERS_PASSWORD'),
+      }),
     })
 
-    // First, authenticate with dztenders.com
-    console.log('Authenticating with dztenders.com')
-    const loginResponse = await firecrawlApp.crawlUrl('https://www.dztenders.com/en/login/', {
-      limit: 1,
-      scrapeOptions: {
-        actions: [
-          {
-            type: 'write',
-            selector: 'input[name="username"]',
-            text: Deno.env.get('DZTENDERS_USERNAME') || ''
-          },
-          {
-            type: 'write',
-            selector: 'input[name="password"]',
-            text: Deno.env.get('DZTENDERS_PASSWORD') || ''
-          },
-          {
-            type: 'click',
-            selector: 'button[type="submit"]'
-          },
-          {
-            type: 'wait',
-            duration: 2000 // Wait for redirect
-          }
-        ]
-      }
-    })
-
-    if (!loginResponse.success) {
-      console.error('Login failed:', loginResponse.error)
-      throw new Error('Failed to authenticate with dztenders.com')
+    if (!loginResponse.ok) {
+      throw new Error('Failed to authenticate with dztenders.com API')
     }
 
-    console.log('Successfully authenticated, starting crawl of dztenders.com')
-    const crawlResponse = await firecrawlApp.crawlUrl('https://www.dztenders.com/en/tenders/', {
-      limit: 1, // Minimum limit to stay within free tier
-      scrapeOptions: {
-        selectors: {
-          title: '.tender-title',
-          deadline: '.tender-deadline',
-          location: '.tender-location',
-          category: '.tender-category',
-          publicationDate: '.tender-publication-date',
-          specifications: '.tender-specifications',
-        }
-      }
+    const { token } = await loginResponse.json()
+
+    // Fetch tenders from the API
+    console.log('Fetching tenders from API')
+    const tendersResponse = await fetch('https://api.dztenders.com/tenders/', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
     })
 
-    if (!crawlResponse.success) {
-      console.error('Crawl failed:', crawlResponse.error)
-      
-      // Check specifically for credit limit error
-      if (crawlResponse.error?.includes('Insufficient credits')) {
-        throw new Error('Credit limit reached. Please try again later or upgrade your plan.')
-      }
-      
-      throw new Error(crawlResponse.error || 'Crawl failed')
+    if (!tendersResponse.ok) {
+      throw new Error('Failed to fetch tenders from API')
     }
+
+    const tenders = await tendersResponse.json()
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
@@ -86,11 +55,10 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Process and store crawled data
-    const { data: crawledData } = crawlResponse
+    // Process and store tender data
     let successCount = 0
 
-    for (const tender of crawledData) {
+    for (const tender of tenders) {
       const { error } = await supabase
         .from('tenders')
         .upsert({
@@ -100,8 +68,13 @@ Deno.serve(async (req) => {
           category: tender.category,
           publication_date: tender.publicationDate,
           specifications_price: tender.specifications,
+          tender_id: tender.id,
+          type: tender.type,
+          region: tender.region,
+          withdrawal_address: tender.withdrawalAddress,
+          link: tender.link,
         }, {
-          onConflict: 'title'
+          onConflict: 'tender_id'
         })
 
       if (error) {
@@ -113,21 +86,18 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({
       success: true,
-      message: 'Tenders scraped and stored successfully',
+      message: 'Tenders fetched and stored successfully',
       count: successCount
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
 
   } catch (error) {
-    console.error('Error in scrape-tenders function:', error)
-    
-    // Format error message for better client-side handling
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+    console.error('Error in fetch-tenders function:', error)
     
     return new Response(JSON.stringify({
       success: false,
-      error: errorMessage
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
