@@ -139,20 +139,21 @@ const Profile = () => {
   if (isLoadingProfile) {
     return (
       <div className="min-h-screen pb-20">
-        <div className="p-4">
+        <Navigation />
+        <div className="p-4 mt-20">
           <h1 className="text-2xl font-bold text-primary mb-4">{t("pages.profile")}</h1>
           <div className="flex justify-center items-center h-48">
             <p>{t("profile.loading")}</p>
           </div>
         </div>
-        <Navigation />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen pb-20">
-      <div className="p-4">
+      <Navigation />
+      <div className="p-4 mt-20">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold text-primary">{t("pages.profile")}</h1>
           <Button 
@@ -231,7 +232,6 @@ const Profile = () => {
           </Button>
         </div>
       </div>
-      <Navigation />
     </div>
   );
 };
