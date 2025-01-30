@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Bell, Plus, Trash2 } from "lucide-react";
+import { Bell, Plus, Trash2, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +16,6 @@ interface Alert extends TenderFiltersType {
   name: string;
 }
 
-// Helper function to map frontend filters to database columns
 const mapFiltersToDb = (filters: TenderFiltersType & { name: string }, userId: string) => {
   return {
     user_id: userId,
@@ -32,7 +31,6 @@ const mapFiltersToDb = (filters: TenderFiltersType & { name: string }, userId: s
   };
 };
 
-// Helper function to map database response to frontend types
 const mapDbToFilters = (dbAlert: any): Alert => {
   return {
     id: dbAlert.id,
@@ -56,6 +54,8 @@ export const AlertsConfig = () => {
   const { session } = useAuth();
   const [showNewAlert, setShowNewAlert] = useState(false);
   const [alertName, setAlertName] = useState("");
+  const [currentFilters, setCurrentFilters] = useState<TenderFiltersType | null>(null);
+  const [editingAlertId, setEditingAlertId] = useState<string | null>(null);
 
   const { data: alerts, refetch } = useQuery({
     queryKey: ["alerts"],
@@ -76,7 +76,7 @@ export const AlertsConfig = () => {
     },
   });
 
-  const handleCreateAlert = async (filters: TenderFiltersType) => {
+  const handleSaveAlert = async () => {
     if (!session?.user) {
       toast({
         title: t("alerts.authError"),
@@ -95,9 +95,16 @@ export const AlertsConfig = () => {
       return;
     }
 
+    if (!currentFilters) {
+      return;
+    }
+
     const { error } = await supabase
       .from("alerts")
-      .insert(mapFiltersToDb({ ...filters, name: alertName }, session.user.id));
+      .upsert(mapFiltersToDb(
+        { ...currentFilters, name: alertName },
+        session.user.id
+      ));
 
     if (error) {
       toast({
@@ -115,6 +122,8 @@ export const AlertsConfig = () => {
 
     setShowNewAlert(false);
     setAlertName("");
+    setCurrentFilters(null);
+    setEditingAlertId(null);
     refetch();
   };
 
@@ -141,12 +150,35 @@ export const AlertsConfig = () => {
     refetch();
   };
 
+  const handleEditAlert = (alert: Alert) => {
+    setEditingAlertId(alert.id);
+    setAlertName(alert.name);
+    setCurrentFilters({
+      search: alert.search,
+      announcers: alert.announcers,
+      tenderType: alert.tenderType,
+      announcementType: alert.announcementType,
+      category: alert.category,
+      wilaya: alert.wilaya,
+      priceRange: alert.priceRange,
+      microEnterprises: alert.microEnterprises,
+      publicationDate: alert.publicationDate,
+      deadlineDate: alert.deadlineDate,
+    });
+    setShowNewAlert(true);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold">{t("alerts.configuration")}</h2>
         <Button
-          onClick={() => setShowNewAlert(true)}
+          onClick={() => {
+            setShowNewAlert(true);
+            setEditingAlertId(null);
+            setAlertName("");
+            setCurrentFilters(null);
+          }}
           className="gap-2"
           variant={showNewAlert ? "secondary" : "default"}
         >
@@ -157,16 +189,38 @@ export const AlertsConfig = () => {
 
       {showNewAlert && (
         <div className="space-y-4 border rounded-lg p-4">
-          <div className="space-y-2">
-            <Label htmlFor="alert-name">{t("alerts.name")}</Label>
-            <Input
-              id="alert-name"
-              value={alertName}
-              onChange={(e) => setAlertName(e.target.value)}
-              placeholder={t("alerts.namePlaceholder")}
-            />
+          <div className="flex justify-between items-start">
+            <div className="space-y-2 flex-1">
+              <Label htmlFor="alert-name">{t("alerts.name")}</Label>
+              <Input
+                id="alert-name"
+                value={alertName}
+                onChange={(e) => setAlertName(e.target.value)}
+                placeholder={t("alerts.namePlaceholder")}
+              />
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                setShowNewAlert(false);
+                setEditingAlertId(null);
+                setAlertName("");
+                setCurrentFilters(null);
+              }}
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
-          <TenderFilters onSearch={handleCreateAlert} />
+          <TenderFilters
+            onSearch={setCurrentFilters}
+            initialFilters={currentFilters}
+          />
+          <div className="flex justify-end">
+            <Button onClick={handleSaveAlert}>
+              {editingAlertId ? t("common.save") : t("common.create")}
+            </Button>
+          </div>
         </div>
       )}
 
@@ -181,19 +235,27 @@ export const AlertsConfig = () => {
               <div>
                 <h3 className="font-medium">{alert.name}</h3>
                 <p className="text-sm text-muted-foreground">
-                  {alert.search && `${t("filters.search")}: ${alert.search}`}
-                  {alert.category && ` • ${t("filters.category")}: ${alert.category}`}
+                  {alert.category && `${t("filters.category")}: ${alert.category}`}
                   {alert.wilaya && ` • ${t("filters.wilaya")}: ${alert.wilaya}`}
                 </p>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleDeleteAlert(alert.id)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleEditAlert(alert)}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleDeleteAlert(alert.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         ))}
       </div>

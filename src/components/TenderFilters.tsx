@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 
 interface TenderFiltersProps {
   onSearch: (filters: TenderFilters) => void;
+  initialFilters?: TenderFilters | null;
 }
 
 export interface TenderFilters {
@@ -29,7 +30,7 @@ export interface TenderFilters {
   deadlineDate: string;
 }
 
-const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
+const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
   const [filters, setFilters] = useState<TenderFilters>({
     search: "",
     announcers: "",
@@ -44,6 +45,12 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
   });
 
   const { t } = useTranslation();
+
+  useEffect(() => {
+    if (initialFilters) {
+      setFilters(initialFilters);
+    }
+  }, [initialFilters]);
 
   const handleFilterChange = (key: keyof TenderFilters, value: string | boolean) => {
     const newFilters = { ...filters, [key]: value };
@@ -171,13 +178,6 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
           className="w-full sm:w-auto"
         >
           {t("filters.clearFilters")}
-        </Button>
-        
-        <Button 
-          onClick={() => onSearch(filters)}
-          className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground"
-        >
-          {t("filters.searchButton")}
         </Button>
       </div>
     </div>
