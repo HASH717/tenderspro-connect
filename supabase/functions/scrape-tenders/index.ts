@@ -23,7 +23,10 @@ Deno.serve(async (req) => {
       'https://api.dztenders.com/api/v1/auth/login/',
       'https://api.dztenders.com/auth/token/',
       'https://api.dztenders.com/rest-auth/login/',
-      'https://api.dztenders.com/api/login/'
+      'https://api.dztenders.com/api/login/',
+      'https://api.dztenders.com/auth/jwt/create/',  // Common DRF JWT endpoint
+      'https://api.dztenders.com/api/v1/token/',     // Another common endpoint
+      'https://api.dztenders.com/users/login/'       // Basic auth endpoint
     ]
     
     const payloadFormats = [
@@ -40,51 +43,73 @@ Deno.serve(async (req) => {
         password: 'Dahdouhhash@717',
       }
     ]
+
+    const authHeaders = [
+      {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json',
+      }
+    ]
     
     let token = null
     let loginResponse = null
     
-    // Try each endpoint with each payload format
+    // Try each endpoint with each payload format and header combination
     for (const endpoint of authEndpoints) {
       console.log(`\nTrying authentication endpoint: ${endpoint}`)
       
       for (const payload of payloadFormats) {
         console.log(`Trying payload format:`, payload)
         
-        try {
-          loginResponse = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-            body: JSON.stringify(payload),
-          })
+        for (const headers of authHeaders) {
+          console.log(`Trying headers:`, headers)
           
-          console.log(`Response status for ${endpoint}:`, loginResponse.status)
-          const responseText = await loginResponse.text()
-          console.log(`Response for ${endpoint}:`, responseText)
-          
-          if (loginResponse.ok) {
-            try {
-              const loginData = JSON.parse(responseText)
-              // Check for different token field names
-              const possibleTokens = ['token', 'access', 'access_token', 'auth_token', 'key']
-              for (const tokenField of possibleTokens) {
-                if (loginData[tokenField]) {
-                  token = loginData[tokenField]
-                  console.log('Successfully authenticated!')
-                  break
+          try {
+            loginResponse = await fetch(endpoint, {
+              method: 'POST',
+              headers,
+              body: headers['Content-Type'] === 'application/x-www-form-urlencoded' 
+                ? new URLSearchParams(payload).toString()
+                : JSON.stringify(payload),
+            })
+            
+            console.log(`Response status for ${endpoint}:`, loginResponse.status)
+            const responseText = await loginResponse.text()
+            console.log(`Response for ${endpoint}:`, responseText)
+            
+            if (loginResponse.ok) {
+              try {
+                const loginData = JSON.parse(responseText)
+                // Check for different token field names
+                const possibleTokens = ['token', 'access', 'access_token', 'auth_token', 'key', 'jwt']
+                for (const tokenField of possibleTokens) {
+                  if (loginData[tokenField]) {
+                    token = loginData[tokenField]
+                    console.log('Successfully authenticated!')
+                    break
+                  }
                 }
+                if (token) break
+              } catch (e) {
+                console.log(`Failed to parse JSON response from ${endpoint}:`, e)
               }
-              if (token) break
-            } catch (e) {
-              console.log(`Failed to parse JSON response from ${endpoint}:`, e)
+            } else {
+              console.log(`Failed with status ${loginResponse.status}`)
             }
+          } catch (e) {
+            console.log(`Failed to connect to ${endpoint}:`, e)
           }
-        } catch (e) {
-          console.log(`Failed to connect to ${endpoint}:`, e)
         }
+        if (token) break
       }
       if (token) break
     }
@@ -93,22 +118,46 @@ Deno.serve(async (req) => {
       throw new Error('Failed to authenticate with any endpoint')
     }
 
-    // Fetch tenders from the API with JSON format
-    console.log('Fetching tenders from API')
-    const tendersResponse = await fetch('https://api.dztenders.com/tenders/?format=json', {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
-      },
-    })
+    // Try different authorization header formats
+    const authorizationHeaders = [
+      { 'Authorization': `Bearer ${token}` },
+      { 'Authorization': `Token ${token}` },
+      { 'Authorization': `JWT ${token}` },
+      { 'Authorization': token }
+    ]
 
-    if (!tendersResponse.ok) {
-      console.error('Tenders response status:', tendersResponse.status)
-      console.error('Tenders response text:', await tendersResponse.text())
-      throw new Error('Failed to fetch tenders from API')
+    let tendersData = null
+    
+    // Try each authorization header format
+    for (const authHeader of authorizationHeaders) {
+      console.log('Trying authorization header:', authHeader)
+      
+      try {
+        const tendersResponse = await fetch('https://api.dztenders.com/tenders/?format=json', {
+          headers: {
+            ...authHeader,
+            'Accept': 'application/json',
+          },
+        })
+
+        if (tendersResponse.ok) {
+          tendersData = await tendersResponse.json()
+          console.log('Successfully fetched tenders data')
+          break
+        } else {
+          console.log(`Failed to fetch tenders with status: ${tendersResponse.status}`)
+          const errorText = await tendersResponse.text()
+          console.log('Error response:', errorText)
+        }
+      } catch (error) {
+        console.error('Error fetching tenders:', error)
+      }
     }
 
-    const tendersData = await tendersResponse.json()
+    if (!tendersData) {
+      throw new Error('Failed to fetch tenders data with any authorization format')
+    }
+
     console.log('Fetched', tendersData.count, 'tenders')
     const tenders = tendersData.results
 
