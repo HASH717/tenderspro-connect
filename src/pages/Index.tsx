@@ -95,7 +95,7 @@ const Index = () => {
 
   return (
     <div className={`${isMobile ? 'pb-20' : 'pt-24'}`}>
-      <div className="sticky top-0 bg-background z-10 p-4 shadow-sm">
+      <div className="bg-background z-10 p-4">
         {isMobile && (
           <div className="flex flex-col items-center mb-4">
             <img 
