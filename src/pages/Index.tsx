@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import TenderCard from "@/components/TenderCard";
 import TenderFilters, { TenderFilters as FilterType } from "@/components/TenderFilters";
@@ -11,7 +11,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const Index = () => {
-  const [favorites, setFavorites] = useState<string[]>([]);
   const [filters, setFilters] = useState<FilterType>({
     search: "",
     announcers: "",
@@ -27,7 +26,8 @@ const Index = () => {
   const isMobile = useIsMobile();
   const { session } = useAuth();
 
-  const { data: tenders = [], isLoading } = useQuery({
+  // Query to fetch tenders
+  const { data: tenders = [], isLoading: isLoadingTenders } = useQuery({
     queryKey: ['tenders', filters],
     queryFn: async () => {
       console.log('Fetching tenders with filters:', filters);
@@ -68,7 +68,6 @@ const Index = () => {
             .gte(priceField, min.toString())
             .lte(priceField, max.toString());
         } else {
-          // Handle 10000+ case
           query = query.gte(priceField, min.toString());
         }
       }
@@ -81,8 +80,27 @@ const Index = () => {
         return [];
       }
 
-      console.log('Fetched tenders:', data);
       return data || [];
+    }
+  });
+
+  // Query to fetch user's favorites
+  const { data: favorites = [], isLoading: isLoadingFavorites } = useQuery({
+    queryKey: ['favorites', session?.user?.id],
+    enabled: !!session?.user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('favorites')
+        .select('tender_id')
+        .eq('user_id', session?.user?.id);
+
+      if (error) {
+        console.error('Error fetching favorites:', error);
+        toast.error('Failed to load favorites');
+        return [];
+      }
+
+      return data.map(fav => fav.tender_id);
     }
   });
 
@@ -91,12 +109,44 @@ const Index = () => {
     setFilters(newFilters);
   };
 
-  const toggleFavorite = (id: string) => {
-    setFavorites((prev) =>
-      prev.includes(id)
-        ? prev.filter((favId) => favId !== id)
-        : [...prev, id]
-    );
+  const toggleFavorite = async (tenderId: string) => {
+    if (!session?.user?.id) {
+      toast.error('Please login to save favorites');
+      return;
+    }
+
+    try {
+      const isFavorite = favorites.includes(tenderId);
+
+      if (isFavorite) {
+        // Remove from favorites
+        const { error } = await supabase
+          .from('favorites')
+          .delete()
+          .eq('user_id', session.user.id)
+          .eq('tender_id', tenderId);
+
+        if (error) throw error;
+        toast.success('Removed from favorites');
+      } else {
+        // Add to favorites
+        const { error } = await supabase
+          .from('favorites')
+          .insert({
+            user_id: session.user.id,
+            tender_id: tenderId
+          });
+
+        if (error) throw error;
+        toast.success('Added to favorites');
+      }
+
+      // Invalidate the favorites query to trigger a refresh
+      await queryClient.invalidateQueries({ queryKey: ['favorites'] });
+    } catch (error: any) {
+      console.error('Error toggling favorite:', error);
+      toast.error(error.message || 'Failed to update favorites');
+    }
   };
 
   const logoSrc = "/lovable-uploads/c1c4772c-d5f0-499c-b16f-ae8dcefaa6c3.png";
@@ -130,7 +180,7 @@ const Index = () => {
         </div>
 
         <div className="max-w-4xl mx-auto px-4">
-          {isLoading ? (
+          {isLoadingTenders || isLoadingFavorites ? (
             <div className="text-center py-8">Loading tenders...</div>
           ) : tenders.length === 0 ? (
             <div className="text-center py-8">No tenders found</div>
