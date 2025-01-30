@@ -41,13 +41,13 @@ interface Alert {
   announcementType: string[];
 }
 
-const mapFiltersToDb = (filters: Alert, userId: string) => {
+const mapFiltersToDb = (filters: Partial<Alert>, userId: string) => {
   return {
     user_id: userId,
     name: filters.name,
-    wilaya: filters.wilaya.join(","),
-    tender_type: filters.tenderType.join(","),
-    announcement_type: filters.announcementType.join(","),
+    wilaya: filters.wilaya?.join(","),
+    tender_type: filters.tenderType?.join(","),
+    announcement_type: filters.announcementType?.join(","),
   };
 };
 
@@ -115,14 +115,12 @@ export const AlertsConfig = () => {
       wilaya: selectedWilayas,
       tenderType: selectedTenderTypes,
       announcementType: selectedAnnouncementTypes,
+      ...(editingAlertId ? { id: editingAlertId } : {}),
     };
 
     const { error } = await supabase
       .from("alerts")
-      .upsert({
-        ...mapFiltersToDb(alertData, session.user.id),
-        ...(editingAlertId ? { id: editingAlertId } : {}),
-      });
+      .upsert(mapFiltersToDb(alertData, session.user.id));
 
     if (error) {
       toast({
