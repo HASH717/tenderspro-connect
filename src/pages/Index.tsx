@@ -4,6 +4,7 @@ import TenderCard from "@/components/TenderCard";
 import TenderFilters, { TenderFilters as FilterType } from "@/components/TenderFilters";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/contexts/ThemeContext";
+import { Separator } from "@/components/ui/separator";
 
 const mockTenders = [
   {
@@ -76,8 +77,6 @@ const Index = () => {
       );
     }
 
-    // Add more filter conditions as needed
-
     setFilteredTenders(filtered);
   };
 
@@ -108,6 +107,10 @@ const Index = () => {
           )}
           <TenderFilters onSearch={handleSearch} />
         </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4">
+        <Separator className="my-6" />
       </div>
 
       <div className="p-4 max-w-4xl mx-auto">
