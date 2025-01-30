@@ -46,19 +46,20 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
   };
 
   return (
-    <div className="space-y-3 bg-background p-3 rounded-lg shadow-sm">
+    <div className="space-y-3 bg-card p-4 rounded-lg shadow-sm">
       <div className="grid grid-cols-1 gap-3">
         <div className="relative">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search"
-            className="pl-10"
+            className="pl-10 bg-white"
             value={filters.search}
             onChange={(e) => handleFilterChange("search", e.target.value)}
           />
         </div>
         <Input
           placeholder="Announcers"
+          className="bg-white"
           value={filters.announcers}
           onChange={(e) => handleFilterChange("announcers", e.target.value)}
         />
@@ -69,7 +70,7 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
           value={filters.marketType}
           onValueChange={(value) => handleFilterChange("marketType", value)}
         >
-          <SelectTrigger>
+          <SelectTrigger className="bg-white">
             <SelectValue placeholder="Market type" />
           </SelectTrigger>
           <SelectContent>
@@ -82,7 +83,7 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
           value={filters.announcementType}
           onValueChange={(value) => handleFilterChange("announcementType", value)}
         >
-          <SelectTrigger>
+          <SelectTrigger className="bg-white">
             <SelectValue placeholder="Announcement type" />
           </SelectTrigger>
           <SelectContent>
@@ -95,7 +96,7 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
           value={filters.category}
           onValueChange={(value) => handleFilterChange("category", value)}
         >
-          <SelectTrigger>
+          <SelectTrigger className="bg-white">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
@@ -109,7 +110,7 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
           value={filters.region}
           onValueChange={(value) => handleFilterChange("region", value)}
         >
-          <SelectTrigger>
+          <SelectTrigger className="bg-white">
             <SelectValue placeholder="Region" />
           </SelectTrigger>
           <SelectContent>
@@ -137,11 +138,11 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
             type="date"
             value={filters.publicationDate}
             onChange={(e) => handleFilterChange("publicationDate", e.target.value)}
-            className="w-full sm:w-auto"
+            className="w-full sm:w-auto bg-white"
           />
           <Button 
             onClick={() => onSearch(filters)}
-            className="bg-secondary hover:bg-secondary/90 w-full sm:w-auto"
+            className="bg-accent hover:bg-accent/90 text-accent-foreground w-full sm:w-auto"
           >
             Search
           </Button>
