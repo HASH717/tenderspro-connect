@@ -7,10 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/ui/date-picker";
+import { useState } from "react";
 
 export default function Index() {
   const { t } = useTranslation();
   const { currentLanguage } = useLanguage();
+  const [publicationDate, setPublicationDate] = useState<Date>();
+  const [deadlineDate, setDeadlineDate] = useState<Date>();
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -70,12 +73,12 @@ export default function Index() {
 
             <div className="space-y-2">
               <Label>{t('filters.publicationDate')}</Label>
-              <DatePicker />
+              <DatePicker date={publicationDate} setDate={setPublicationDate} />
             </div>
 
             <div className="space-y-2">
               <Label>{t('filters.deadlineDate')}</Label>
-              <DatePicker />
+              <DatePicker date={deadlineDate} setDate={setDeadlineDate} />
             </div>
           </div>
 
