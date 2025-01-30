@@ -17,7 +17,10 @@ export const AdminScraper = () => {
   const { t } = useTranslation();
 
   const handleScrape = async () => {
-    setIsLoading(true);
+    if (!isLoading) {
+      setIsLoading(true);
+    }
+    
     let successCount = 0;
     let failedAttempts = 0;
     const MAX_RETRIES = 3;
@@ -79,6 +82,8 @@ export const AdminScraper = () => {
           description: t("scraper.completedDescription", { count: successCount }),
         });
         setCurrentPage(1); // Reset for next full run
+        setIsLoading(false);
+        setProgress(0);
       } else {
         toast({
           title: t("scraper.batchSuccess"),
@@ -88,6 +93,10 @@ export const AdminScraper = () => {
             count: successCount 
           }),
         });
+        // Add delay before starting next batch
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Continue with next batch automatically
+        handleScrape();
       }
       
       console.log('Batch completed successfully:', data);
@@ -112,11 +121,8 @@ export const AdminScraper = () => {
         description: errorMessage,
         variant: "destructive",
       });
-    } finally {
-      if (currentPage >= TOTAL_PAGES) {
-        setIsLoading(false);
-        setProgress(0);
-      }
+      setIsLoading(false);
+      setProgress(0);
     }
   };
 
