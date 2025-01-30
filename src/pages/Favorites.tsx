@@ -10,7 +10,7 @@ const Favorites = () => {
   const { session } = useAuth();
   const { t } = useTranslation();
 
-  const { data: tenders = [], isLoading } = useQuery({
+  const { data: favorites = [], isLoading: isFavoritesLoading } = useQuery({
     queryKey: ['favorites', session?.user?.id],
     enabled: !!session?.user?.id,
     queryFn: async () => {
@@ -24,12 +24,16 @@ const Favorites = () => {
         return [];
       }
 
-      if (!favorites.length) {
-        return [];
-      }
+      return favorites || [];
+    }
+  });
 
+  const { data: tenders = [], isLoading: isTendersLoading } = useQuery({
+    queryKey: ['favorited-tenders', favorites],
+    enabled: favorites.length > 0,
+    queryFn: async () => {
       const tenderIds = favorites.map(fav => fav.tender_id);
-
+      
       const { data: tenders, error: tendersError } = await supabase
         .from('tenders')
         .select('*')
@@ -44,6 +48,8 @@ const Favorites = () => {
     }
   });
 
+  const isLoading = isFavoritesLoading || isTendersLoading;
+
   if (isLoading) {
     return (
       <div className="min-h-screen pb-20">
@@ -56,7 +62,7 @@ const Favorites = () => {
     );
   }
 
-  if (!tenders.length) {
+  if (!favorites.length) {
     return (
       <div className="min-h-screen pb-20">
         <div className="p-4">
