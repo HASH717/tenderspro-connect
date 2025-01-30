@@ -5,6 +5,14 @@
     "alerts": "Alerts",
     "profile": "Profile"
   },
+  "pages": {
+    "home": "Home",
+    "favorites": "Favorites",
+    "alerts": "Alerts",
+    "profile": "Profile",
+    "noFavorites": "No favorites yet",
+    "noAlerts": "No alerts set"
+  },
   "filters": {
     "search": "Search",
     "announcers": "Announcers",

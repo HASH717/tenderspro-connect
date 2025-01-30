@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 interface Profile {
   first_name: string;
@@ -14,6 +15,7 @@ interface Profile {
 }
 
 const Profile = () => {
+  const { t } = useTranslation();
   const { session } = useAuth();
   const [profile, setProfile] = useState<Profile>({
     first_name: "",
@@ -138,7 +140,7 @@ const Profile = () => {
     return (
       <div className="min-h-screen pb-20">
         <div className="p-4">
-          <h1 className="text-2xl font-bold text-primary mb-4">Profile</h1>
+          <h1 className="text-2xl font-bold text-primary mb-4">{t("pages.profile")}</h1>
           <div className="flex justify-center items-center h-48">
             <p>Loading profile...</p>
           </div>
@@ -152,7 +154,7 @@ const Profile = () => {
     <div className="min-h-screen pb-20">
       <div className="p-4">
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold text-primary">Profile</h1>
+          <h1 className="text-2xl font-bold text-primary">{t("pages.profile")}</h1>
           <Button 
             variant="outline" 
             onClick={handleLogout}

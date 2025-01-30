@@ -5,6 +5,14 @@
     "alerts": "التنبيهات",
     "profile": "الملف الشخصي"
   },
+  "pages": {
+    "home": "الرئيسية",
+    "favorites": "المفضلة",
+    "alerts": "التنبيهات",
+    "profile": "الملف الشخصي",
+    "noFavorites": "لا توجد مفضلات حتى الآن",
+    "noAlerts": "لا توجد تنبيهات"
+  },
   "filters": {
     "search": "بحث",
     "announcers": "المعلنون",
