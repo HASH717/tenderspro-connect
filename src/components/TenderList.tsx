@@ -84,7 +84,7 @@ export const TenderList = ({ tenders, isLoading }: TenderListProps) => {
           key={tender.id}
           id={tender.id}
           title={tender.title}
-          organization={tender.category || "Unknown"}
+          organization={tender.organization_name || tender.category || "Unknown"}
           location={tender.region || tender.wilaya || "Unknown"}
           deadline={tender.deadline || "Not specified"}
           publicationDate={tender.publication_date}
