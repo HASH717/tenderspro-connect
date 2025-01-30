@@ -96,16 +96,18 @@ const Index = () => {
   return (
     <div className={`${isMobile ? 'pb-20' : 'pt-24'}`}>
       <div className="bg-background z-10 p-4">
-        {isMobile && (
-          <div className="flex flex-col items-center mb-4">
-            <img 
-              src={logoSrc}
-              alt="TendersPro Logo" 
-              className="h-12 mb-1"
-            />
-          </div>
-        )}
-        <TenderFilters onSearch={handleSearch} />
+        <div className="max-w-4xl mx-auto">
+          {isMobile && (
+            <div className="flex flex-col items-center mb-4">
+              <img 
+                src={logoSrc}
+                alt="TendersPro Logo" 
+                className="h-12 mb-1"
+              />
+            </div>
+          )}
+          <TenderFilters onSearch={handleSearch} />
+        </div>
       </div>
 
       <div className="p-4 max-w-4xl mx-auto">
