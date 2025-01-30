@@ -10,20 +10,29 @@ export const AdminScraper = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const TOTAL_PAGES = 667;
+  const BATCH_SIZE = 20;
+  const PAGES_PER_BATCH = 5;
   const { t } = useTranslation();
 
   const handleScrape = async () => {
     setIsLoading(true);
-    setProgress(25);
+    let successCount = 0;
+    let failedAttempts = 0;
+    const MAX_RETRIES = 3;
 
     try {
-      console.log('Starting scraping process...');
+      console.log('Starting scraping process from page:', currentPage);
+      
+      // Calculate end page for this batch
+      const endPage = Math.min(currentPage + PAGES_PER_BATCH - 1, TOTAL_PAGES);
       
       const { data, error } = await supabase.functions.invoke('scrape-tenders', {
         body: { 
-          batchSize: 20, // Increased from 5 to 20
-          startPage: 1,
-          maxPages: 8 // Slightly increased from 5 to 8
+          batchSize: BATCH_SIZE,
+          startPage: currentPage,
+          maxPages: PAGES_PER_BATCH
         },
         headers: {
           'Content-Type': 'application/json',
@@ -53,16 +62,50 @@ export const AdminScraper = () => {
         throw new Error(errorMessage);
       }
       
-      setProgress(100);
-      toast({
-        title: t("scraper.success"),
-        description: t("scraper.successDescription", { count: data?.count || 0 }),
-      });
+      // Update progress
+      const progressPercentage = (endPage / TOTAL_PAGES) * 100;
+      setProgress(progressPercentage);
       
-      console.log('Scraping completed successfully:', data);
+      // Update current page for next batch
+      setCurrentPage(endPage + 1);
+      
+      successCount = data?.count || 0;
+      
+      const isComplete = endPage >= TOTAL_PAGES;
+      
+      if (isComplete) {
+        toast({
+          title: t("scraper.success"),
+          description: t("scraper.completedDescription", { count: successCount }),
+        });
+        setCurrentPage(1); // Reset for next full run
+      } else {
+        toast({
+          title: t("scraper.batchSuccess"),
+          description: t("scraper.batchDescription", { 
+            current: endPage,
+            total: TOTAL_PAGES,
+            count: successCount 
+          }),
+        });
+      }
+      
+      console.log('Batch completed successfully:', data);
     } catch (error) {
       console.error('Error in scraping process:', error);
+      failedAttempts++;
+      
       let errorMessage = error instanceof Error ? error.message : t("scraper.errorDescription");
+      
+      if (failedAttempts < MAX_RETRIES) {
+        toast({
+          title: t("scraper.retrying"),
+          description: t("scraper.retryDescription", { attempt: failedAttempts }),
+        });
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        return handleScrape();
+      }
       
       toast({
         title: t("scraper.error"),
@@ -70,8 +113,10 @@ export const AdminScraper = () => {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
-      setTimeout(() => setProgress(0), 1000);
+      if (currentPage >= TOTAL_PAGES) {
+        setIsLoading(false);
+        setProgress(0);
+      }
     }
   };
 
@@ -79,6 +124,13 @@ export const AdminScraper = () => {
     <Card className="p-4">
       <h2 className="text-lg font-semibold mb-4">{t("scraper.title")}</h2>
       <div className="space-y-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm text-muted-foreground">
+            {currentPage > 1 ? 
+              t("scraper.progress", { current: currentPage - 1, total: TOTAL_PAGES }) :
+              t("scraper.ready")}
+          </span>
+        </div>
         <Button 
           onClick={handleScrape} 
           disabled={isLoading}
