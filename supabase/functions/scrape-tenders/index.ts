@@ -78,6 +78,16 @@ Deno.serve(async (req) => {
 
             const detailData = await detailResponse.json()
 
+            // Format image URLs by adding the base URL
+            const formatImageUrl = (path: string) => {
+              if (!path) return null;
+              return `https://old.dztenders.com/${path}`;
+            };
+
+            // Get all available images from files_verbose
+            const imageUrls = tender.files_verbose?.map(formatImageUrl).filter(Boolean) || [];
+            const primaryImageUrl = imageUrls[0] || null;
+
             const formattedTender = {
               title: tender.title || 'Untitled Tender',
               wilaya: tender.region_verbose?.name || 'Unknown',
@@ -90,7 +100,7 @@ Deno.serve(async (req) => {
               region: tender.region_verbose?.name || null,
               withdrawal_address: tender.cc_address || null,
               link: tender.files_verbose?.[0] || null,
-              image_url: tender.files_verbose?.[0] ? `https://old.dztenders.com/${tender.files_verbose[0]}` : null,
+              image_url: primaryImageUrl,
               tender_number: detailData.tender_number || null,
               qualification_required: detailData.qualification_required || null,
               qualification_details: detailData.qualification_details || null,
