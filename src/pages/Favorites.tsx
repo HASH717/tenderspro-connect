@@ -52,7 +52,7 @@ const Favorites = () => {
 
   if (!session) {
     return (
-      <div className="min-h-screen pb-20">
+      <div className="min-h-screen pb-20 pt-24">
         <div className="p-4">
           <h1 className="text-2xl font-bold text-primary mb-4">{t("pages.favorites")}</h1>
           <div className="flex flex-col items-center justify-center mt-20">
@@ -67,7 +67,7 @@ const Favorites = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen pb-20">
+      <div className="min-h-screen pb-20 pt-24">
         <div className="p-4">
           <h1 className="text-2xl font-bold text-primary mb-4">{t("pages.favorites")}</h1>
           <div className="text-center py-8">Loading favorites...</div>
@@ -79,7 +79,7 @@ const Favorites = () => {
 
   if (!favorites.length) {
     return (
-      <div className="min-h-screen pb-20">
+      <div className="min-h-screen pb-20 pt-24">
         <div className="p-4">
           <h1 className="text-2xl font-bold text-primary mb-4">{t("pages.favorites")}</h1>
           <div className="flex flex-col items-center justify-center mt-20">
@@ -93,7 +93,7 @@ const Favorites = () => {
   }
 
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen pb-20 pt-24">
       <div className="p-4">
         <h1 className="text-2xl font-bold text-primary mb-4">{t("pages.favorites")}</h1>
         <div className="max-w-4xl mx-auto">
