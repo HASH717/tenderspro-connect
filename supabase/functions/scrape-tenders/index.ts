@@ -26,10 +26,12 @@ Deno.serve(async (req) => {
     const credentials = btoa(`${username}:${password}`)
     const authHeader = `Basic ${credentials}`
 
-    // Parse request body with error handling
+    // Parse request body with better error handling
     let requestBody
     try {
-      requestBody = await req.json()
+      const text = await req.text() // First get the raw text
+      console.log('Raw request body:', text) // Log the raw text for debugging
+      requestBody = text ? JSON.parse(text) : {} // Only parse if there's content
     } catch (error) {
       console.error('Error parsing request body:', error)
       return new Response(
