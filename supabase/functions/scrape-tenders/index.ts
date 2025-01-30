@@ -12,6 +12,13 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const username = Deno.env.get('DZTENDERS_USERNAME')
+    const password = Deno.env.get('DZTENDERS_PASSWORD')
+
+    if (!username || !password) {
+      throw new Error('Missing API credentials')
+    }
+
     // First, authenticate with dztenders.com API
     console.log('Authenticating with dztenders.com API')
     const loginResponse = await fetch('https://api.dztenders.com/auth/login', {
@@ -20,12 +27,14 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        username: Deno.env.get('DZTENDERS_USERNAME'),
-        password: Deno.env.get('DZTENDERS_PASSWORD'),
+        username,
+        password,
       }),
     })
 
     if (!loginResponse.ok) {
+      console.error('Login response status:', loginResponse.status)
+      console.error('Login response text:', await loginResponse.text())
       throw new Error('Failed to authenticate with dztenders.com API')
     }
 
@@ -40,6 +49,8 @@ Deno.serve(async (req) => {
     })
 
     if (!tendersResponse.ok) {
+      console.error('Tenders response status:', tendersResponse.status)
+      console.error('Tenders response text:', await tendersResponse.text())
       throw new Error('Failed to fetch tenders from API')
     }
 
