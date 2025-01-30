@@ -90,5 +90,22 @@
     "logout": "تسجيل الخروج",
     "enterEmail": "أدخل البريد الإلكتروني",
     "enterPhoneNumber": "أدخل رقم الهاتف"
+  },
+  "alerts": {
+    "configuration": "إعدادات التنبيهات",
+    "new": "تنبيه جديد",
+    "name": "اسم التنبيه",
+    "namePlaceholder": "اختر اسماً لتنبيهك",
+    "created": "تم إنشاء التنبيه",
+    "createdDescription": "تم إنشاء التنبيه بنجاح",
+    "deleted": "تم حذف التنبيه",
+    "deletedDescription": "تم حذف التنبيه بنجاح",
+    "createError": "خطأ في إنشاء التنبيه",
+    "deleteError": "خطأ في حذف التنبيه",
+    "nameRequired": "اسم التنبيه مطلوب",
+    "enterName": "الرجاء إدخال اسم للتنبيه",
+    "authError": "خطأ في المصادقة",
+    "loginRequired": "يجب تسجيل الدخول لإنشاء التنبيهات",
+    "fetchError": "خطأ في جلب التنبيهات"
   }
 }

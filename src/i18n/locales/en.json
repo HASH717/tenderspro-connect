@@ -90,5 +90,22 @@
     "logout": "Logout",
     "enterEmail": "Enter email",
     "enterPhoneNumber": "Enter phone number"
+  },
+  "alerts": {
+    "configuration": "Alerts Configuration",
+    "new": "New Alert",
+    "name": "Alert Name",
+    "namePlaceholder": "Name your alert",
+    "created": "Alert Created",
+    "createdDescription": "Your alert has been created successfully",
+    "deleted": "Alert Deleted",
+    "deletedDescription": "Your alert has been deleted successfully",
+    "createError": "Error Creating Alert",
+    "deleteError": "Error Deleting Alert",
+    "nameRequired": "Alert Name Required",
+    "enterName": "Please enter a name for your alert",
+    "authError": "Authentication Error",
+    "loginRequired": "You must be logged in to create alerts",
+    "fetchError": "Error Fetching Alerts"
   }
 }

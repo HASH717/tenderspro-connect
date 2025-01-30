@@ -90,5 +90,22 @@
     "logout": "Déconnexion",
     "enterEmail": "Entrez votre email",
     "enterPhoneNumber": "Entrez votre numéro de téléphone"
+  },
+  "alerts": {
+    "configuration": "Configuration des alertes",
+    "new": "Nouvelle alerte",
+    "name": "Nom de l'alerte",
+    "namePlaceholder": "Nommez votre alerte",
+    "created": "Alerte créée",
+    "createdDescription": "Votre alerte a été créée avec succès",
+    "deleted": "Alerte supprimée",
+    "deletedDescription": "Votre alerte a été supprimée avec succès",
+    "createError": "Erreur lors de la création de l'alerte",
+    "deleteError": "Erreur lors de la suppression de l'alerte",
+    "nameRequired": "Nom d'alerte requis",
+    "enterName": "Veuillez entrer un nom pour votre alerte",
+    "authError": "Erreur d'authentification",
+    "loginRequired": "Vous devez être connecté pour créer des alertes",
+    "fetchError": "Erreur lors de la récupération des alertes"
   }
 }
