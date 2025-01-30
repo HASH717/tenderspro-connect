@@ -14,35 +14,55 @@ Deno.serve(async (req) => {
   try {
     // First, authenticate with dztenders.com API
     console.log('Authenticating with dztenders.com API')
-    const loginResponse = await fetch('https://api.dztenders.com/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        username: 'motraxa@gmail.com',
-        password: 'Dahdouhhash@717',
-      }),
-    })
-
-    console.log('Login response status:', loginResponse.status)
-    const loginResponseText = await loginResponse.text()
-    console.log('Login response text:', loginResponseText)
-
-    if (!loginResponse.ok) {
-      throw new Error(`Authentication failed with status ${loginResponse.status}: ${loginResponseText}`)
+    
+    // Try different common DRF authentication endpoints
+    const authEndpoints = [
+      'https://api.dztenders.com/api/token/',
+      'https://api.dztenders.com/api/auth/token/',
+      'https://api.dztenders.com/api-auth/login/',
+      'https://api.dztenders.com/api/v1/auth/login/'
+    ]
+    
+    let token = null
+    let loginResponse = null
+    
+    for (const endpoint of authEndpoints) {
+      console.log(`Trying authentication endpoint: ${endpoint}`)
+      try {
+        loginResponse = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            username: 'motraxa@gmail.com',
+            password: 'Dahdouhhash@717',
+          }),
+        })
+        
+        console.log(`Response status for ${endpoint}:`, loginResponse.status)
+        const responseText = await loginResponse.text()
+        console.log(`Response for ${endpoint}:`, responseText)
+        
+        if (loginResponse.ok) {
+          try {
+            const loginData = JSON.parse(responseText)
+            if (loginData.token || loginData.access) {
+              token = loginData.token || loginData.access
+              console.log('Successfully authenticated!')
+              break
+            }
+          } catch (e) {
+            console.log(`Failed to parse JSON response from ${endpoint}:`, e)
+          }
+        }
+      } catch (e) {
+        console.log(`Failed to connect to ${endpoint}:`, e)
+      }
     }
 
-    let token
-    try {
-      const loginData = JSON.parse(loginResponseText)
-      token = loginData.token
-      if (!token) {
-        throw new Error('No token in response')
-      }
-    } catch (e) {
-      console.error('Failed to parse login response:', e)
-      throw new Error('Invalid authentication response format')
+    if (!token) {
+      throw new Error('Failed to authenticate with any endpoint')
     }
 
     // Fetch tenders from the API with JSON format
