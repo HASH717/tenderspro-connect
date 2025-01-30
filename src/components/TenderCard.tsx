@@ -24,15 +24,15 @@ const TenderCard = ({
         <div className="flex-1">
           <h3 className="font-semibold text-lg text-foreground mb-2">{title}</h3>
           <div className="space-y-2">
-            <div className="flex items-center text-gray-600">
+            <div className="flex items-center text-muted-foreground">
               <Building className="w-4 h-4 mr-2" />
               <span className="text-sm">{organization}</span>
             </div>
-            <div className="flex items-center text-gray-600">
+            <div className="flex items-center text-muted-foreground">
               <MapPin className="w-4 h-4 mr-2" />
               <span className="text-sm">{location}</span>
             </div>
-            <div className="flex items-center text-gray-600">
+            <div className="flex items-center text-muted-foreground">
               <Calendar className="w-4 h-4 mr-2" />
               <span className="text-sm">Deadline: {deadline}</span>
             </div>
