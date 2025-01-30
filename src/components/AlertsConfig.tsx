@@ -15,6 +15,39 @@ interface Alert extends TenderFiltersType {
   name: string;
 }
 
+// Helper function to map frontend filters to database columns
+const mapFiltersToDb = (filters: TenderFiltersType & { name: string }) => {
+  return {
+    name: filters.name,
+    search: filters.search,
+    announcers: filters.announcers,
+    tender_type: filters.tenderType,
+    announcement_type: filters.announcementType,
+    category: filters.category,
+    wilaya: filters.wilaya,
+    price_range: filters.priceRange,
+    micro_enterprises: filters.microEnterprises,
+  };
+};
+
+// Helper function to map database response to frontend types
+const mapDbToFilters = (dbAlert: any): Alert => {
+  return {
+    id: dbAlert.id,
+    name: dbAlert.name,
+    search: dbAlert.search || "",
+    announcers: dbAlert.announcers || "",
+    tenderType: dbAlert.tender_type || "",
+    announcementType: dbAlert.announcement_type || "",
+    category: dbAlert.category || "",
+    wilaya: dbAlert.wilaya || "",
+    priceRange: dbAlert.price_range || "",
+    microEnterprises: dbAlert.micro_enterprises || false,
+    publicationDate: "",
+    deadlineDate: "",
+  };
+};
+
 export const AlertsConfig = () => {
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -36,7 +69,7 @@ export const AlertsConfig = () => {
         });
         return [];
       }
-      return data as Alert[];
+      return data.map(mapDbToFilters);
     },
   });
 
@@ -50,10 +83,9 @@ export const AlertsConfig = () => {
       return;
     }
 
-    const { error } = await supabase.from("alerts").insert({
-      name: alertName,
-      ...filters,
-    });
+    const { error } = await supabase
+      .from("alerts")
+      .insert(mapFiltersToDb({ ...filters, name: alertName }));
 
     if (error) {
       toast({
