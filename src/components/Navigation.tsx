@@ -39,13 +39,12 @@ const Navigation = () => {
   return (
     <nav className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 px-6 py-4 z-50">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center">
           <img 
             src="/lovable-uploads/c1c4772c-d5f0-499c-b16f-ae8dcefaa6c3.png" 
             alt="TendersPro Logo" 
             className="h-8"
           />
-          <span className="text-sm font-medium text-gray-600">#1 Algerian Tenders</span>
         </div>
         <div className="flex items-center space-x-6">
           {navItems.map(({ icon: Icon, path, label }) => (

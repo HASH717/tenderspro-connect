@@ -45,7 +45,6 @@ const Index = () => {
               alt="TendersPro Logo" 
               className="h-12 mb-1"
             />
-            <h2 className="text-sm text-gray-600">#1 Algerian Tenders</h2>
           </div>
         )}
         <div className="relative max-w-2xl mx-auto">
