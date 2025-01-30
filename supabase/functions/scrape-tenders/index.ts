@@ -60,36 +60,43 @@ Deno.serve(async (req) => {
     for (const tender of tenders) {
       console.log('Processing tender:', tender.id)
       
-      // Format the data properly before insertion
+      // Ensure required fields have default values and proper formatting
       const formattedTender = {
-        title: tender.title || '',
+        id: crypto.randomUUID(), // Generate a new UUID for each tender
+        title: tender.title || 'Untitled Tender', // Provide default for required field
+        wilaya: tender.region_verbose?.name || 'Unknown', // Provide default for required field
         deadline: tender.expiration_date ? new Date(tender.expiration_date).toISOString() : null,
-        wilaya: tender.region_verbose?.name || '',
         category: tender.categories_verbose?.[0]?.name || null,
         publication_date: tender.publishing_date ? new Date(tender.publishing_date).toISOString() : null,
         specifications_price: tender.cc_price?.toString() || null,
-        tender_id: tender.id?.toString() || null,
+        tender_id: tender.id?.toString() || crypto.randomUUID(), // Fallback to UUID if no tender_id
         type: tender.type || null,
         region: tender.region_verbose?.name || null,
         withdrawal_address: tender.cc_address || null,
         link: tender.files_verbose?.[0] || null,
+        image_url: null // Set to null as it's not provided in the API response
       }
 
       // Log the formatted tender for debugging
       console.log('Formatted tender:', JSON.stringify(formattedTender, null, 2))
 
-      const { error } = await supabase
-        .from('tenders')
-        .upsert(formattedTender, {
-          onConflict: 'tender_id'
-        })
+      try {
+        const { error } = await supabase
+          .from('tenders')
+          .upsert(formattedTender, {
+            onConflict: 'tender_id'
+          })
 
-      if (error) {
-        console.error('Error inserting tender:', error)
-        console.error('Failed tender data:', JSON.stringify(formattedTender, null, 2))
-      } else {
-        successCount++
-        console.log('Successfully processed tender:', tender.id)
+        if (error) {
+          console.error('Error inserting tender:', error)
+          console.error('Failed tender data:', JSON.stringify(formattedTender, null, 2))
+        } else {
+          successCount++
+          console.log('Successfully processed tender:', tender.id)
+        }
+      } catch (error) {
+        console.error('Exception while inserting tender:', error)
+        console.error('Problem tender data:', JSON.stringify(formattedTender, null, 2))
       }
     }
 
