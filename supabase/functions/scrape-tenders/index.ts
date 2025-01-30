@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
 
     let totalTenders = 0
     let successCount = 0
-    const totalPages = 1 // Reduced for testing, increase later
+    const totalPages = 667 // Total number of pages to scrape
     
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
