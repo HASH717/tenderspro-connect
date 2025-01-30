@@ -18,6 +18,10 @@ const Navigation = () => {
     { icon: User, path: "/profile", label: "Profile" },
   ];
 
+  const logoSrc = theme === 'dark' 
+    ? "/lovable-uploads/322d9f00-44ae-4a52-85db-ab74141855f7.png"
+    : "/lovable-uploads/c1c4772c-d5f0-499c-b16f-ae8dcefaa6c3.png";
+
   if (isMobile) {
     return (
       <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border px-4 py-2 z-50">
@@ -44,7 +48,7 @@ const Navigation = () => {
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         <div className="flex items-center">
           <img 
-            src="/lovable-uploads/c1c4772c-d5f0-499c-b16f-ae8dcefaa6c3.png" 
+            src={logoSrc}
             alt="TendersPro Logo" 
             className="h-8"
           />

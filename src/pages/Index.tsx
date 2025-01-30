@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import Navigation from "@/components/Navigation";
 import TenderCard from "@/components/TenderCard";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTheme } from "@/contexts/ThemeContext";
 
 // Mock data for initial development
 const mockTenders = [
@@ -26,6 +27,7 @@ const mockTenders = [
 const Index = () => {
   const [favorites, setFavorites] = useState<number[]>([]);
   const isMobile = useIsMobile();
+  const { theme } = useTheme();
 
   const toggleFavorite = (id: number) => {
     setFavorites((prev) =>
@@ -35,20 +37,24 @@ const Index = () => {
     );
   };
 
+  const logoSrc = theme === 'dark' 
+    ? "/lovable-uploads/322d9f00-44ae-4a52-85db-ab74141855f7.png"
+    : "/lovable-uploads/c1c4772c-d5f0-499c-b16f-ae8dcefaa6c3.png";
+
   return (
     <div className={`${isMobile ? 'pb-20' : 'pt-24'}`}>
-      <div className="sticky top-0 bg-white z-10 p-4 shadow-sm">
+      <div className="sticky top-0 bg-background z-10 p-4 shadow-sm">
         {isMobile && (
           <div className="flex flex-col items-center mb-4">
             <img 
-              src="/lovable-uploads/c1c4772c-d5f0-499c-b16f-ae8dcefaa6c3.png" 
+              src={logoSrc}
               alt="TendersPro Logo" 
               className="h-12 mb-1"
             />
           </div>
         )}
         <div className="relative max-w-2xl mx-auto">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search tenders..."
             className="pl-10"
