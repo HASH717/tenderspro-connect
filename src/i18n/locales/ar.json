@@ -1,0 +1,23 @@
+{
+  "navigation": {
+    "home": "الرئيسية",
+    "favorites": "المفضلة",
+    "alerts": "التنبيهات",
+    "profile": "الملف الشخصي"
+  },
+  "filters": {
+    "search": "بحث",
+    "announcers": "المعلنون",
+    "marketType": "نوع السوق",
+    "announcementType": "نوع الإعلان",
+    "category": "الفئة",
+    "region": "المنطقة",
+    "microEnterprises": "المؤسسات الصغيرة",
+    "searchButton": "بحث"
+  },
+  "tender": {
+    "deadline": "الموعد النهائي",
+    "organization": "المنظمة",
+    "location": "الموقع"
+  }
+}

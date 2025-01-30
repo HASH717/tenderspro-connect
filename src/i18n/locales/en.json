@@ -1,0 +1,23 @@
+{
+  "navigation": {
+    "home": "Home",
+    "favorites": "Favorites",
+    "alerts": "Alerts",
+    "profile": "Profile"
+  },
+  "filters": {
+    "search": "Search",
+    "announcers": "Announcers",
+    "marketType": "Market type",
+    "announcementType": "Announcement type",
+    "category": "Category",
+    "region": "Region",
+    "microEnterprises": "Micro-enterprises",
+    "searchButton": "Search"
+  },
+  "tender": {
+    "deadline": "Deadline",
+    "organization": "Organization",
+    "location": "Location"
+  }
+}

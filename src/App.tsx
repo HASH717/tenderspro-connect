@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
-import { ThemeProvider } from "./contexts/ThemeContext";
+import { LanguageProvider } from "./contexts/LanguageContext";
 import { useAuth } from "./contexts/AuthContext";
 import Index from "./pages/Index";
 import Favorites from "./pages/Favorites";
@@ -16,7 +16,6 @@ import TenderDetails from "./pages/TenderDetails";
 
 const queryClient = new QueryClient();
 
-// Protected Route wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { session, isLoading } = useAuth();
 
@@ -34,7 +33,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <ThemeProvider>
+      <LanguageProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
@@ -85,7 +84,7 @@ const App = () => (
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
-      </ThemeProvider>
+      </LanguageProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

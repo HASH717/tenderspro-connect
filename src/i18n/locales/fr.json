@@ -1,0 +1,23 @@
+{
+  "navigation": {
+    "home": "Accueil",
+    "favorites": "Favoris",
+    "alerts": "Alertes",
+    "profile": "Profil"
+  },
+  "filters": {
+    "search": "Rechercher",
+    "announcers": "Annonceurs",
+    "marketType": "Type de marché",
+    "announcementType": "Type d'annonce",
+    "category": "Catégorie",
+    "region": "Région",
+    "microEnterprises": "Micro-entreprises",
+    "searchButton": "Rechercher"
+  },
+  "tender": {
+    "deadline": "Date limite",
+    "organization": "Organisation",
+    "location": "Emplacement"
+  }
+}
