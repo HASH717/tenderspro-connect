@@ -9,6 +9,7 @@ import { TenderFilters as TenderFiltersType } from "@/components/TenderFilters";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Alert extends TenderFiltersType {
   id: string;
@@ -16,8 +17,9 @@ interface Alert extends TenderFiltersType {
 }
 
 // Helper function to map frontend filters to database columns
-const mapFiltersToDb = (filters: TenderFiltersType & { name: string }) => {
+const mapFiltersToDb = (filters: TenderFiltersType & { name: string }, userId: string) => {
   return {
+    user_id: userId,
     name: filters.name,
     search: filters.search,
     announcers: filters.announcers,
@@ -51,6 +53,7 @@ const mapDbToFilters = (dbAlert: any): Alert => {
 export const AlertsConfig = () => {
   const { t } = useTranslation();
   const { toast } = useToast();
+  const { session } = useAuth();
   const [showNewAlert, setShowNewAlert] = useState(false);
   const [alertName, setAlertName] = useState("");
 
@@ -74,6 +77,15 @@ export const AlertsConfig = () => {
   });
 
   const handleCreateAlert = async (filters: TenderFiltersType) => {
+    if (!session?.user) {
+      toast({
+        title: t("alerts.authError"),
+        description: t("alerts.loginRequired"),
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!alertName.trim()) {
       toast({
         title: t("alerts.nameRequired"),
@@ -85,7 +97,7 @@ export const AlertsConfig = () => {
 
     const { error } = await supabase
       .from("alerts")
-      .insert(mapFiltersToDb({ ...filters, name: alertName }));
+      .insert(mapFiltersToDb({ ...filters, name: alertName }, session.user.id));
 
     if (error) {
       toast({
