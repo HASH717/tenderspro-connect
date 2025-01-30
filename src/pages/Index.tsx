@@ -34,9 +34,9 @@ const Index = () => {
   const logoSrc = "/lovable-uploads/c1c4772c-d5f0-499c-b16f-ae8dcefaa6c3.png";
 
   return (
-    <div className={`min-h-screen ${isMobile ? 'pb-20' : ''}`}>
+    <div className={`min-h-screen flex flex-col ${isMobile ? 'pb-32' : 'pb-24'}`}>
       <Navigation />
-      <div className={`${isMobile ? '' : 'mt-20'}`}>
+      <div className={`flex-grow ${isMobile ? '' : 'mt-20'}`}>
         <div className="bg-background z-10">
           <div className="max-w-4xl mx-auto px-4">
             {isMobile && (
@@ -68,6 +68,12 @@ const Index = () => {
           />
         </div>
       </div>
+      
+      <footer className="w-full py-6 mt-auto bg-background border-t">
+        <div className="max-w-4xl mx-auto px-4 text-center text-sm text-muted-foreground">
+          © {new Date().getFullYear()} TendersPro. All rights reserved.
+        </div>
+      </footer>
     </div>
   );
 };
