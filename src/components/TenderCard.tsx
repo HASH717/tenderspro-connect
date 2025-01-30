@@ -1,7 +1,9 @@
 import { Calendar, MapPin, Building, Heart } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { useNavigate } from "react-router-dom";
 
 interface TenderCardProps {
+  id: string;
   title: string;
   organization: string;
   location: string;
@@ -11,6 +13,7 @@ interface TenderCardProps {
 }
 
 const TenderCard = ({
+  id,
   title,
   organization,
   location,
@@ -18,8 +21,13 @@ const TenderCard = ({
   onFavorite,
   isFavorite = false,
 }: TenderCardProps) => {
+  const navigate = useNavigate();
+
   return (
-    <Card className="p-4 mb-4 hover:shadow-lg transition-shadow">
+    <Card 
+      className="p-4 mb-4 hover:shadow-lg transition-shadow cursor-pointer"
+      onClick={() => navigate(`/tender/${id}`)}
+    >
       <div className="flex justify-between items-start">
         <div className="flex-1">
           <h3 className="font-semibold text-lg text-foreground mb-2">{title}</h3>
@@ -39,7 +47,10 @@ const TenderCard = ({
           </div>
         </div>
         <button
-          onClick={onFavorite}
+          onClick={(e) => {
+            e.stopPropagation();
+            onFavorite?.();
+          }}
           className={`p-2 rounded-full ${
             isFavorite ? "text-red-500" : "text-gray-400"
           }`}

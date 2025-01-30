@@ -12,6 +12,7 @@ import Alerts from "./pages/Alerts";
 import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import TenderDetails from "./pages/TenderDetails";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Index />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/tender/:id"
+                element={
+                  <ProtectedRoute>
+                    <TenderDetails />
                   </ProtectedRoute>
                 }
               />
