@@ -48,6 +48,7 @@ Deno.serve(async (req) => {
     }
 
     const tendersData = await tendersResponse.json()
+    console.log('Fetched', tendersData.count, 'tenders')
     const tenders = tendersData.results
 
     // Initialize Supabase client
@@ -62,8 +63,10 @@ Deno.serve(async (req) => {
 
     // Process and store tender data
     let successCount = 0
+    console.log('Processing', tenders.length, 'tenders')
 
     for (const tender of tenders) {
+      console.log('Processing tender:', tender.id)
       const { error } = await supabase
         .from('tenders')
         .upsert({
@@ -86,8 +89,11 @@ Deno.serve(async (req) => {
         console.error('Error inserting tender:', error)
       } else {
         successCount++
+        console.log('Successfully processed tender:', tender.id)
       }
     }
+
+    console.log('Finished processing tenders. Success count:', successCount)
 
     return new Response(JSON.stringify({
       success: true,
