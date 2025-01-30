@@ -155,83 +155,85 @@ const Profile = () => {
   return (
     <div className="min-h-screen pb-20">
       <Navigation />
-      <div className={`p-4 ${isMobile ? "pt-6" : "pt-24"}`}>
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold text-primary">{t("pages.profile")}</h1>
-          <Button 
-            variant="outline" 
-            onClick={handleLogout}
-            className="bg-red-500 text-white hover:bg-red-600"
-          >
-            {t("profile.logout")}
-          </Button>
-        </div>
-        
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t("profile.email")}
-            </label>
-            <Input 
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder={t("profile.enterEmail")}
-            />
+      <div className={`${isMobile ? "pt-6" : "pt-24"}`}>
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-2xl font-bold text-primary">{t("pages.profile")}</h1>
+            <Button 
+              variant="outline" 
+              onClick={handleLogout}
+              className="bg-red-500 text-white hover:bg-red-600"
+            >
+              {t("profile.logout")}
+            </Button>
           </div>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t("profile.email")}
+              </label>
+              <Input 
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder={t("profile.enterEmail")}
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t("profile.newPassword")} {t("profile.newPasswordHint")}
-            </label>
-            <Input 
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder={t("profile.newPasswordPlaceholder")}
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t("profile.newPassword")} {t("profile.newPasswordHint")}
+              </label>
+              <Input 
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder={t("profile.newPasswordPlaceholder")}
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t("profile.firstName")}
-            </label>
-            <Input 
-              value={profile.first_name}
-              disabled
-              className="bg-gray-100"
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t("profile.firstName")}
+              </label>
+              <Input 
+                value={profile.first_name}
+                disabled
+                className="bg-gray-100"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t("profile.lastName")}
+              </label>
+              <Input 
+                value={profile.last_name}
+                disabled
+                className="bg-gray-100"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t("profile.phoneNumber")}
+              </label>
+              <Input 
+                value={profile.phone_number}
+                onChange={(e) => setProfile({ ...profile, phone_number: e.target.value })}
+                placeholder={t("profile.enterPhoneNumber")}
+              />
+            </div>
+            
+            <Button 
+              className="w-full" 
+              onClick={handleUpdateProfile}
+              disabled={isLoading}
+            >
+              {isLoading ? t("profile.saving") : t("profile.saveChanges")}
+            </Button>
           </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t("profile.lastName")}
-            </label>
-            <Input 
-              value={profile.last_name}
-              disabled
-              className="bg-gray-100"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t("profile.phoneNumber")}
-            </label>
-            <Input 
-              value={profile.phone_number}
-              onChange={(e) => setProfile({ ...profile, phone_number: e.target.value })}
-              placeholder={t("profile.enterPhoneNumber")}
-            />
-          </div>
-          
-          <Button 
-            className="w-full" 
-            onClick={handleUpdateProfile}
-            disabled={isLoading}
-          >
-            {isLoading ? t("profile.saving") : t("profile.saveChanges")}
-          </Button>
         </div>
       </div>
     </div>

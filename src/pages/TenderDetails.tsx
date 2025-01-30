@@ -40,7 +40,7 @@ const TenderDetails = () => {
     <div className={`${isMobile ? 'pb-20' : 'pt-24'}`}>
       <Navigation />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-4 py-8">
         <Button
           variant="ghost"
           className="mb-6"
@@ -50,7 +50,7 @@ const TenderDetails = () => {
           Back
         </Button>
 
-        <div className="max-w-4xl mx-auto bg-background rounded-lg shadow-lg overflow-hidden">
+        <div className="bg-background rounded-lg shadow-lg overflow-hidden">
           <div className="p-6">
             <div className="mb-6">
               <h1 className="text-2xl font-semibold text-foreground">{tender.title}</h1>

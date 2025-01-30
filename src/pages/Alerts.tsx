@@ -9,10 +9,12 @@ const Alerts = () => {
 
   return (
     <div className="min-h-screen pb-20">
-      <div className={`p-4 ${isMobile ? "pt-6" : "pt-24"}`}>
-        <AlertsConfig />
-      </div>
       <Navigation />
+      <div className={`${isMobile ? "pt-6" : "pt-24"}`}>
+        <div className="max-w-4xl mx-auto px-4">
+          <AlertsConfig />
+        </div>
+      </div>
     </div>
   );
 };
