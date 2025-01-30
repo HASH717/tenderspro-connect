@@ -46,8 +46,8 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
   };
 
   return (
-    <div className="space-y-4 bg-background p-4 rounded-lg shadow-sm">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="space-y-3 bg-background p-3 rounded-lg shadow-sm">
+      <div className="grid grid-cols-1 gap-3">
         <div className="relative">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
@@ -64,7 +64,7 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-2">
         <Select
           value={filters.marketType}
           onValueChange={(value) => handleFilterChange("marketType", value)}
@@ -120,26 +120,28 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
         </Select>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="micro-enterprises"
-            checked={filters.microEnterprises}
-            onCheckedChange={(checked) => handleFilterChange("microEnterprises", checked)}
-          />
-          <Label htmlFor="micro-enterprises">Micro-enterprises</Label>
+      <div className="flex flex-col space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="micro-enterprises"
+              checked={filters.microEnterprises}
+              onCheckedChange={(checked) => handleFilterChange("microEnterprises", checked)}
+            />
+            <Label htmlFor="micro-enterprises">Micro-enterprises</Label>
+          </div>
         </div>
 
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
           <Input
             type="date"
             value={filters.publicationDate}
             onChange={(e) => handleFilterChange("publicationDate", e.target.value)}
-            className="w-auto"
+            className="w-full sm:w-auto"
           />
           <Button 
             onClick={() => onSearch(filters)}
-            className="bg-secondary hover:bg-secondary/90"
+            className="bg-secondary hover:bg-secondary/90 w-full sm:w-auto"
           >
             Search
           </Button>
