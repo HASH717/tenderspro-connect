@@ -16,40 +16,64 @@
   "filters": {
     "search": "بحث",
     "announcers": "المعلنون",
-    "marketType": "نوع السوق",
+    "tenderType": "نوع السوق",
     "announcementType": "نوع الإعلان",
     "category": "الفئة",
-    "region": "المنطقة",
+    "wilaya": "المنطقة",
     "microEnterprises": "المؤسسات الصغيرة",
     "searchButton": "بحث",
-    "public": "عمومي",
-    "private": "خاص",
-    "tender": "مناقصة",
-    "auction": "مزاد"
+    "clearFilters": "مسح الفلاتر",
+    "publicationDate": "تاريخ النشر",
+    "deadlineDate": "تاريخ الانتهاء",
+    "types": {
+      "national_call": "مناقصة وطنية",
+      "national_international": "مناقصة وطنية ودولية",
+      "sale_notice": "إشعار بيع",
+      "international_consultation": "استشارة دولية",
+      "national_consultation": "استشارة وطنية",
+      "expression_interest": "إبداء الاهتمام",
+      "national_preselection": "تأهيل مسبق وطني",
+      "adjudication": "مزايدة"
+    },
+    "announcement": {
+      "tenders": "المناقصات",
+      "results": "جميع النتائج",
+      "attribution": "الإسناد",
+      "extension": "تمديد المدة",
+      "fruitless": "عدم الجدوى",
+      "cancellation": "الإلغاءات",
+      "update": "تحديث"
+    }
   },
   "tender": {
     "deadline": "الموعد النهائي",
     "organization": "المنظمة",
     "location": "الموقع",
     "categories": {
+      "hydraulics": "الري وإمدادات المياه والصرف الصحي",
+      "plastic": "صناعة البلاستيك والمطاط",
+      "steel": "الصناعات الحديدية والميكانيكية",
+      "renewable": "الطاقة المتجددة",
+      "paper": "صناعة الورق والتغليف",
       "construction": "البناء",
-      "transport": "النقل",
-      "education": "التعليم",
-      "chemical": "المواد الكيميائية"
-    },
-    "titles": {
-      "tender1": "أشغال إنجاز 300 سكن عمومي إيجاري و 48 سكن ترقوي",
-      "tender2": "إنجاز 08 سكنات ترقوية مع أشغال الطرق والشبكات المختلفة",
-      "tender3": "مؤسسات مصغرة لإنجاز ثانوية نموذجية 1000 في 04 حصص",
-      "tender4": "نقل المواد",
-      "tender5": "توريد ونقل كمية دنيا 1300 طن وكمية 2500 طن من كبريتات الألمنيوم المحبب"
+      "others": "أخرى"
     },
     "locations": {
-      "mascara": "معسكر",
-      "sidi_bel_abbes": "سيدي بلعباس",
+      "adrar": "أدرار",
+      "alger": "الجزائر",
+      "annaba": "عنابة",
+      "batna": "باتنة",
+      "biskra": "بسكرة",
+      "blida": "البليدة",
+      "bouira": "البويرة",
+      "tlemcen": "تلمسان",
       "tizi_ouzou": "تيزي وزو",
-      "algiers": "الجزائر",
-      "annaba": "عنابة"
+      "djelfa": "الجلفة",
+      "setif": "سطيف",
+      "saida": "سعيدة",
+      "skikda": "سكيكدة",
+      "constantine": "قسنطينة",
+      "oran": "وهران"
     }
   },
   "profile": {

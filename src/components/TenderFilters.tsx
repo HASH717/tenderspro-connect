@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 
 interface TenderFiltersProps {
   onSearch: (filters: TenderFilters) => void;
@@ -20,7 +21,8 @@ interface TenderFiltersProps {
 export interface TenderFilters {
   search: string;
   announcers: string;
-  type: string;
+  tenderType: string;
+  announcementType: string;
   category: string;
   wilaya: string;
   priceRange: string;
@@ -33,7 +35,8 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
   const [filters, setFilters] = useState<TenderFilters>({
     search: "",
     announcers: "",
-    type: "",
+    tenderType: "",
+    announcementType: "",
     category: "",
     wilaya: "",
     priceRange: "",
@@ -50,9 +53,26 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
     onSearch(newFilters);
   };
 
+  const handleClearFilters = () => {
+    const clearedFilters = {
+      search: "",
+      announcers: "",
+      tenderType: "",
+      announcementType: "",
+      category: "",
+      wilaya: "",
+      priceRange: "",
+      microEnterprises: false,
+      publicationDate: "",
+      deadlineDate: "",
+    };
+    setFilters(clearedFilters);
+    onSearch(clearedFilters);
+  };
+
   return (
-    <div className="space-y-3 bg-card p-4 rounded-lg shadow-sm">
-      <div className="grid grid-cols-1 gap-3">
+    <div className="space-y-4 bg-card p-4 rounded-lg shadow-sm">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="relative">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
@@ -70,18 +90,41 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         <Select
-          value={filters.type}
-          onValueChange={(value) => handleFilterChange("type", value)}
+          value={filters.tenderType}
+          onValueChange={(value) => handleFilterChange("tenderType", value)}
         >
           <SelectTrigger className="bg-white">
             <SelectValue placeholder={t("filters.tenderType")} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="national_call">{t("filters.types.national_call")}</SelectItem>
+            <SelectItem value="national_international">{t("filters.types.national_international")}</SelectItem>
+            <SelectItem value="sale_notice">{t("filters.types.sale_notice")}</SelectItem>
+            <SelectItem value="international_consultation">{t("filters.types.international_consultation")}</SelectItem>
+            <SelectItem value="national_consultation">{t("filters.types.national_consultation")}</SelectItem>
+            <SelectItem value="expression_interest">{t("filters.types.expression_interest")}</SelectItem>
             <SelectItem value="national_preselection">{t("filters.types.national_preselection")}</SelectItem>
-            <SelectItem value="international_call">{t("filters.types.international_call")}</SelectItem>
+            <SelectItem value="adjudication">{t("filters.types.adjudication")}</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={filters.announcementType}
+          onValueChange={(value) => handleFilterChange("announcementType", value)}
+        >
+          <SelectTrigger className="bg-white">
+            <SelectValue placeholder={t("filters.announcementType")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="tenders">{t("filters.announcement.tenders")}</SelectItem>
+            <SelectItem value="results">{t("filters.announcement.results")}</SelectItem>
+            <SelectItem value="attribution">{t("filters.announcement.attribution")}</SelectItem>
+            <SelectItem value="extension">{t("filters.announcement.extension")}</SelectItem>
+            <SelectItem value="fruitless">{t("filters.announcement.fruitless")}</SelectItem>
+            <SelectItem value="cancellation">{t("filters.announcement.cancellation")}</SelectItem>
+            <SelectItem value="update">{t("filters.announcement.update")}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -93,11 +136,13 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
             <SelectValue placeholder={t("filters.category")} />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="hydraulics">{t("tender.categories.hydraulics")}</SelectItem>
+            <SelectItem value="plastic">{t("tender.categories.plastic")}</SelectItem>
+            <SelectItem value="steel">{t("tender.categories.steel")}</SelectItem>
+            <SelectItem value="renewable">{t("tender.categories.renewable")}</SelectItem>
+            <SelectItem value="paper">{t("tender.categories.paper")}</SelectItem>
             <SelectItem value="construction">{t("tender.categories.construction")}</SelectItem>
-            <SelectItem value="hydraulic">{t("tender.categories.hydraulic")}</SelectItem>
-            <SelectItem value="sanitation">{t("tender.categories.sanitation")}</SelectItem>
-            <SelectItem value="petroleum">{t("tender.categories.petroleum")}</SelectItem>
-            <SelectItem value="water">{t("tender.categories.water")}</SelectItem>
+            <SelectItem value="others">{t("tender.categories.others")}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -109,33 +154,29 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
             <SelectValue placeholder={t("filters.wilaya")} />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="adrar">{t("tender.locations.adrar")}</SelectItem>
             <SelectItem value="alger">{t("tender.locations.alger")}</SelectItem>
-            <SelectItem value="constantine">{t("tender.locations.constantine")}</SelectItem>
-            <SelectItem value="mostaganem">{t("tender.locations.mostaganem")}</SelectItem>
-            <SelectItem value="timimoun">{t("tender.locations.timimoun")}</SelectItem>
-            <SelectItem value="bejaia">{t("tender.locations.bejaia")}</SelectItem>
+            <SelectItem value="annaba">{t("tender.locations.annaba")}</SelectItem>
+            <SelectItem value="batna">{t("tender.locations.batna")}</SelectItem>
+            <SelectItem value="biskra">{t("tender.locations.biskra")}</SelectItem>
+            <SelectItem value="blida">{t("tender.locations.blida")}</SelectItem>
+            <SelectItem value="bouira">{t("tender.locations.bouira")}</SelectItem>
+            <SelectItem value="tlemcen">{t("tender.locations.tlemcen")}</SelectItem>
+            <SelectItem value="tizi_ouzou">{t("tender.locations.tizi_ouzou")}</SelectItem>
+            <SelectItem value="djelfa">{t("tender.locations.djelfa")}</SelectItem>
+            <SelectItem value="setif">{t("tender.locations.setif")}</SelectItem>
             <SelectItem value="saida">{t("tender.locations.saida")}</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={filters.priceRange}
-          onValueChange={(value) => handleFilterChange("priceRange", value)}
-        >
-          <SelectTrigger className="bg-white">
-            <SelectValue placeholder={t("filters.priceRange")} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="0-1000">0 - 1,000 DA</SelectItem>
-            <SelectItem value="1000-5000">1,000 - 5,000 DA</SelectItem>
-            <SelectItem value="5000-10000">5,000 - 10,000 DA</SelectItem>
-            <SelectItem value="10000+">10,000+ DA</SelectItem>
+            <SelectItem value="skikda">{t("tender.locations.skikda")}</SelectItem>
+            <SelectItem value="constantine">{t("tender.locations.constantine")}</SelectItem>
+            <SelectItem value="oran">{t("tender.locations.oran")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      <div className="flex flex-col space-y-3">
-        <div className="flex items-center justify-between">
+      <Separator className="my-4" />
+
+      <div className="flex flex-col space-y-4">
+        <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <Switch
               id="micro-enterprises"
@@ -144,9 +185,19 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
             />
             <Label htmlFor="micro-enterprises">{t("filters.microEnterprises")}</Label>
           </div>
+          
+          <div className="flex-1" />
+          
+          <Button 
+            variant="outline"
+            onClick={handleClearFilters}
+            className="hidden sm:inline-flex"
+          >
+            {t("filters.clearFilters")}
+          </Button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>{t("filters.publicationDate")}</Label>
             <Input
@@ -167,12 +218,22 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
           </div>
         </div>
 
-        <Button 
-          onClick={() => onSearch(filters)}
-          className="bg-accent hover:bg-accent/90 text-accent-foreground w-full sm:w-auto"
-        >
-          {t("filters.searchButton")}
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button 
+            variant="outline"
+            onClick={handleClearFilters}
+            className="sm:hidden w-full"
+          >
+            {t("filters.clearFilters")}
+          </Button>
+          
+          <Button 
+            onClick={() => onSearch(filters)}
+            className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground"
+          >
+            {t("filters.searchButton")}
+          </Button>
+        </div>
       </div>
     </div>
   );

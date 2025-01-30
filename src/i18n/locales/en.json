@@ -16,40 +16,64 @@
   "filters": {
     "search": "Search",
     "announcers": "Announcers",
-    "marketType": "Market type",
+    "tenderType": "Market type",
     "announcementType": "Announcement type",
     "category": "Category",
-    "region": "Region",
+    "wilaya": "Region",
     "microEnterprises": "Micro-enterprises",
     "searchButton": "Search",
-    "public": "Public",
-    "private": "Private",
-    "tender": "Tender",
-    "auction": "Auction"
+    "clearFilters": "Clear filters",
+    "publicationDate": "Publication date",
+    "deadlineDate": "Deadline date",
+    "types": {
+      "national_call": "National call for tenders",
+      "national_international": "National and International Call for Tenders",
+      "sale_notice": "Sale notice",
+      "international_consultation": "International consultation",
+      "national_consultation": "National consultation",
+      "expression_interest": "Expressions of Interest",
+      "national_preselection": "National Preselection",
+      "adjudication": "Adjudication"
+    },
+    "announcement": {
+      "tenders": "Tenders",
+      "results": "All results",
+      "attribution": "Attribution",
+      "extension": "Extension of time",
+      "fruitless": "Fruitlessness",
+      "cancellation": "Cancellations",
+      "update": "Update"
+    }
   },
   "tender": {
     "deadline": "Deadline",
     "organization": "Organization",
     "location": "Location",
     "categories": {
+      "hydraulics": "Hydraulics, Water Supply and Sanitation",
+      "plastic": "Plastic and rubber industry",
+      "steel": "Steel and Mechanical Industries",
+      "renewable": "Renewable energy",
+      "paper": "Paper and Packaging Industry",
       "construction": "Construction",
-      "transport": "Transport",
-      "education": "Education",
-      "chemical": "Chemical Supply"
-    },
-    "titles": {
-      "tender1": "Construction work for 300 LPA and 48 LPL",
-      "tender2": "Construction of 08 promotional housing TCE + VRD",
-      "tender3": "Micro-enterprises Construction of a type 1000 high school in 04 lots",
-      "tender4": "Transport of materials",
-      "tender5": "Supply and transport of a minimum quantity of 1300 tons and quantity of 2500 tons of granulated aluminum sulfate"
+      "others": "Others"
     },
     "locations": {
-      "mascara": "Mascara",
-      "sidi_bel_abbes": "Sidi-Bel-Abbès",
-      "tizi_ouzou": "Tizi-Ouzou",
-      "algiers": "Algiers",
-      "annaba": "Annaba"
+      "adrar": "Adrar",
+      "alger": "Algiers",
+      "annaba": "Annaba",
+      "batna": "Batna",
+      "biskra": "Biskra",
+      "blida": "Blida",
+      "bouira": "Bouira",
+      "tlemcen": "Tlemcen",
+      "tizi_ouzou": "Tizi Ouzou",
+      "djelfa": "Djelfa",
+      "setif": "Setif",
+      "saida": "Saida",
+      "skikda": "Skikda",
+      "constantine": "Constantine",
+      "oran": "Oran"
     }
   },
   "profile": {

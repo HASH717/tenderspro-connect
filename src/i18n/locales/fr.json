@@ -16,40 +16,64 @@
   "filters": {
     "search": "Rechercher",
     "announcers": "Annonceurs",
-    "marketType": "Type de marché",
+    "tenderType": "Type de marché",
     "announcementType": "Type d'annonce",
     "category": "Catégorie",
-    "region": "Région",
+    "wilaya": "Région",
     "microEnterprises": "Micro-entreprises",
     "searchButton": "Rechercher",
-    "public": "Public",
-    "private": "Privé",
-    "tender": "Appel d'offres",
-    "auction": "Enchère"
+    "clearFilters": "Effacer les filtres",
+    "publicationDate": "Date de publication",
+    "deadlineDate": "Date limite",
+    "types": {
+      "national_call": "Appel d'Offres National",
+      "national_international": "Appel d'Offres National et International",
+      "sale_notice": "Avis de vente",
+      "international_consultation": "Consultation Internationale",
+      "national_consultation": "Consultation Nationale",
+      "expression_interest": "Manifestations d'Intérêt",
+      "national_preselection": "Présélection Nationale",
+      "adjudication": "Adjudication"
+    },
+    "announcement": {
+      "tenders": "Appels d'offres",
+      "results": "Tous les résultats",
+      "attribution": "Attribution",
+      "extension": "Prorogation",
+      "fruitless": "Infructuosité",
+      "cancellation": "Annulations",
+      "update": "Mise à jour"
+    }
   },
   "tender": {
     "deadline": "Date limite",
     "organization": "Organisation",
     "location": "Emplacement",
     "categories": {
+      "hydraulics": "Hydraulique, Alimentation en Eau et Assainissement",
+      "plastic": "Industrie plastique et caoutchouc",
+      "steel": "Industries Sidérurgiques et Mécaniques",
+      "renewable": "Énergies renouvelables",
+      "paper": "Industrie du Papier et Emballage",
       "construction": "Construction",
-      "transport": "Transport",
-      "education": "Éducation",
-      "chemical": "Fourniture Chimique"
-    },
-    "titles": {
-      "tender1": "Travaux de réalisation en TCE 300 LPA et 48 LPL",
-      "tender2": "Réalisation des 08 logements promotionnels TCE + VRD",
-      "tender3": "Micro-entreprises Travaux de réalisation d'un lycée type 1000 en 04 lots",
-      "tender4": "Transport de matériaux",
-      "tender5": "Fourniture et transport d'une quantité minimale de 1300 tonnes et quantité de 2500 tonnes de sulfate d'alumine granulé"
+      "others": "Autres"
     },
     "locations": {
-      "mascara": "Mascara",
-      "sidi_bel_abbes": "Sidi Bel Abbès",
+      "adrar": "Adrar",
+      "alger": "Alger",
+      "annaba": "Annaba",
+      "batna": "Batna",
+      "biskra": "Biskra",
+      "blida": "Blida",
+      "bouira": "Bouira",
+      "tlemcen": "Tlemcen",
       "tizi_ouzou": "Tizi Ouzou",
-      "algiers": "Alger",
-      "annaba": "Annaba"
+      "djelfa": "Djelfa",
+      "setif": "Sétif",
+      "saida": "Saïda",
+      "skikda": "Skikda",
+      "constantine": "Constantine",
+      "oran": "Oran"
     }
   },
   "profile": {
