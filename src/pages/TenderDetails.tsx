@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, MapPin, Building, ExternalLink, Download, Info } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Building, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -52,16 +52,8 @@ const TenderDetails = () => {
 
         <div className="max-w-4xl mx-auto bg-background rounded-lg shadow-lg overflow-hidden">
           <div className="p-6">
-            <div className="flex justify-between items-start mb-6">
+            <div className="mb-6">
               <h1 className="text-2xl font-semibold text-foreground">{tender.title}</h1>
-              {tender.link && (
-                <Button variant="outline" asChild>
-                  <a href={`https://old.dztenders.com/${tender.link}`} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    View Original
-                  </a>
-                </Button>
-              )}
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -112,22 +104,6 @@ const TenderDetails = () => {
               </div>
 
               <div className="space-y-6">
-                <div>
-                  <h2 className="text-lg font-semibold mb-4">Specifications</h2>
-                  {tender.specifications_price && (
-                    <p className="text-muted-foreground mb-2">
-                      <strong>Price:</strong> {tender.specifications_price}
-                    </p>
-                  )}
-                  {tender.withdrawal_address && (
-                    <p className="text-muted-foreground">
-                      <strong>Withdrawal Address:</strong> {tender.withdrawal_address}
-                    </p>
-                  )}
-                </div>
-
-                <Separator />
-
                 {(tender.qualification_required || tender.qualification_details) && (
                   <>
                     <div>
