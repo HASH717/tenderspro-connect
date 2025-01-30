@@ -40,10 +40,18 @@ export type Database = {
           id: string
           image_url: string | null
           link: string | null
+          organization_address: string | null
+          organization_name: string | null
+          original_image_url: string | null
+          project_description: string | null
           publication_date: string | null
+          qualification_details: string | null
+          qualification_required: string | null
           region: string | null
           specifications_price: string | null
           tender_id: string | null
+          tender_number: string | null
+          tender_status: string | null
           title: string
           type: string | null
           wilaya: string
@@ -55,10 +63,18 @@ export type Database = {
           id?: string
           image_url?: string | null
           link?: string | null
+          organization_address?: string | null
+          organization_name?: string | null
+          original_image_url?: string | null
+          project_description?: string | null
           publication_date?: string | null
+          qualification_details?: string | null
+          qualification_required?: string | null
           region?: string | null
           specifications_price?: string | null
           tender_id?: string | null
+          tender_number?: string | null
+          tender_status?: string | null
           title: string
           type?: string | null
           wilaya: string
@@ -70,10 +86,18 @@ export type Database = {
           id?: string
           image_url?: string | null
           link?: string | null
+          organization_address?: string | null
+          organization_name?: string | null
+          original_image_url?: string | null
+          project_description?: string | null
           publication_date?: string | null
+          qualification_details?: string | null
+          qualification_required?: string | null
           region?: string | null
           specifications_price?: string | null
           tender_id?: string | null
+          tender_number?: string | null
+          tender_status?: string | null
           title?: string
           type?: string | null
           wilaya?: string

@@ -1,25 +1,40 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Building, ExternalLink, Download, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Separator } from "@/components/ui/separator";
+import { useTranslation } from "react-i18next";
 
 const TenderDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
 
-  // Mock data for now - this would be fetched from Supabase in a real implementation
-  const tender = {
-    title: "Travaux de réalisation en tce 300 lpa et 48 lpl",
-    organization: "AADL Agence Nationale de l'Amélioration et du Développement du Logement",
-    region: "Mascara",
-    publicationDate: "15/12/2024",
-    deadline: "15/01/2024",
-    specifications_price: "5000.00 DA",
-    withdrawal_address: "La direction régionale AADL Rest , cité 500 logements bâtimente 16 , Kaid Ahmed - Tiaret",
-    image_url: "/lovable-uploads/72bb512e-6a19-42f7-a234-ebd4c3510fef.png"
-  };
+  const { data: tender, isLoading } = useQuery({
+    queryKey: ['tender', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('tenders')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  }
+
+  if (!tender) {
+    return <div className="flex items-center justify-center min-h-screen">Tender not found</div>;
+  }
 
   return (
     <div className={`${isMobile ? 'pb-20' : 'pt-24'}`}>
@@ -37,48 +52,122 @@ const TenderDetails = () => {
 
         <div className="max-w-4xl mx-auto bg-background rounded-lg shadow-lg overflow-hidden">
           <div className="p-6">
-            <h1 className="text-2xl font-semibold text-foreground mb-4">{tender.title}</h1>
+            <div className="flex justify-between items-start mb-6">
+              <h1 className="text-2xl font-semibold text-foreground">{tender.title}</h1>
+              {tender.link && (
+                <Button variant="outline" asChild>
+                  <a href={`https://old.dztenders.com/${tender.link}`} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    View Original
+                  </a>
+                </Button>
+              )}
+            </div>
             
-            <div className="space-y-4 text-muted-foreground">
-              <div>
-                <h2 className="font-semibold text-foreground">Organization</h2>
-                <p>{tender.organization}</p>
-              </div>
-              
-              <div>
-                <h2 className="font-semibold text-foreground">Region</h2>
-                <p>{tender.region}</p>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-6">
                 <div>
-                  <h2 className="font-semibold text-foreground">Publication Date</h2>
-                  <p>{tender.publicationDate}</p>
+                  <h2 className="text-lg font-semibold mb-4">Tender Information</h2>
+                  <div className="space-y-3">
+                    {tender.tender_number && (
+                      <div className="flex items-center text-muted-foreground">
+                        <Info className="w-4 h-4 mr-2" />
+                        <span>Tender Number: {tender.tender_number}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center text-muted-foreground">
+                      <Building className="w-4 h-4 mr-2" />
+                      <span>Category: {tender.category}</span>
+                    </div>
+                    <div className="flex items-center text-muted-foreground">
+                      <MapPin className="w-4 h-4 mr-2" />
+                      <span>Region: {tender.region}</span>
+                    </div>
+                    <div className="flex items-center text-muted-foreground">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      <span>Publication Date: {tender.publication_date}</span>
+                    </div>
+                    <div className="flex items-center text-muted-foreground">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      <span>Deadline: {tender.deadline}</span>
+                    </div>
+                  </div>
                 </div>
+
+                <Separator />
+
                 <div>
-                  <h2 className="font-semibold text-foreground">Deadline</h2>
-                  <p>{tender.deadline}</p>
+                  <h2 className="text-lg font-semibold mb-4">Organization Details</h2>
+                  {tender.organization_name && (
+                    <p className="text-muted-foreground mb-2">
+                      <strong>Name:</strong> {tender.organization_name}
+                    </p>
+                  )}
+                  {tender.organization_address && (
+                    <p className="text-muted-foreground">
+                      <strong>Address:</strong> {tender.organization_address}
+                    </p>
+                  )}
                 </div>
               </div>
-              
-              <div>
-                <h2 className="font-semibold text-foreground">Specifications Price</h2>
-                <p>{tender.specifications_price}</p>
-              </div>
-              
-              <div>
-                <h2 className="font-semibold text-foreground">Withdrawal Address</h2>
-                <p>{tender.withdrawal_address}</p>
+
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-lg font-semibold mb-4">Specifications</h2>
+                  {tender.specifications_price && (
+                    <p className="text-muted-foreground mb-2">
+                      <strong>Price:</strong> {tender.specifications_price}
+                    </p>
+                  )}
+                  {tender.withdrawal_address && (
+                    <p className="text-muted-foreground">
+                      <strong>Withdrawal Address:</strong> {tender.withdrawal_address}
+                    </p>
+                  )}
+                </div>
+
+                <Separator />
+
+                {(tender.qualification_required || tender.qualification_details) && (
+                  <>
+                    <div>
+                      <h2 className="text-lg font-semibold mb-4">Qualifications</h2>
+                      {tender.qualification_required && (
+                        <p className="text-muted-foreground mb-2">
+                          <strong>Required:</strong> {tender.qualification_required}
+                        </p>
+                      )}
+                      {tender.qualification_details && (
+                        <p className="text-muted-foreground">
+                          <strong>Details:</strong> {tender.qualification_details}
+                        </p>
+                      )}
+                    </div>
+                    <Separator />
+                  </>
+                )}
+
+                {tender.project_description && (
+                  <div>
+                    <h2 className="text-lg font-semibold mb-4">Project Description</h2>
+                    <p className="text-muted-foreground whitespace-pre-wrap">
+                      {tender.project_description}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="mt-8">
-              <img 
-                src={tender.image_url} 
-                alt="Tender Document"
-                className="w-full object-contain"
-              />
-            </div>
+            {tender.image_url && (
+              <div className="mt-8">
+                <h2 className="text-lg font-semibold mb-4">Tender Document</h2>
+                <img 
+                  src={tender.image_url}
+                  alt="Tender Document"
+                  className="w-full object-contain border rounded-lg"
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

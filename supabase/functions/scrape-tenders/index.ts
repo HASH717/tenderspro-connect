@@ -63,6 +63,21 @@ Deno.serve(async (req) => {
 
         for (const tender of tenders) {
           try {
+            // Get detailed tender information
+            const detailResponse = await fetch(`https://api.dztenders.com/tenders/${tender.id}/?format=json`, {
+              headers: {
+                'Authorization': authHeader,
+                'Accept': 'application/json',
+              },
+            })
+
+            if (!detailResponse.ok) {
+              console.error(`Failed to fetch tender details for ID ${tender.id}:`, detailResponse.status)
+              continue
+            }
+
+            const detailData = await detailResponse.json()
+
             const formattedTender = {
               title: tender.title || 'Untitled Tender',
               wilaya: tender.region_verbose?.name || 'Unknown',
@@ -75,7 +90,15 @@ Deno.serve(async (req) => {
               region: tender.region_verbose?.name || null,
               withdrawal_address: tender.cc_address || null,
               link: tender.files_verbose?.[0] || null,
-              image_url: null
+              image_url: tender.files_verbose?.[0] ? `https://old.dztenders.com/${tender.files_verbose[0]}` : null,
+              tender_number: detailData.tender_number || null,
+              qualification_required: detailData.qualification_required || null,
+              qualification_details: detailData.qualification_details || null,
+              project_description: detailData.description || null,
+              organization_name: detailData.organization?.name || null,
+              organization_address: detailData.organization?.address || null,
+              tender_status: detailData.status || null,
+              original_image_url: tender.files_verbose?.[0] || null
             }
 
             const { error } = await supabase
@@ -93,6 +116,9 @@ Deno.serve(async (req) => {
           } catch (error) {
             console.error(`Error processing tender on page ${page}:`, error)
           }
+
+          // Add a small delay between tender detail requests to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 500))
         }
 
         // Add a small delay between pages to avoid rate limiting
