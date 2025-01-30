@@ -47,7 +47,8 @@ Deno.serve(async (req) => {
       throw new Error('Failed to fetch tenders from API')
     }
 
-    const tenders = await tendersResponse.json()
+    const tendersData = await tendersResponse.json()
+    const tenders = tendersData.results
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
@@ -67,16 +68,16 @@ Deno.serve(async (req) => {
         .from('tenders')
         .upsert({
           title: tender.title,
-          deadline: tender.deadline,
-          wilaya: tender.location,
-          category: tender.category,
-          publication_date: tender.publicationDate,
-          specifications_price: tender.specifications,
-          tender_id: tender.id,
+          deadline: tender.expiration_date,
+          wilaya: tender.region_verbose?.name || '',
+          category: tender.categories_verbose?.[0]?.name || null,
+          publication_date: tender.publishing_date,
+          specifications_price: tender.cc_price || null,
+          tender_id: tender.id.toString(),
           type: tender.type,
-          region: tender.region,
-          withdrawal_address: tender.withdrawalAddress,
-          link: tender.link,
+          region: tender.region_verbose?.name || null,
+          withdrawal_address: tender.cc_address || null,
+          link: tender.files_verbose?.[0] || null,
         }, {
           onConflict: 'tender_id'
         })
