@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useState, useEffect } from "react";
 
 interface Profile {
   first_name: string;
@@ -20,15 +20,17 @@ const Profile = () => {
     last_name: "",
     phone_number: "",
   });
+  const [email, setEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (!session?.user.id) return;
+    
     const getProfile = async () => {
-      if (!session?.user.id) return;
-      
       try {
         setIsLoadingProfile(true);
         const { data, error } = await supabase
@@ -48,6 +50,7 @@ const Profile = () => {
 
         if (data) {
           setProfile(data);
+          setEmail(session.user.email || "");
         } else {
           toast({
             variant: "destructive",
@@ -67,34 +70,55 @@ const Profile = () => {
     };
 
     getProfile();
-  }, [session?.user.id, toast]);
+  }, [session?.user.id, session?.user.email, toast]);
 
   const handleUpdateProfile = async () => {
     if (!session?.user.id) return;
     
     setIsLoading(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        phone_number: profile.phone_number,
-      })
-      .eq("id", session.user.id);
+    try {
+      // Update email if changed
+      if (email !== session.user.email) {
+        const { error: emailError } = await supabase.auth.updateUser({
+          email: email,
+        });
+        if (emailError) throw emailError;
+      }
 
-    setIsLoading(false);
+      // Update password if provided
+      if (newPassword) {
+        const { error: passwordError } = await supabase.auth.updateUser({
+          password: newPassword,
+        });
+        if (passwordError) throw passwordError;
+      }
 
-    if (error) {
+      // Update phone number
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          phone_number: profile.phone_number,
+        })
+        .eq("id", session.user.id);
+
+      if (profileError) throw profileError;
+
+      toast({
+        title: "Success",
+        description: "Profile updated successfully",
+      });
+
+      // Clear password field after successful update
+      setNewPassword("");
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to update profile",
+        description: error.message || "Failed to update profile",
       });
-      return;
+    } finally {
+      setIsLoading(false);
     }
-
-    toast({
-      title: "Success",
-      description: "Profile updated successfully",
-    });
   };
 
   const handleLogout = async () => {
@@ -144,9 +168,22 @@ const Profile = () => {
               Email
             </label>
             <Input 
-              value={session?.user.email || ""}
-              disabled
-              className="bg-gray-100"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter email"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              New Password (leave blank to keep current)
+            </label>
+            <Input 
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Enter new password"
             />
           </div>
 
