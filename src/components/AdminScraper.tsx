@@ -17,21 +17,30 @@ export const AdminScraper = () => {
     setProgress(25);
 
     try {
-      const { data, error } = await supabase.functions.invoke('scrape-tenders')
+      const { data, error } = await supabase.functions.invoke('scrape-tenders', {
+        options: {
+          timeout: 600000 // 10 minutes timeout
+        }
+      });
       
       if (error) {
         // Parse the error message from the response if available
         let errorMessage = t("scraper.errorDescription");
         try {
-          const errorBody = JSON.parse(error.message);
-          if (errorBody.error) {
-            errorMessage = errorBody.error;
+          if (typeof error.message === 'string') {
+            const errorBody = JSON.parse(error.message);
+            if (errorBody.error) {
+              errorMessage = errorBody.error;
+            }
+          } else {
+            errorMessage = error.message || t("scraper.errorDescription");
           }
         } catch {
           // If parsing fails, use the raw error message
-          errorMessage = error.message;
+          errorMessage = error.message || t("scraper.errorDescription");
         }
         
+        console.error('Detailed error:', error);
         throw new Error(errorMessage);
       }
       
@@ -42,9 +51,16 @@ export const AdminScraper = () => {
       });
     } catch (error) {
       console.error('Error scraping tenders:', error);
+      let errorMessage = error instanceof Error ? error.message : t("scraper.errorDescription");
+      
+      // Add more context for network errors
+      if (errorMessage.includes('Failed to fetch')) {
+        errorMessage = t("scraper.networkError");
+      }
+      
       toast({
         title: t("scraper.error"),
-        description: error instanceof Error ? error.message : t("scraper.errorDescription"),
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
