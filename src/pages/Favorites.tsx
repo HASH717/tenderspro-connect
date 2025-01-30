@@ -5,10 +5,12 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Heart } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Favorites = () => {
   const { session } = useAuth();
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
 
   const { data: favorites = [], isLoading: isFavoritesLoading } = useQuery({
     queryKey: ['favorites', session?.user?.id],
@@ -52,8 +54,8 @@ const Favorites = () => {
 
   if (!session) {
     return (
-      <div className="min-h-screen pb-20 pt-24">
-        <div className="p-4">
+      <div className="min-h-screen pb-20">
+        <div className={`p-4 ${isMobile ? "pt-6" : "pt-24"}`}>
           <h1 className="text-2xl font-bold text-primary mb-4">{t("pages.favorites")}</h1>
           <div className="flex flex-col items-center justify-center mt-20">
             <Heart className="w-16 h-16 text-gray-300 mb-4" />
@@ -67,8 +69,8 @@ const Favorites = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen pb-20 pt-24">
-        <div className="p-4">
+      <div className="min-h-screen pb-20">
+        <div className={`p-4 ${isMobile ? "pt-6" : "pt-24"}`}>
           <h1 className="text-2xl font-bold text-primary mb-4">{t("pages.favorites")}</h1>
           <div className="text-center py-8">Loading favorites...</div>
         </div>
@@ -79,11 +81,11 @@ const Favorites = () => {
 
   if (!favorites.length) {
     return (
-      <div className="min-h-screen pb-20 pt-24">
-        <div className="p-4">
+      <div className="min-h-screen pb-20">
+        <div className={`p-4 ${isMobile ? "pt-6" : "pt-24"}`}>
           <h1 className="text-2xl font-bold text-primary mb-4">{t("pages.favorites")}</h1>
           <div className="flex flex-col items-center justify-center mt-20">
-            <Heart className="w-16 h-16 text-gray-300 mb-4" />
+            <Heart className="w-16 h-6 text-gray-300 mb-4" />
             <p className="text-gray-500">{t("pages.noFavorites")}</p>
           </div>
         </div>
@@ -93,8 +95,8 @@ const Favorites = () => {
   }
 
   return (
-    <div className="min-h-screen pb-20 pt-24">
-      <div className="p-4">
+    <div className="min-h-screen pb-20">
+      <div className={`p-4 ${isMobile ? "pt-6" : "pt-24"}`}>
         <h1 className="text-2xl font-bold text-primary mb-4">{t("pages.favorites")}</h1>
         <div className="max-w-4xl mx-auto">
           <TenderList 
