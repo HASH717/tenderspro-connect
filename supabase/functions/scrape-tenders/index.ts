@@ -12,9 +12,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('Fetching tenders using Basic Authentication')
+    console.log('Starting tender scraping process')
     
-    // Create Basic Auth header using environment variables
     const username = Deno.env.get('DZTENDERS_USERNAME')
     const password = Deno.env.get('DZTENDERS_PASSWORD')
     if (!username || !password) {
@@ -24,25 +23,10 @@ Deno.serve(async (req) => {
     const credentials = btoa(`${username}:${password}`)
     const authHeader = `Basic ${credentials}`
 
-    // Fetch tenders with Basic Auth
-    const tendersResponse = await fetch('https://api.dztenders.com/tenders/?format=json', {
-      headers: {
-        'Authorization': authHeader,
-        'Accept': 'application/json',
-      },
-    })
-
-    if (!tendersResponse.ok) {
-      console.error('Failed to fetch tenders:', tendersResponse.status)
-      const errorText = await tendersResponse.text()
-      console.error('Error response:', errorText)
-      throw new Error(`Failed to fetch tenders: ${tendersResponse.status}`)
-    }
-
-    const tendersData = await tendersResponse.json()
-    console.log('Fetched', tendersData.count, 'tenders')
-    const tenders = tendersData.results
-
+    let totalTenders = 0
+    let successCount = 0
+    const totalPages = 667 // Total number of pages to scrape
+    
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -53,55 +37,80 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Process and store tender data
-    let successCount = 0
-    console.log('Processing', tenders.length, 'tenders')
-
-    for (const tender of tenders) {
-      console.log('Processing tender:', tender.id)
+    // Process tenders page by page
+    for (let page = 1; page <= totalPages; page++) {
+      console.log(`Fetching page ${page} of ${totalPages}`)
       
-      // Format the tender data
-      const formattedTender = {
-        title: tender.title || 'Untitled Tender',
-        wilaya: tender.region_verbose?.name || 'Unknown',
-        deadline: tender.expiration_date ? new Date(tender.expiration_date).toISOString() : null,
-        category: tender.categories_verbose?.[0]?.name || null,
-        publication_date: tender.publishing_date ? new Date(tender.publishing_date).toISOString() : null,
-        specifications_price: tender.cc_price?.toString() || null,
-        tender_id: tender.id?.toString() || crypto.randomUUID(),
-        type: tender.type || null,
-        region: tender.region_verbose?.name || null,
-        withdrawal_address: tender.cc_address || null,
-        link: tender.files_verbose?.[0] || null,
-        image_url: null
-      }
-
       try {
-        const { error } = await supabase
-          .from('tenders')
-          .upsert(formattedTender, {
-            onConflict: 'tender_id'
-          })
+        const tendersResponse = await fetch(`https://api.dztenders.com/tenders/?format=json&page=${page}`, {
+          headers: {
+            'Authorization': authHeader,
+            'Accept': 'application/json',
+          },
+        })
 
-        if (error) {
-          console.error('Error inserting tender:', error)
-          console.error('Failed tender data:', JSON.stringify(formattedTender, null, 2))
-        } else {
-          successCount++
-          console.log('Successfully processed tender:', tender.id)
+        if (!tendersResponse.ok) {
+          console.error(`Failed to fetch page ${page}:`, tendersResponse.status)
+          const errorText = await tendersResponse.text()
+          console.error('Error response:', errorText)
+          continue // Skip this page and continue with the next
         }
+
+        const tendersData = await tendersResponse.json()
+        const tenders = tendersData.results
+        totalTenders += tenders.length
+        console.log(`Processing ${tenders.length} tenders from page ${page}`)
+
+        for (const tender of tenders) {
+          try {
+            const formattedTender = {
+              title: tender.title || 'Untitled Tender',
+              wilaya: tender.region_verbose?.name || 'Unknown',
+              deadline: tender.expiration_date ? new Date(tender.expiration_date).toISOString() : null,
+              category: tender.categories_verbose?.[0]?.name || null,
+              publication_date: tender.publishing_date ? new Date(tender.publishing_date).toISOString() : null,
+              specifications_price: tender.cc_price?.toString() || null,
+              tender_id: tender.id?.toString() || crypto.randomUUID(),
+              type: tender.type || null,
+              region: tender.region_verbose?.name || null,
+              withdrawal_address: tender.cc_address || null,
+              link: tender.files_verbose?.[0] || null,
+              image_url: null
+            }
+
+            const { error } = await supabase
+              .from('tenders')
+              .upsert(formattedTender, {
+                onConflict: 'tender_id'
+              })
+
+            if (error) {
+              console.error(`Error inserting tender on page ${page}:`, error)
+              console.error('Failed tender data:', JSON.stringify(formattedTender, null, 2))
+            } else {
+              successCount++
+            }
+          } catch (error) {
+            console.error(`Error processing tender on page ${page}:`, error)
+          }
+        }
+
+        // Add a small delay between pages to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 1000))
       } catch (error) {
-        console.error('Exception while inserting tender:', error)
-        console.error('Problem tender data:', JSON.stringify(formattedTender, null, 2))
+        console.error(`Error processing page ${page}:`, error)
       }
     }
 
-    console.log('Finished processing tenders. Success count:', successCount)
+    console.log('Finished processing all pages')
+    console.log(`Total tenders processed: ${totalTenders}`)
+    console.log(`Successfully imported: ${successCount}`)
 
     return new Response(JSON.stringify({
       success: true,
-      message: 'Tenders fetched and stored successfully',
-      count: successCount
+      message: 'All tenders fetched and stored successfully',
+      totalProcessed: totalTenders,
+      successCount: successCount
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
