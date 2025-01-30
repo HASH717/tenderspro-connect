@@ -17,47 +17,53 @@ export const AdminScraper = () => {
     setProgress(25);
 
     try {
+      console.log('Starting scraping process...');
+      
       const { data, error } = await supabase.functions.invoke('scrape-tenders', {
-        body: {}, // Empty body object
+        body: { 
+          batchSize: 5, // Start with a smaller batch size for testing
+          startPage: 1,
+          maxPages: 10 // Test with fewer pages first
+        },
         headers: {
           'Content-Type': 'application/json',
         }
       });
       
       if (error) {
-        // Parse the error message from the response if available
+        console.error('Detailed error:', error);
         let errorMessage = t("scraper.errorDescription");
+        
         try {
           if (typeof error.message === 'string') {
             const errorBody = JSON.parse(error.message);
             if (errorBody.error) {
               errorMessage = errorBody.error;
             }
-          } else {
-            errorMessage = error.message || t("scraper.errorDescription");
           }
         } catch {
-          // If parsing fails, use the raw error message
           errorMessage = error.message || t("scraper.errorDescription");
         }
         
-        console.error('Detailed error:', error);
+        // Add specific handling for network errors
+        if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+          errorMessage = t("scraper.networkError");
+          console.error('Network error details:', error);
+        }
+        
         throw new Error(errorMessage);
       }
       
       setProgress(100);
       toast({
         title: t("scraper.success"),
-        description: t("scraper.successDescription", { count: data.count }),
+        description: t("scraper.successDescription", { count: data?.count || 0 }),
       });
-    } catch (error) {
-      console.error('Error scraping tenders:', error);
-      let errorMessage = error instanceof Error ? error.message : t("scraper.errorDescription");
       
-      // Add more context for network errors
-      if (errorMessage.includes('Failed to fetch')) {
-        errorMessage = t("scraper.networkError");
-      }
+      console.log('Scraping completed successfully:', data);
+    } catch (error) {
+      console.error('Error in scraping process:', error);
+      let errorMessage = error instanceof Error ? error.message : t("scraper.errorDescription");
       
       toast({
         title: t("scraper.error"),
