@@ -102,7 +102,7 @@ export const TenderList = ({ tenders, isLoading }: TenderListProps) => {
       </div>
       
       {hasMore && (
-        <div className="flex justify-center pt-4">
+        <div className="flex justify-center pt-4 pb-8">
           <Button 
             onClick={() => setDisplayCount(prev => prev + 10)}
             variant="outline"
