@@ -4,6 +4,8 @@ import TenderCard from "@/components/TenderCard";
 import TenderFilters, { TenderFilters as FilterType } from "@/components/TenderFilters";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Separator } from "@/components/ui/separator";
+import { AdminScraper } from "@/components/AdminScraper";
+import { useAuth } from "@/contexts/AuthContext";
 
 const mockTenders = [
   {
@@ -52,6 +54,7 @@ const Index = () => {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [filteredTenders, setFilteredTenders] = useState(mockTenders);
   const isMobile = useIsMobile();
+  const { session } = useAuth();
 
   const handleSearch = (filters: FilterType) => {
     let filtered = mockTenders;
@@ -101,6 +104,11 @@ const Index = () => {
                   alt="TendersPro Logo" 
                   className="h-12 mb-1"
                 />
+              </div>
+            )}
+            {session?.user.email === "motraxagency@gmail.com" && (
+              <div className="mb-6">
+                <AdminScraper />
               </div>
             )}
             <TenderFilters onSearch={handleSearch} />
