@@ -10,8 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 
 interface TenderFiltersProps {
@@ -72,16 +70,7 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
 
   return (
     <div className="space-y-4 bg-card p-4 rounded-lg shadow-sm">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder={t("filters.search")}
-            className="pl-10 bg-white"
-            value={filters.search}
-            onChange={(e) => handleFilterChange("search", e.target.value)}
-          />
-        </div>
+      <div className="relative">
         <Input
           placeholder={t("filters.announcers")}
           className="bg-white"
@@ -175,65 +164,21 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
 
       <Separator className="my-4" />
 
-      <div className="flex flex-col space-y-4">
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="micro-enterprises"
-              checked={filters.microEnterprises}
-              onCheckedChange={(checked) => handleFilterChange("microEnterprises", checked)}
-            />
-            <Label htmlFor="micro-enterprises">{t("filters.microEnterprises")}</Label>
-          </div>
-          
-          <div className="flex-1" />
-          
-          <Button 
-            variant="outline"
-            onClick={handleClearFilters}
-            className="hidden sm:inline-flex"
-          >
-            {t("filters.clearFilters")}
-          </Button>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>{t("filters.publicationDate")}</Label>
-            <Input
-              type="date"
-              value={filters.publicationDate}
-              onChange={(e) => handleFilterChange("publicationDate", e.target.value)}
-              className="w-full bg-white"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>{t("filters.deadlineDate")}</Label>
-            <Input
-              type="date"
-              value={filters.deadlineDate}
-              onChange={(e) => handleFilterChange("deadlineDate", e.target.value)}
-              className="w-full bg-white"
-            />
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-2">
-          <Button 
-            variant="outline"
-            onClick={handleClearFilters}
-            className="sm:hidden w-full"
-          >
-            {t("filters.clearFilters")}
-          </Button>
-          
-          <Button 
-            onClick={() => onSearch(filters)}
-            className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground"
-          >
-            {t("filters.searchButton")}
-          </Button>
-        </div>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <Button 
+          variant="outline"
+          onClick={handleClearFilters}
+          className="w-full sm:w-auto"
+        >
+          {t("filters.clearFilters")}
+        </Button>
+        
+        <Button 
+          onClick={() => onSearch(filters)}
+          className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground"
+        >
+          {t("filters.searchButton")}
+        </Button>
       </div>
     </div>
   );
