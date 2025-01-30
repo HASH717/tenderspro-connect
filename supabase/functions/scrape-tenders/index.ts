@@ -14,11 +14,17 @@ Deno.serve(async (req) => {
   try {
     console.log('Fetching tenders using Basic Authentication')
     
-    // Create Basic Auth header
-    const credentials = btoa('motraxa@gmail.com:Dahdouhhash@717')
+    // Create Basic Auth header using environment variables
+    const username = Deno.env.get('DZTENDERS_USERNAME')
+    const password = Deno.env.get('DZTENDERS_PASSWORD')
+    if (!username || !password) {
+      throw new Error('Missing credentials in environment variables')
+    }
+
+    const credentials = btoa(`${username}:${password}`)
     const authHeader = `Basic ${credentials}`
 
-    // Fetch tenders directly with Basic Auth
+    // Fetch tenders with Basic Auth
     const tendersResponse = await fetch('https://api.dztenders.com/tenders/?format=json', {
       headers: {
         'Authorization': authHeader,
@@ -53,26 +59,34 @@ Deno.serve(async (req) => {
 
     for (const tender of tenders) {
       console.log('Processing tender:', tender.id)
+      
+      // Format the data properly before insertion
+      const formattedTender = {
+        title: tender.title || '',
+        deadline: tender.expiration_date ? new Date(tender.expiration_date).toISOString() : null,
+        wilaya: tender.region_verbose?.name || '',
+        category: tender.categories_verbose?.[0]?.name || null,
+        publication_date: tender.publishing_date ? new Date(tender.publishing_date).toISOString() : null,
+        specifications_price: tender.cc_price?.toString() || null,
+        tender_id: tender.id?.toString() || null,
+        type: tender.type || null,
+        region: tender.region_verbose?.name || null,
+        withdrawal_address: tender.cc_address || null,
+        link: tender.files_verbose?.[0] || null,
+      }
+
+      // Log the formatted tender for debugging
+      console.log('Formatted tender:', JSON.stringify(formattedTender, null, 2))
+
       const { error } = await supabase
         .from('tenders')
-        .upsert({
-          title: tender.title,
-          deadline: tender.expiration_date,
-          wilaya: tender.region_verbose?.name || '',
-          category: tender.categories_verbose?.[0]?.name || null,
-          publication_date: tender.publishing_date,
-          specifications_price: tender.cc_price || null,
-          tender_id: tender.id.toString(),
-          type: tender.type,
-          region: tender.region_verbose?.name || null,
-          withdrawal_address: tender.cc_address || null,
-          link: tender.files_verbose?.[0] || null,
-        }, {
+        .upsert(formattedTender, {
           onConflict: 'tender_id'
         })
 
       if (error) {
         console.error('Error inserting tender:', error)
+        console.error('Failed tender data:', JSON.stringify(formattedTender, null, 2))
       } else {
         successCount++
         console.log('Successfully processed tender:', tender.id)
