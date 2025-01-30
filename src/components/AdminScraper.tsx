@@ -21,9 +21,9 @@ export const AdminScraper = () => {
       
       const { data, error } = await supabase.functions.invoke('scrape-tenders', {
         body: { 
-          batchSize: 5, // Start with a smaller batch size for testing
+          batchSize: 5,
           startPage: 1,
-          maxPages: 10 // Test with fewer pages first
+          maxPages: 5 // Start with even fewer pages for initial testing
         },
         headers: {
           'Content-Type': 'application/json',
@@ -45,7 +45,6 @@ export const AdminScraper = () => {
           errorMessage = error.message || t("scraper.errorDescription");
         }
         
-        // Add specific handling for network errors
         if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
           errorMessage = t("scraper.networkError");
           console.error('Network error details:', error);
