@@ -24,6 +24,20 @@
       "transport": "Transport",
       "education": "Éducation",
       "chemical": "Fourniture Chimique"
+    },
+    "titles": {
+      "tender1": "Travaux de réalisation en TCE 300 LPA et 48 LPL",
+      "tender2": "Réalisation des 08 logements promotionnels TCE + VRD",
+      "tender3": "Micro-entreprises Travaux de réalisation d'un lycée type 1000 en 04 lots",
+      "tender4": "Transport de matériaux",
+      "tender5": "Fourniture et transport d'une quantité minimale de 1300 tonnes et quantité de 2500 tonnes de sulfate d'alumine granulé"
+    },
+    "locations": {
+      "mascara": "Mascara",
+      "sidi_bel_abbes": "Sidi Bel Abbès",
+      "tizi_ouzou": "Tizi Ouzou",
+      "algiers": "Alger",
+      "annaba": "Annaba"
     }
   }
 }

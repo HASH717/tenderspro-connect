@@ -24,6 +24,20 @@
       "transport": "Transport",
       "education": "Education",
       "chemical": "Chemical Supply"
+    },
+    "titles": {
+      "tender1": "Construction work for 300 LPA and 48 LPL",
+      "tender2": "Construction of 08 promotional housing TCE + VRD",
+      "tender3": "Micro-enterprises Construction of a type 1000 high school in 04 lots",
+      "tender4": "Transport of materials",
+      "tender5": "Supply and transport of a minimum quantity of 1300 tons and quantity of 2500 tons of granulated aluminum sulfate"
+    },
+    "locations": {
+      "mascara": "Mascara",
+      "sidi_bel_abbes": "Sidi-Bel-Abbès",
+      "tizi_ouzou": "Tizi-Ouzou",
+      "algiers": "Algiers",
+      "annaba": "Annaba"
     }
   }
 }

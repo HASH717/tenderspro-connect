@@ -38,6 +38,30 @@ const TenderCard = ({
     return t(`tender.categories.${category}`);
   };
 
+  const getTitleTranslation = (title: string) => {
+    const titleMap: { [key: string]: string } = {
+      "Travaux de réalisation en tce 300 lpa et 48 lpl": "tender1",
+      "Réalisation des 08 logements promotionnels tce + vrd": "tender2",
+      "Micro-entreprises Travaux de réalisation d'un lycée type 1000 en 04 lots": "tender3",
+      "Transport de matériaux": "tender4",
+      "Fourniture et transport d'une quantité minimale de 1300 tonnes et quantité de 2500 tonnes de sulfate d'alumine granulé": "tender5"
+    };
+    const titleKey = titleMap[title] || title;
+    return t(`tender.titles.${titleKey}`);
+  };
+
+  const getLocationTranslation = (loc: string) => {
+    const locationMap: { [key: string]: string } = {
+      "Mascara": "mascara",
+      "Sidi-Bel-Abbès": "sidi_bel_abbes",
+      "Tizi-Ouzou": "tizi_ouzou",
+      "Algiers": "algiers",
+      "Annaba": "annaba"
+    };
+    const locationKey = locationMap[loc] || loc.toLowerCase();
+    return t(`tender.locations.${locationKey}`);
+  };
+
   return (
     <Card 
       className="p-4 mb-4 hover:shadow-lg transition-shadow cursor-pointer"
@@ -45,7 +69,9 @@ const TenderCard = ({
     >
       <div className="flex justify-between items-start">
         <div className="flex-1">
-          <h3 className="font-semibold text-lg text-foreground mb-2">{title}</h3>
+          <h3 className="font-semibold text-lg text-foreground mb-2">
+            {getTitleTranslation(title)}
+          </h3>
           <div className="space-y-2">
             <div className="flex items-center text-muted-foreground">
               <Building className="w-4 h-4 mr-2" />
@@ -53,7 +79,7 @@ const TenderCard = ({
             </div>
             <div className="flex items-center text-muted-foreground">
               <MapPin className="w-4 h-4 mr-2" />
-              <span className="text-sm">{location}</span>
+              <span className="text-sm">{getLocationTranslation(location)}</span>
             </div>
             <div className="flex items-center text-muted-foreground">
               <Calendar className="w-4 h-4 mr-2" />
