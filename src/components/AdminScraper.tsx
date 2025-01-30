@@ -23,31 +23,32 @@ export const AdminScraper = () => {
         body: { 
           batchSize: 5,
           startPage: 1,
-          maxPages: 5 // Start with even fewer pages for initial testing
+          maxPages: 5
         },
         headers: {
           'Content-Type': 'application/json',
         }
       });
-      
+
       if (error) {
         console.error('Detailed error:', error);
         let errorMessage = t("scraper.errorDescription");
         
         try {
-          if (typeof error.message === 'string') {
-            const errorBody = JSON.parse(error.message);
-            if (errorBody.error) {
-              errorMessage = errorBody.error;
+          if (error.message && typeof error.message === 'string') {
+            // Try to parse error body if it's JSON
+            if (error.message.includes('{') && error.message.includes('}')) {
+              const errorBody = JSON.parse(error.message);
+              if (errorBody.error) {
+                errorMessage = errorBody.error;
+              }
+            } else {
+              errorMessage = error.message;
             }
           }
-        } catch {
+        } catch (parseError) {
+          console.error('Error parsing error message:', parseError);
           errorMessage = error.message || t("scraper.errorDescription");
-        }
-        
-        if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
-          errorMessage = t("scraper.networkError");
-          console.error('Network error details:', error);
         }
         
         throw new Error(errorMessage);

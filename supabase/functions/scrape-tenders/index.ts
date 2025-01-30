@@ -26,11 +26,29 @@ Deno.serve(async (req) => {
     const credentials = btoa(`${username}:${password}`)
     const authHeader = `Basic ${credentials}`
 
-    // Get request parameters
-    const { batchSize = 5, startPage = 1, maxPages = 10 } = await req.json()
+    // Parse request body with error handling
+    let requestBody
+    try {
+      requestBody = await req.json()
+    } catch (error) {
+      console.error('Error parsing request body:', error)
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Invalid JSON in request body'
+        }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    // Get request parameters with defaults
+    const { batchSize = 5, startPage = 1, maxPages = 5 } = requestBody
     
     let successCount = 0
-    const endPage = Math.min(startPage + maxPages - 1, 667)
+    const endPage = Math.min(startPage + maxPages - 1, 10) // Limiting to 10 pages for initial testing
     
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
@@ -79,7 +97,7 @@ Deno.serve(async (req) => {
 
             const detailData = await detailResponse.json()
 
-            const formatImageUrl = (path) => {
+            const formatImageUrl = (path: string | null) => {
               if (!path) return null
               return `https://old.dztenders.com/${path}`
             }
@@ -110,14 +128,14 @@ Deno.serve(async (req) => {
               original_image_url: tender.files_verbose?.[0] || null
             }
 
-            const { error } = await supabase
+            const { error: upsertError } = await supabase
               .from('tenders')
               .upsert(formattedTender, {
                 onConflict: 'tender_id'
               })
 
-            if (error) {
-              console.error(`Error inserting tender on page ${page}:`, error)
+            if (upsertError) {
+              console.error(`Error inserting tender on page ${page}:`, upsertError)
             } else {
               successCount++
             }
@@ -126,14 +144,14 @@ Deno.serve(async (req) => {
           }
 
           // Small delay between tender processing
-          await new Promise(resolve => setTimeout(resolve, 100))
+          await new Promise(resolve => setTimeout(resolve, 500))
         }
       } catch (error) {
         console.error(`Error processing page ${page}:`, error)
       }
       
       // Add delay between pages
-      await new Promise(resolve => setTimeout(resolve, 500))
+      await new Promise(resolve => setTimeout(resolve, 1000))
     }
 
     return new Response(
