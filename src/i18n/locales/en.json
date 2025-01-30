@@ -51,5 +51,20 @@
       "algiers": "Algiers",
       "annaba": "Annaba"
     }
+  },
+  "profile": {
+    "email": "Email",
+    "newPassword": "New Password",
+    "newPasswordPlaceholder": "Enter new password",
+    "newPasswordHint": "(leave blank to keep current)",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "phoneNumber": "Phone Number",
+    "loading": "Loading profile...",
+    "saveChanges": "Save Changes",
+    "saving": "Updating...",
+    "logout": "Logout",
+    "enterEmail": "Enter email",
+    "enterPhoneNumber": "Enter phone number"
   }
 }

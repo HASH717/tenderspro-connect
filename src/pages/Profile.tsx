@@ -142,7 +142,7 @@ const Profile = () => {
         <div className="p-4">
           <h1 className="text-2xl font-bold text-primary mb-4">{t("pages.profile")}</h1>
           <div className="flex justify-center items-center h-48">
-            <p>Loading profile...</p>
+            <p>{t("profile.loading")}</p>
           </div>
         </div>
         <Navigation />
@@ -160,38 +160,38 @@ const Profile = () => {
             onClick={handleLogout}
             className="bg-red-500 text-white hover:bg-red-600"
           >
-            Logout
+            {t("profile.logout")}
           </Button>
         </div>
         
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
+              {t("profile.email")}
             </label>
             <Input 
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter email"
+              placeholder={t("profile.enterEmail")}
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              New Password (leave blank to keep current)
+              {t("profile.newPassword")} {t("profile.newPasswordHint")}
             </label>
             <Input 
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Enter new password"
+              placeholder={t("profile.newPasswordPlaceholder")}
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              First Name
+              {t("profile.firstName")}
             </label>
             <Input 
               value={profile.first_name}
@@ -202,7 +202,7 @@ const Profile = () => {
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Last Name
+              {t("profile.lastName")}
             </label>
             <Input 
               value={profile.last_name}
@@ -213,12 +213,12 @@ const Profile = () => {
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Phone Number
+              {t("profile.phoneNumber")}
             </label>
             <Input 
               value={profile.phone_number}
               onChange={(e) => setProfile({ ...profile, phone_number: e.target.value })}
-              placeholder="Enter phone number"
+              placeholder={t("profile.enterPhoneNumber")}
             />
           </div>
           
@@ -227,7 +227,7 @@ const Profile = () => {
             onClick={handleUpdateProfile}
             disabled={isLoading}
           >
-            {isLoading ? "Updating..." : "Save Changes"}
+            {isLoading ? t("profile.saving") : t("profile.saveChanges")}
           </Button>
         </div>
       </div>
