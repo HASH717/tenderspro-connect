@@ -4,30 +4,50 @@ import { Bell, Plus, Trash2, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import TenderFilters from "@/components/TenderFilters";
-import { TenderFilters as TenderFiltersType } from "@/components/TenderFilters";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 
-interface Alert extends TenderFiltersType {
+const WILAYA_OPTIONS = [
+  { value: "1", label: "1 - Adrar" },
+  { value: "2", label: "2 - Chlef" },
+  { value: "3", label: "3 - Laghouat" },
+  // ... Add all other wilayas
+];
+
+const TENDER_TYPE_OPTIONS = [
+  { value: "national_call", label: "National call for tenders" },
+  { value: "international_call", label: "National and International Call for Tenders" },
+  { value: "sale_notice", label: "Sale notice" },
+  { value: "international_consultation", label: "International consultation" },
+  { value: "national_consultation", label: "National consultation" },
+  { value: "expressions_interest", label: "Expressions of Interest" },
+  { value: "national_preselection", label: "National Preselection" },
+  { value: "adjudication", label: "Adjudication" },
+];
+
+const ANNOUNCEMENT_TYPE_OPTIONS = [
+  { value: "tenders", label: "Tenders" },
+  { value: "results", label: "Results" },
+];
+
+interface Alert {
   id: string;
   name: string;
+  wilaya: string[];
+  tenderType: string[];
+  announcementType: string[];
 }
 
-const mapFiltersToDb = (filters: TenderFiltersType & { name: string }, userId: string) => {
+const mapFiltersToDb = (filters: Alert, userId: string) => {
   return {
     user_id: userId,
     name: filters.name,
-    search: filters.search,
-    announcers: filters.announcers,
-    tender_type: filters.tenderType,
-    announcement_type: filters.announcementType,
-    category: filters.category,
-    wilaya: filters.wilaya,
-    price_range: filters.priceRange,
-    micro_enterprises: filters.microEnterprises,
+    wilaya: filters.wilaya.join(","),
+    tender_type: filters.tenderType.join(","),
+    announcement_type: filters.announcementType.join(","),
   };
 };
 
@@ -35,16 +55,9 @@ const mapDbToFilters = (dbAlert: any): Alert => {
   return {
     id: dbAlert.id,
     name: dbAlert.name,
-    search: dbAlert.search || "",
-    announcers: dbAlert.announcers || "",
-    tenderType: dbAlert.tender_type || "",
-    announcementType: dbAlert.announcement_type || "",
-    category: dbAlert.category || "",
-    wilaya: dbAlert.wilaya || "",
-    priceRange: dbAlert.price_range || "",
-    microEnterprises: dbAlert.micro_enterprises || false,
-    publicationDate: "",
-    deadlineDate: "",
+    wilaya: dbAlert.wilaya ? dbAlert.wilaya.split(",") : [],
+    tenderType: dbAlert.tender_type ? dbAlert.tender_type.split(",") : [],
+    announcementType: dbAlert.announcement_type ? dbAlert.announcement_type.split(",") : [],
   };
 };
 
@@ -54,7 +67,9 @@ export const AlertsConfig = () => {
   const { session } = useAuth();
   const [showNewAlert, setShowNewAlert] = useState(false);
   const [alertName, setAlertName] = useState("");
-  const [currentFilters, setCurrentFilters] = useState<TenderFiltersType | null>(null);
+  const [selectedWilayas, setSelectedWilayas] = useState<string[]>([]);
+  const [selectedTenderTypes, setSelectedTenderTypes] = useState<string[]>([]);
+  const [selectedAnnouncementTypes, setSelectedAnnouncementTypes] = useState<string[]>([]);
   const [editingAlertId, setEditingAlertId] = useState<string | null>(null);
 
   const { data: alerts, refetch } = useQuery({
@@ -95,17 +110,17 @@ export const AlertsConfig = () => {
       return;
     }
 
-    if (!currentFilters) {
-      return;
-    }
+    const alertData = {
+      name: alertName,
+      wilaya: selectedWilayas,
+      tenderType: selectedTenderTypes,
+      announcementType: selectedAnnouncementTypes,
+    };
 
     const { error } = await supabase
       .from("alerts")
       .upsert({
-        ...mapFiltersToDb(
-          { ...currentFilters, name: alertName },
-          session.user.id
-        ),
+        ...mapFiltersToDb(alertData, session.user.id),
         ...(editingAlertId ? { id: editingAlertId } : {}),
       });
 
@@ -125,7 +140,9 @@ export const AlertsConfig = () => {
 
     setShowNewAlert(false);
     setAlertName("");
-    setCurrentFilters(null);
+    setSelectedWilayas([]);
+    setSelectedTenderTypes([]);
+    setSelectedAnnouncementTypes([]);
     setEditingAlertId(null);
     refetch();
   };
@@ -156,18 +173,9 @@ export const AlertsConfig = () => {
   const handleEditAlert = (alert: Alert) => {
     setEditingAlertId(alert.id);
     setAlertName(alert.name);
-    setCurrentFilters({
-      search: alert.search,
-      announcers: alert.announcers,
-      tenderType: alert.tenderType,
-      announcementType: alert.announcementType,
-      category: alert.category,
-      wilaya: alert.wilaya,
-      priceRange: alert.priceRange,
-      microEnterprises: alert.microEnterprises,
-      publicationDate: alert.publicationDate,
-      deadlineDate: alert.deadlineDate,
-    });
+    setSelectedWilayas(alert.wilaya);
+    setSelectedTenderTypes(alert.tenderType);
+    setSelectedAnnouncementTypes(alert.announcementType);
     setShowNewAlert(true);
   };
 
@@ -180,13 +188,15 @@ export const AlertsConfig = () => {
             setShowNewAlert(true);
             setEditingAlertId(null);
             setAlertName("");
-            setCurrentFilters(null);
+            setSelectedWilayas([]);
+            setSelectedTenderTypes([]);
+            setSelectedAnnouncementTypes([]);
           }}
           className="gap-2"
           variant={showNewAlert ? "secondary" : "default"}
         >
           <Plus className="h-4 w-4" />
-          {t("alerts.new")}
+          New Alert
         </Button>
       </div>
 
@@ -194,12 +204,12 @@ export const AlertsConfig = () => {
         <div className="space-y-4 border rounded-lg p-4">
           <div className="flex justify-between items-start">
             <div className="space-y-2 flex-1">
-              <Label htmlFor="alert-name">{t("alerts.name")}</Label>
+              <Label htmlFor="alert-name">Alert Name</Label>
               <Input
                 id="alert-name"
                 value={alertName}
                 onChange={(e) => setAlertName(e.target.value)}
-                placeholder={t("alerts.namePlaceholder")}
+                placeholder="Name your alert"
               />
             </div>
             <Button
@@ -209,16 +219,36 @@ export const AlertsConfig = () => {
                 setShowNewAlert(false);
                 setEditingAlertId(null);
                 setAlertName("");
-                setCurrentFilters(null);
+                setSelectedWilayas([]);
+                setSelectedTenderTypes([]);
+                setSelectedAnnouncementTypes([]);
               }}
             >
               <X className="h-4 w-4" />
             </Button>
           </div>
-          <TenderFilters
-            onSearch={setCurrentFilters}
-            initialFilters={currentFilters}
+
+          <MultiSelect
+            label="Regions"
+            options={WILAYA_OPTIONS}
+            selectedValues={selectedWilayas}
+            onChange={setSelectedWilayas}
           />
+
+          <MultiSelect
+            label="Market type"
+            options={TENDER_TYPE_OPTIONS}
+            selectedValues={selectedTenderTypes}
+            onChange={setSelectedTenderTypes}
+          />
+
+          <MultiSelect
+            label="Announcement type"
+            options={ANNOUNCEMENT_TYPE_OPTIONS}
+            selectedValues={selectedAnnouncementTypes}
+            onChange={setSelectedAnnouncementTypes}
+          />
+
           <div className="flex justify-end">
             <Button onClick={handleSaveAlert}>
               Save
@@ -238,8 +268,8 @@ export const AlertsConfig = () => {
               <div>
                 <h3 className="font-medium">{alert.name}</h3>
                 <p className="text-sm text-muted-foreground">
-                  {alert.category && `${t("filters.category")}: ${alert.category}`}
-                  {alert.wilaya && ` • ${t("filters.wilaya")}: ${alert.wilaya}`}
+                  {alert.wilaya.length > 0 && `${alert.wilaya.length} regions selected`}
+                  {alert.tenderType.length > 0 && ` • ${alert.tenderType.length} market types`}
                 </p>
               </div>
             </div>
