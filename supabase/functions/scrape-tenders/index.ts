@@ -25,13 +25,25 @@ Deno.serve(async (req) => {
       }),
     })
 
+    console.log('Login response status:', loginResponse.status)
+    const loginResponseText = await loginResponse.text()
+    console.log('Login response text:', loginResponseText)
+
     if (!loginResponse.ok) {
-      console.error('Login response status:', loginResponse.status)
-      console.error('Login response text:', await loginResponse.text())
-      throw new Error('Failed to authenticate with dztenders.com API')
+      throw new Error(`Authentication failed with status ${loginResponse.status}: ${loginResponseText}`)
     }
 
-    const { token } = await loginResponse.json()
+    let token
+    try {
+      const loginData = JSON.parse(loginResponseText)
+      token = loginData.token
+      if (!token) {
+        throw new Error('No token in response')
+      }
+    } catch (e) {
+      console.error('Failed to parse login response:', e)
+      throw new Error('Invalid authentication response format')
+    }
 
     // Fetch tenders from the API with JSON format
     console.log('Fetching tenders from API')
