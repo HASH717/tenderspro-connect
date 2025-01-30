@@ -101,14 +101,17 @@ export const AlertsConfig = () => {
 
     const { error } = await supabase
       .from("alerts")
-      .upsert(mapFiltersToDb(
-        { ...currentFilters, name: alertName },
-        session.user.id
-      ));
+      .upsert({
+        ...mapFiltersToDb(
+          { ...currentFilters, name: alertName },
+          session.user.id
+        ),
+        ...(editingAlertId ? { id: editingAlertId } : {}),
+      });
 
     if (error) {
       toast({
-        title: t("alerts.createError"),
+        title: editingAlertId ? t("alerts.updateError") : t("alerts.createError"),
         description: error.message,
         variant: "destructive",
       });
@@ -116,8 +119,8 @@ export const AlertsConfig = () => {
     }
 
     toast({
-      title: t("alerts.created"),
-      description: t("alerts.createdDescription"),
+      title: editingAlertId ? t("alerts.updated") : t("alerts.created"),
+      description: editingAlertId ? t("alerts.updatedDescription") : t("alerts.createdDescription"),
     });
 
     setShowNewAlert(false);
@@ -218,7 +221,7 @@ export const AlertsConfig = () => {
           />
           <div className="flex justify-end">
             <Button onClick={handleSaveAlert}>
-              {editingAlertId ? t("common.save") : t("common.create")}
+              {t("common.save")}
             </Button>
           </div>
         </div>
