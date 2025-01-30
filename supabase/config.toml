@@ -2,3 +2,6 @@ project_id = "achevndenwxikpbabzop"
 
 [functions.scrape-tenders]
 verify_jwt = false
+
+[functions.check-new-tenders]
+verify_jwt = false
