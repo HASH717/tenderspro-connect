@@ -8,6 +8,7 @@ interface TenderCardProps {
   organization: string;
   location: string;
   deadline: string;
+  publicationDate?: string;
   onFavorite?: () => void;
   isFavorite?: boolean;
 }
@@ -18,6 +19,7 @@ const TenderCard = ({
   organization,
   location,
   deadline,
+  publicationDate,
   onFavorite,
   isFavorite = false,
 }: TenderCardProps) => {

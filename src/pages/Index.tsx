@@ -6,30 +6,55 @@ import TenderCard from "@/components/TenderCard";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/contexts/ThemeContext";
 
-// Mock data for initial development
 const mockTenders = [
   {
-    id: 1,
-    title: "Construction of Public School",
-    organization: "Ministry of Education",
-    location: "Algiers",
-    deadline: "2024-04-01",
+    id: "1",
+    title: "Travaux de réalisation en tce 300 lpa et 48 lpl",
+    organization: "Construction",
+    location: "Mascara",
+    deadline: "29/12/2024",
+    publicationDate: "15/12/2024"
   },
   {
-    id: 2,
-    title: "Hospital Equipment Supply",
-    organization: "Ministry of Health",
-    location: "Oran",
-    deadline: "2024-03-25",
+    id: "2",
+    title: "Réalisation des 08 logements promotionnels tce + vrd",
+    organization: "Construction",
+    location: "Sidi-Bel-Abbès",
+    deadline: "29/12/2024",
+    publicationDate: "15/12/2024"
   },
+  {
+    id: "3",
+    title: "Micro-entreprises Travaux de réalisation d'un lycée type 1000 en 04 lots",
+    organization: "Education",
+    location: "Tizi-Ouzou",
+    deadline: "24/12/2024",
+    publicationDate: "15/12/2024"
+  },
+  {
+    id: "4",
+    title: "Transport de matériaux",
+    organization: "Transport",
+    location: "Algiers",
+    deadline: "04/01/2025",
+    publicationDate: "15/12/2024"
+  },
+  {
+    id: "5",
+    title: "Fourniture et transport d'une quantité minimale de 1300 tonnes et quantité de 2500 tonnes de sulfate d'alumine granulé",
+    organization: "Chemical Supply",
+    location: "Annaba",
+    deadline: "29/12/2024",
+    publicationDate: "15/12/2024"
+  }
 ];
 
 const Index = () => {
-  const [favorites, setFavorites] = useState<number[]>([]);
+  const [favorites, setFavorites] = useState<string[]>([]);
   const isMobile = useIsMobile();
   const { theme } = useTheme();
 
-  const toggleFavorite = (id: number) => {
+  const toggleFavorite = (id: string) => {
     setFavorites((prev) =>
       prev.includes(id)
         ? prev.filter((favId) => favId !== id)
