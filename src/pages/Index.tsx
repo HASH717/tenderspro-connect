@@ -3,7 +3,6 @@ import Navigation from "@/components/Navigation";
 import TenderCard from "@/components/TenderCard";
 import TenderFilters, { TenderFilters as FilterType } from "@/components/TenderFilters";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useTheme } from "@/contexts/ThemeContext";
 import { Separator } from "@/components/ui/separator";
 
 const mockTenders = [
@@ -53,7 +52,6 @@ const Index = () => {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [filteredTenders, setFilteredTenders] = useState(mockTenders);
   const isMobile = useIsMobile();
-  const { theme } = useTheme();
 
   const handleSearch = (filters: FilterType) => {
     let filtered = mockTenders;
@@ -88,9 +86,7 @@ const Index = () => {
     );
   };
 
-  const logoSrc = theme === 'dark' 
-    ? "/lovable-uploads/322d9f00-44ae-4a52-85db-ab74141855f7.png"
-    : "/lovable-uploads/c1c4772c-d5f0-499c-b16f-ae8dcefaa6c3.png";
+  const logoSrc = "/lovable-uploads/c1c4772c-d5f0-499c-b16f-ae8dcefaa6c3.png";
 
   return (
     <div className={`${isMobile ? 'pb-20' : 'pt-24'}`}>

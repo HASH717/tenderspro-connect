@@ -34,36 +34,6 @@
 
     --radius: 0.5rem;
   }
-
-  .dark {
-    --background: 0 0% 7%;
-    --foreground: 0 0% 98%;
-
-    --card: 0 0% 0%;
-    --card-foreground: 0 0% 98%;
-
-    --popover: 0 0% 0%;
-    --popover-foreground: 0 0% 98%;
-
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 10%;
-
-    --secondary: 32 75% 68%;
-    --secondary-foreground: 0 0% 10%;
-
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 80%;
-
-    --accent: 32 75% 68%;
-    --accent-foreground: 0 0% 10%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 0 0% 15%;
-    --input: 0 0% 15%;
-    --ring: 32 75% 68%;
-  }
 }
 
 @layer base {

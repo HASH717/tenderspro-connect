@@ -1,13 +1,10 @@
-import { Home, Heart, Bell, User, Moon, Sun } from "lucide-react";
+import { Home, Heart, Bell, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useTheme } from "@/contexts/ThemeContext";
-import { Switch } from "@/components/ui/switch";
 
 const Navigation = () => {
   const location = useLocation();
   const isMobile = useIsMobile();
-  const { theme, toggleTheme } = useTheme();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -18,9 +15,7 @@ const Navigation = () => {
     { icon: User, path: "/profile", label: "Profile" },
   ];
 
-  const logoSrc = theme === 'dark' 
-    ? "/lovable-uploads/322d9f00-44ae-4a52-85db-ab74141855f7.png"
-    : "/lovable-uploads/c1c4772c-d5f0-499c-b16f-ae8dcefaa6c3.png";
+  const logoSrc = "/lovable-uploads/c1c4772c-d5f0-499c-b16f-ae8dcefaa6c3.png";
 
   if (isMobile) {
     return (
@@ -68,15 +63,6 @@ const Navigation = () => {
               <span className="text-sm font-medium">{label}</span>
             </Link>
           ))}
-          <div className="flex items-center space-x-2 ml-4">
-            <Sun className="h-4 w-4" />
-            <Switch
-              checked={theme === 'dark'}
-              onCheckedChange={toggleTheme}
-              className="data-[state=checked]:bg-primary"
-            />
-            <Moon className="h-4 w-4" />
-          </div>
         </div>
       </div>
     </nav>
