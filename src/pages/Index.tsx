@@ -89,38 +89,39 @@ const Index = () => {
   const logoSrc = "/lovable-uploads/c1c4772c-d5f0-499c-b16f-ae8dcefaa6c3.png";
 
   return (
-    <div className={`${isMobile ? 'pb-20' : 'pt-24'}`}>
-      <div className="bg-background z-10">
+    <div className={`min-h-screen ${isMobile ? 'pb-20' : ''}`}>
+      <Navigation />
+      <div className={`${isMobile ? '' : 'mt-20'}`}>
+        <div className="bg-background z-10">
+          <div className="max-w-4xl mx-auto px-4">
+            {isMobile && (
+              <div className="flex flex-col items-center mb-4">
+                <img 
+                  src={logoSrc}
+                  alt="TendersPro Logo" 
+                  className="h-12 mb-1"
+                />
+              </div>
+            )}
+            <TenderFilters onSearch={handleSearch} />
+          </div>
+        </div>
+
         <div className="max-w-4xl mx-auto px-4">
-          {isMobile && (
-            <div className="flex flex-col items-center mb-4">
-              <img 
-                src={logoSrc}
-                alt="TendersPro Logo" 
-                className="h-12 mb-1"
-              />
-            </div>
-          )}
-          <TenderFilters onSearch={handleSearch} />
+          <Separator className="my-6" />
+        </div>
+
+        <div className="max-w-4xl mx-auto px-4">
+          {filteredTenders.map((tender) => (
+            <TenderCard
+              key={tender.id}
+              {...tender}
+              isFavorite={favorites.includes(tender.id)}
+              onFavorite={() => toggleFavorite(tender.id)}
+            />
+          ))}
         </div>
       </div>
-
-      <div className="max-w-4xl mx-auto px-4">
-        <Separator className="my-6" />
-      </div>
-
-      <div className="max-w-4xl mx-auto px-4">
-        {filteredTenders.map((tender) => (
-          <TenderCard
-            key={tender.id}
-            {...tender}
-            isFavorite={favorites.includes(tender.id)}
-            onFavorite={() => toggleFavorite(tender.id)}
-          />
-        ))}
-      </div>
-
-      <Navigation />
     </div>
   );
 };
