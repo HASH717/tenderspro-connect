@@ -1,6 +1,7 @@
 import { Calendar, MapPin, Building, Heart } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 interface TenderCardProps {
   id: string;
@@ -24,6 +25,18 @@ const TenderCard = ({
   isFavorite = false,
 }: TenderCardProps) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+
+  const getCategoryTranslation = (org: string) => {
+    const categoryMap: { [key: string]: string } = {
+      "Construction": "construction",
+      "Transport": "transport",
+      "Education": "education",
+      "Chemical Supply": "chemical"
+    };
+    const category = categoryMap[org] || org.toLowerCase();
+    return t(`tender.categories.${category}`);
+  };
 
   return (
     <Card 
@@ -36,7 +49,7 @@ const TenderCard = ({
           <div className="space-y-2">
             <div className="flex items-center text-muted-foreground">
               <Building className="w-4 h-4 mr-2" />
-              <span className="text-sm">{organization}</span>
+              <span className="text-sm">{getCategoryTranslation(organization)}</span>
             </div>
             <div className="flex items-center text-muted-foreground">
               <MapPin className="w-4 h-4 mr-2" />
@@ -44,7 +57,7 @@ const TenderCard = ({
             </div>
             <div className="flex items-center text-muted-foreground">
               <Calendar className="w-4 h-4 mr-2" />
-              <span className="text-sm">Deadline: {deadline}</span>
+              <span className="text-sm">{t('tender.deadline')}: {deadline}</span>
             </div>
           </div>
         </div>

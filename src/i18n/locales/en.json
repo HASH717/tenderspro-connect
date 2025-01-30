@@ -18,6 +18,12 @@
   "tender": {
     "deadline": "Deadline",
     "organization": "Organization",
-    "location": "Location"
+    "location": "Location",
+    "categories": {
+      "construction": "Construction",
+      "transport": "Transport",
+      "education": "Education",
+      "chemical": "Chemical Supply"
+    }
   }
 }

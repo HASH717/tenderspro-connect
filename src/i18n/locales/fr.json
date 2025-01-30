@@ -18,6 +18,12 @@
   "tender": {
     "deadline": "Date limite",
     "organization": "Organisation",
-    "location": "Emplacement"
+    "location": "Emplacement",
+    "categories": {
+      "construction": "Construction",
+      "transport": "Transport",
+      "education": "Éducation",
+      "chemical": "Fourniture Chimique"
+    }
   }
 }

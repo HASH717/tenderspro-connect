@@ -18,6 +18,12 @@
   "tender": {
     "deadline": "الموعد النهائي",
     "organization": "المنظمة",
-    "location": "الموقع"
+    "location": "الموقع",
+    "categories": {
+      "construction": "البناء",
+      "transport": "النقل",
+      "education": "التعليم",
+      "chemical": "المواد الكيميائية"
+    }
   }
 }
