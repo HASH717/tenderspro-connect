@@ -3,6 +3,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useState } from "react";
+import { Button } from "./ui/button";
 
 interface TenderListProps {
   tenders: any[];
@@ -12,6 +14,7 @@ interface TenderListProps {
 export const TenderList = ({ tenders, isLoading }: TenderListProps) => {
   const { session } = useAuth();
   const queryClient = useQueryClient();
+  const [displayCount, setDisplayCount] = useState(10);
 
   const { data: favorites = [], isLoading: isLoadingFavorites } = useQuery({
     queryKey: ['favorites', session?.user?.id],
@@ -77,21 +80,37 @@ export const TenderList = ({ tenders, isLoading }: TenderListProps) => {
     return <div className="text-center py-8">No tenders found</div>;
   }
 
+  const displayedTenders = tenders.slice(0, displayCount);
+  const hasMore = displayCount < tenders.length;
+
   return (
-    <>
-      {tenders.map((tender) => (
-        <TenderCard
-          key={tender.id}
-          id={tender.id}
-          title={tender.title}
-          organization={tender.organization_name || tender.category || "Unknown"}
-          location={tender.region || tender.wilaya || "Unknown"}
-          deadline={tender.deadline || "Not specified"}
-          publicationDate={tender.publication_date}
-          isFavorite={favorites.includes(tender.id)}
-          onFavorite={() => toggleFavorite(tender.id)}
-        />
-      ))}
-    </>
+    <div className="space-y-6">
+      <div className="space-y-4">
+        {displayedTenders.map((tender) => (
+          <TenderCard
+            key={tender.id}
+            id={tender.id}
+            title={tender.title}
+            organization={tender.organization_name || tender.category || "Unknown"}
+            location={tender.region || tender.wilaya || "Unknown"}
+            deadline={tender.deadline || "Not specified"}
+            publicationDate={tender.publication_date}
+            isFavorite={favorites.includes(tender.id)}
+            onFavorite={() => toggleFavorite(tender.id)}
+          />
+        ))}
+      </div>
+      
+      {hasMore && (
+        <div className="flex justify-center pt-4">
+          <Button 
+            onClick={() => setDisplayCount(prev => prev + 10)}
+            variant="outline"
+          >
+            Show More
+          </Button>
+        </div>
+      )}
+    </div>
   );
 };
