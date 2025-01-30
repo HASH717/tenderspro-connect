@@ -20,24 +20,26 @@ interface TenderFiltersProps {
 export interface TenderFilters {
   search: string;
   announcers: string;
-  marketType: string;
-  announcementType: string;
+  type: string;
   category: string;
-  region: string;
+  wilaya: string;
+  priceRange: string;
   microEnterprises: boolean;
   publicationDate: string;
+  deadlineDate: string;
 }
 
 const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
   const [filters, setFilters] = useState<TenderFilters>({
     search: "",
     announcers: "",
-    marketType: "",
-    announcementType: "",
+    type: "",
     category: "",
-    region: "",
+    wilaya: "",
+    priceRange: "",
     microEnterprises: false,
     publicationDate: "",
+    deadlineDate: "",
   });
 
   const { t } = useTranslation();
@@ -70,28 +72,16 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
 
       <div className="grid grid-cols-2 gap-2">
         <Select
-          value={filters.marketType}
-          onValueChange={(value) => handleFilterChange("marketType", value)}
+          value={filters.type}
+          onValueChange={(value) => handleFilterChange("type", value)}
         >
           <SelectTrigger className="bg-white">
-            <SelectValue placeholder={t("filters.marketType")} />
+            <SelectValue placeholder={t("filters.tenderType")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="public">{t("filters.public")}</SelectItem>
-            <SelectItem value="private">{t("filters.private")}</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={filters.announcementType}
-          onValueChange={(value) => handleFilterChange("announcementType", value)}
-        >
-          <SelectTrigger className="bg-white">
-            <SelectValue placeholder={t("filters.announcementType")} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="tender">{t("filters.tender")}</SelectItem>
-            <SelectItem value="auction">{t("filters.auction")}</SelectItem>
+            <SelectItem value="national_call">{t("filters.types.national_call")}</SelectItem>
+            <SelectItem value="national_preselection">{t("filters.types.national_preselection")}</SelectItem>
+            <SelectItem value="international_call">{t("filters.types.international_call")}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -104,25 +94,42 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="construction">{t("tender.categories.construction")}</SelectItem>
-            <SelectItem value="transport">{t("tender.categories.transport")}</SelectItem>
-            <SelectItem value="education">{t("tender.categories.education")}</SelectItem>
-            <SelectItem value="chemical">{t("tender.categories.chemical")}</SelectItem>
+            <SelectItem value="hydraulic">{t("tender.categories.hydraulic")}</SelectItem>
+            <SelectItem value="sanitation">{t("tender.categories.sanitation")}</SelectItem>
+            <SelectItem value="petroleum">{t("tender.categories.petroleum")}</SelectItem>
+            <SelectItem value="water">{t("tender.categories.water")}</SelectItem>
           </SelectContent>
         </Select>
 
         <Select
-          value={filters.region}
-          onValueChange={(value) => handleFilterChange("region", value)}
+          value={filters.wilaya}
+          onValueChange={(value) => handleFilterChange("wilaya", value)}
         >
           <SelectTrigger className="bg-white">
-            <SelectValue placeholder={t("filters.region")} />
+            <SelectValue placeholder={t("filters.wilaya")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="mascara">{t("tender.locations.mascara")}</SelectItem>
-            <SelectItem value="sidi_bel_abbes">{t("tender.locations.sidi_bel_abbes")}</SelectItem>
-            <SelectItem value="tizi_ouzou">{t("tender.locations.tizi_ouzou")}</SelectItem>
-            <SelectItem value="algiers">{t("tender.locations.algiers")}</SelectItem>
-            <SelectItem value="annaba">{t("tender.locations.annaba")}</SelectItem>
+            <SelectItem value="alger">{t("tender.locations.alger")}</SelectItem>
+            <SelectItem value="constantine">{t("tender.locations.constantine")}</SelectItem>
+            <SelectItem value="mostaganem">{t("tender.locations.mostaganem")}</SelectItem>
+            <SelectItem value="timimoun">{t("tender.locations.timimoun")}</SelectItem>
+            <SelectItem value="bejaia">{t("tender.locations.bejaia")}</SelectItem>
+            <SelectItem value="saida">{t("tender.locations.saida")}</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={filters.priceRange}
+          onValueChange={(value) => handleFilterChange("priceRange", value)}
+        >
+          <SelectTrigger className="bg-white">
+            <SelectValue placeholder={t("filters.priceRange")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="0-1000">0 - 1,000 DA</SelectItem>
+            <SelectItem value="1000-5000">1,000 - 5,000 DA</SelectItem>
+            <SelectItem value="5000-10000">5,000 - 10,000 DA</SelectItem>
+            <SelectItem value="10000+">10,000+ DA</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -139,20 +146,33 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-          <Input
-            type="date"
-            value={filters.publicationDate}
-            onChange={(e) => handleFilterChange("publicationDate", e.target.value)}
-            className="w-full sm:w-auto bg-white"
-          />
-          <Button 
-            onClick={() => onSearch(filters)}
-            className="bg-accent hover:bg-accent/90 text-accent-foreground w-full sm:w-auto"
-          >
-            {t("filters.searchButton")}
-          </Button>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="space-y-2">
+            <Label>{t("filters.publicationDate")}</Label>
+            <Input
+              type="date"
+              value={filters.publicationDate}
+              onChange={(e) => handleFilterChange("publicationDate", e.target.value)}
+              className="w-full bg-white"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>{t("filters.deadlineDate")}</Label>
+            <Input
+              type="date"
+              value={filters.deadlineDate}
+              onChange={(e) => handleFilterChange("deadlineDate", e.target.value)}
+              className="w-full bg-white"
+            />
+          </div>
         </div>
+
+        <Button 
+          onClick={() => onSearch(filters)}
+          className="bg-accent hover:bg-accent/90 text-accent-foreground w-full sm:w-auto"
+        >
+          {t("filters.searchButton")}
+        </Button>
       </div>
     </div>
   );

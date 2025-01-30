@@ -15,12 +15,13 @@ const Index = () => {
   const [filters, setFilters] = useState<FilterType>({
     search: "",
     announcers: "",
-    marketType: "",
-    announcementType: "",
+    type: "",
     category: "",
-    region: "",
+    wilaya: "",
+    priceRange: "",
     microEnterprises: false,
     publicationDate: "",
+    deadlineDate: "",
   });
   
   const isMobile = useIsMobile();
@@ -38,16 +39,38 @@ const Index = () => {
         query = query.ilike('title', `%${filters.search}%`);
       }
 
-      if (filters.region) {
-        query = query.eq('region', filters.region);
+      if (filters.wilaya) {
+        query = query.ilike('wilaya', `%${filters.wilaya}%`);
       }
 
       if (filters.category) {
-        query = query.eq('category', filters.category);
+        query = query.ilike('category', `%${filters.category}%`);
+      }
+
+      if (filters.type) {
+        query = query.ilike('type', `%${filters.type}%`);
       }
 
       if (filters.publicationDate) {
         query = query.eq('publication_date', filters.publicationDate);
+      }
+
+      if (filters.deadlineDate) {
+        query = query.eq('deadline', filters.deadlineDate);
+      }
+
+      if (filters.priceRange) {
+        const [min, max] = filters.priceRange.split('-').map(Number);
+        const priceField = 'specifications_price';
+        
+        if (max) {
+          query = query
+            .gte(priceField, min.toString())
+            .lte(priceField, max.toString());
+        } else {
+          // Handle 10000+ case
+          query = query.gte(priceField, min.toString());
+        }
       }
 
       const { data, error } = await query;
