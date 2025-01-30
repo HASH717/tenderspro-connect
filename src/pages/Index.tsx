@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import Navigation from "@/components/Navigation";
 import TenderCard from "@/components/TenderCard";
+import TenderFilters, { TenderFilters as FilterType } from "@/components/TenderFilters";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -51,8 +50,36 @@ const mockTenders = [
 
 const Index = () => {
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [filteredTenders, setFilteredTenders] = useState(mockTenders);
   const isMobile = useIsMobile();
   const { theme } = useTheme();
+
+  const handleSearch = (filters: FilterType) => {
+    let filtered = mockTenders;
+
+    if (filters.search) {
+      filtered = filtered.filter(tender => 
+        tender.title.toLowerCase().includes(filters.search.toLowerCase()) ||
+        tender.organization.toLowerCase().includes(filters.search.toLowerCase())
+      );
+    }
+
+    if (filters.region) {
+      filtered = filtered.filter(tender => 
+        tender.location.toLowerCase() === filters.region.toLowerCase()
+      );
+    }
+
+    if (filters.publicationDate) {
+      filtered = filtered.filter(tender => 
+        tender.publicationDate === filters.publicationDate
+      );
+    }
+
+    // Add more filter conditions as needed
+
+    setFilteredTenders(filtered);
+  };
 
   const toggleFavorite = (id: string) => {
     setFavorites((prev) =>
@@ -78,17 +105,11 @@ const Index = () => {
             />
           </div>
         )}
-        <div className="relative max-w-2xl mx-auto">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search tenders..."
-            className="pl-10"
-          />
-        </div>
+        <TenderFilters onSearch={handleSearch} />
       </div>
 
       <div className="p-4 max-w-4xl mx-auto">
-        {mockTenders.map((tender) => (
+        {filteredTenders.map((tender) => (
           <TenderCard
             key={tender.id}
             {...tender}
