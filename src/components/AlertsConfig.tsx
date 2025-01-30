@@ -221,7 +221,7 @@ export const AlertsConfig = () => {
           />
           <div className="flex justify-end">
             <Button onClick={handleSaveAlert}>
-              {t("common.save")}
+              Save
             </Button>
           </div>
         </div>
