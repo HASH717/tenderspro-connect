@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 import {
   Select,
   SelectContent,
@@ -39,6 +40,8 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
     publicationDate: "",
   });
 
+  const { t } = useTranslation();
+
   const handleFilterChange = (key: keyof TenderFilters, value: string | boolean) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
@@ -51,14 +54,14 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
         <div className="relative">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search"
+            placeholder={t("filters.search")}
             className="pl-10 bg-white"
             value={filters.search}
             onChange={(e) => handleFilterChange("search", e.target.value)}
           />
         </div>
         <Input
-          placeholder="Announcers"
+          placeholder={t("filters.announcers")}
           className="bg-white"
           value={filters.announcers}
           onChange={(e) => handleFilterChange("announcers", e.target.value)}
@@ -71,11 +74,11 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
           onValueChange={(value) => handleFilterChange("marketType", value)}
         >
           <SelectTrigger className="bg-white">
-            <SelectValue placeholder="Market type" />
+            <SelectValue placeholder={t("filters.marketType")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="public">Public</SelectItem>
-            <SelectItem value="private">Private</SelectItem>
+            <SelectItem value="public">{t("filters.public")}</SelectItem>
+            <SelectItem value="private">{t("filters.private")}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -84,11 +87,11 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
           onValueChange={(value) => handleFilterChange("announcementType", value)}
         >
           <SelectTrigger className="bg-white">
-            <SelectValue placeholder="Announcement type" />
+            <SelectValue placeholder={t("filters.announcementType")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="tender">Tender</SelectItem>
-            <SelectItem value="auction">Auction</SelectItem>
+            <SelectItem value="tender">{t("filters.tender")}</SelectItem>
+            <SelectItem value="auction">{t("filters.auction")}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -97,12 +100,13 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
           onValueChange={(value) => handleFilterChange("category", value)}
         >
           <SelectTrigger className="bg-white">
-            <SelectValue placeholder="Category" />
+            <SelectValue placeholder={t("filters.category")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="construction">Construction</SelectItem>
-            <SelectItem value="transport">Transport</SelectItem>
-            <SelectItem value="supplies">Supplies</SelectItem>
+            <SelectItem value="construction">{t("tender.categories.construction")}</SelectItem>
+            <SelectItem value="transport">{t("tender.categories.transport")}</SelectItem>
+            <SelectItem value="education">{t("tender.categories.education")}</SelectItem>
+            <SelectItem value="chemical">{t("tender.categories.chemical")}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -111,12 +115,14 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
           onValueChange={(value) => handleFilterChange("region", value)}
         >
           <SelectTrigger className="bg-white">
-            <SelectValue placeholder="Region" />
+            <SelectValue placeholder={t("filters.region")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="algiers">Algiers</SelectItem>
-            <SelectItem value="oran">Oran</SelectItem>
-            <SelectItem value="constantine">Constantine</SelectItem>
+            <SelectItem value="mascara">{t("tender.locations.mascara")}</SelectItem>
+            <SelectItem value="sidi_bel_abbes">{t("tender.locations.sidi_bel_abbes")}</SelectItem>
+            <SelectItem value="tizi_ouzou">{t("tender.locations.tizi_ouzou")}</SelectItem>
+            <SelectItem value="algiers">{t("tender.locations.algiers")}</SelectItem>
+            <SelectItem value="annaba">{t("tender.locations.annaba")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -129,7 +135,7 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
               checked={filters.microEnterprises}
               onCheckedChange={(checked) => handleFilterChange("microEnterprises", checked)}
             />
-            <Label htmlFor="micro-enterprises">Micro-enterprises</Label>
+            <Label htmlFor="micro-enterprises">{t("filters.microEnterprises")}</Label>
           </div>
         </div>
 
@@ -144,7 +150,7 @@ const TenderFilters = ({ onSearch }: TenderFiltersProps) => {
             onClick={() => onSearch(filters)}
             className="bg-accent hover:bg-accent/90 text-accent-foreground w-full sm:w-auto"
           >
-            Search
+            {t("filters.searchButton")}
           </Button>
         </div>
       </div>

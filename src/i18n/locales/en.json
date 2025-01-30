@@ -13,7 +13,11 @@
     "category": "Category",
     "region": "Region",
     "microEnterprises": "Micro-enterprises",
-    "searchButton": "Search"
+    "searchButton": "Search",
+    "public": "Public",
+    "private": "Private",
+    "tender": "Tender",
+    "auction": "Auction"
   },
   "tender": {
     "deadline": "Deadline",

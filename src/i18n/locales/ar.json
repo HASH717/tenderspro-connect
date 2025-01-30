@@ -13,7 +13,11 @@
     "category": "الفئة",
     "region": "المنطقة",
     "microEnterprises": "المؤسسات الصغيرة",
-    "searchButton": "بحث"
+    "searchButton": "بحث",
+    "public": "عمومي",
+    "private": "خاص",
+    "tender": "مناقصة",
+    "auction": "مزاد"
   },
   "tender": {
     "deadline": "الموعد النهائي",

@@ -13,7 +13,11 @@
     "category": "Catégorie",
     "region": "Région",
     "microEnterprises": "Micro-entreprises",
-    "searchButton": "Rechercher"
+    "searchButton": "Rechercher",
+    "public": "Public",
+    "private": "Privé",
+    "tender": "Appel d'offres",
+    "auction": "Enchère"
   },
   "tender": {
     "deadline": "Date limite",
