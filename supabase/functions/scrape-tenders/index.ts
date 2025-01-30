@@ -15,50 +15,78 @@ Deno.serve(async (req) => {
     // First, authenticate with dztenders.com API
     console.log('Authenticating with dztenders.com API')
     
-    // Try different common DRF authentication endpoints
+    // Try different common DRF authentication endpoints and payload formats
     const authEndpoints = [
       'https://api.dztenders.com/api/token/',
       'https://api.dztenders.com/api/auth/token/',
       'https://api.dztenders.com/api-auth/login/',
-      'https://api.dztenders.com/api/v1/auth/login/'
+      'https://api.dztenders.com/api/v1/auth/login/',
+      'https://api.dztenders.com/auth/token/',
+      'https://api.dztenders.com/rest-auth/login/',
+      'https://api.dztenders.com/api/login/'
+    ]
+    
+    const payloadFormats = [
+      {
+        username: 'motraxa@gmail.com',
+        password: 'Dahdouhhash@717',
+      },
+      {
+        email: 'motraxa@gmail.com',
+        password: 'Dahdouhhash@717',
+      },
+      {
+        user: 'motraxa@gmail.com',
+        password: 'Dahdouhhash@717',
+      }
     ]
     
     let token = null
     let loginResponse = null
     
+    // Try each endpoint with each payload format
     for (const endpoint of authEndpoints) {
-      console.log(`Trying authentication endpoint: ${endpoint}`)
-      try {
-        loginResponse = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            username: 'motraxa@gmail.com',
-            password: 'Dahdouhhash@717',
-          }),
-        })
+      console.log(`\nTrying authentication endpoint: ${endpoint}`)
+      
+      for (const payload of payloadFormats) {
+        console.log(`Trying payload format:`, payload)
         
-        console.log(`Response status for ${endpoint}:`, loginResponse.status)
-        const responseText = await loginResponse.text()
-        console.log(`Response for ${endpoint}:`, responseText)
-        
-        if (loginResponse.ok) {
-          try {
-            const loginData = JSON.parse(responseText)
-            if (loginData.token || loginData.access) {
-              token = loginData.token || loginData.access
-              console.log('Successfully authenticated!')
-              break
+        try {
+          loginResponse = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify(payload),
+          })
+          
+          console.log(`Response status for ${endpoint}:`, loginResponse.status)
+          const responseText = await loginResponse.text()
+          console.log(`Response for ${endpoint}:`, responseText)
+          
+          if (loginResponse.ok) {
+            try {
+              const loginData = JSON.parse(responseText)
+              // Check for different token field names
+              const possibleTokens = ['token', 'access', 'access_token', 'auth_token', 'key']
+              for (const tokenField of possibleTokens) {
+                if (loginData[tokenField]) {
+                  token = loginData[tokenField]
+                  console.log('Successfully authenticated!')
+                  break
+                }
+              }
+              if (token) break
+            } catch (e) {
+              console.log(`Failed to parse JSON response from ${endpoint}:`, e)
             }
-          } catch (e) {
-            console.log(`Failed to parse JSON response from ${endpoint}:`, e)
           }
+        } catch (e) {
+          console.log(`Failed to connect to ${endpoint}:`, e)
         }
-      } catch (e) {
-        console.log(`Failed to connect to ${endpoint}:`, e)
       }
+      if (token) break
     }
 
     if (!token) {
@@ -70,6 +98,7 @@ Deno.serve(async (req) => {
     const tendersResponse = await fetch('https://api.dztenders.com/tenders/?format=json', {
       headers: {
         'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
       },
     })
 
