@@ -21,9 +21,9 @@ export const AdminScraper = () => {
       
       const { data, error } = await supabase.functions.invoke('scrape-tenders', {
         body: { 
-          batchSize: 5,
+          batchSize: 20, // Increased from 5 to 20
           startPage: 1,
-          maxPages: 5
+          maxPages: 8 // Slightly increased from 5 to 8
         },
         headers: {
           'Content-Type': 'application/json',
@@ -36,7 +36,6 @@ export const AdminScraper = () => {
         
         try {
           if (error.message && typeof error.message === 'string') {
-            // Try to parse error body if it's JSON
             if (error.message.includes('{') && error.message.includes('}')) {
               const errorBody = JSON.parse(error.message);
               if (errorBody.error) {
