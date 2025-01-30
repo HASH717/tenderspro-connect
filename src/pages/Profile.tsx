@@ -21,6 +21,7 @@ const Profile = () => {
     phone_number: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -28,23 +29,40 @@ const Profile = () => {
     const getProfile = async () => {
       if (!session?.user.id) return;
       
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("first_name, last_name, phone_number")
-        .eq("id", session.user.id)
-        .single();
+      try {
+        setIsLoadingProfile(true);
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("first_name, last_name, phone_number")
+          .eq("id", session.user.id)
+          .maybeSingle();
 
-      if (error) {
+        if (error) {
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to load profile",
+          });
+          return;
+        }
+
+        if (data) {
+          setProfile(data);
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Profile Not Found",
+            description: "Your profile information could not be found",
+          });
+        }
+      } catch (error) {
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to load profile",
+          description: "An unexpected error occurred",
         });
-        return;
-      }
-
-      if (data) {
-        setProfile(data);
+      } finally {
+        setIsLoadingProfile(false);
       }
     };
 
@@ -93,6 +111,20 @@ const Profile = () => {
     }
     navigate("/auth");
   };
+
+  if (isLoadingProfile) {
+    return (
+      <div className="min-h-screen pb-20">
+        <div className="p-4">
+          <h1 className="text-2xl font-bold text-primary mb-4">Profile</h1>
+          <div className="flex justify-center items-center h-48">
+            <p>Loading profile...</p>
+          </div>
+        </div>
+        <Navigation />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pb-20">
