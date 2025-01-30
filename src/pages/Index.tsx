@@ -94,8 +94,8 @@ const Index = () => {
 
   return (
     <div className={`${isMobile ? 'pb-20' : 'pt-24'}`}>
-      <div className="bg-background z-10 p-4">
-        <div className="max-w-4xl mx-auto">
+      <div className="bg-background z-10">
+        <div className="max-w-4xl mx-auto px-4">
           {isMobile && (
             <div className="flex flex-col items-center mb-4">
               <img 
@@ -113,7 +113,7 @@ const Index = () => {
         <Separator className="my-6" />
       </div>
 
-      <div className="p-4 max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto px-4">
         {filteredTenders.map((tender) => (
           <TenderCard
             key={tender.id}
