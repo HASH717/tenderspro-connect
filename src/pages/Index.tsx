@@ -6,79 +6,66 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Separator } from "@/components/ui/separator";
 import { AdminScraper } from "@/components/AdminScraper";
 import { useAuth } from "@/contexts/AuthContext";
-
-const mockTenders = [
-  {
-    id: "1",
-    title: "Travaux de réalisation en tce 300 lpa et 48 lpl",
-    organization: "Construction",
-    location: "Mascara",
-    deadline: "29/12/2024",
-    publicationDate: "15/12/2024"
-  },
-  {
-    id: "2",
-    title: "Réalisation des 08 logements promotionnels tce + vrd",
-    organization: "Construction",
-    location: "Sidi-Bel-Abbès",
-    deadline: "29/12/2024",
-    publicationDate: "15/12/2024"
-  },
-  {
-    id: "3",
-    title: "Micro-entreprises Travaux de réalisation d'un lycée type 1000 en 04 lots",
-    organization: "Education",
-    location: "Tizi-Ouzou",
-    deadline: "24/12/2024",
-    publicationDate: "15/12/2024"
-  },
-  {
-    id: "4",
-    title: "Transport de matériaux",
-    organization: "Transport",
-    location: "Algiers",
-    deadline: "04/01/2025",
-    publicationDate: "15/12/2024"
-  },
-  {
-    id: "5",
-    title: "Fourniture et transport d'une quantité minimale de 1300 tonnes et quantité de 2500 tonnes de sulfate d'alumine granulé",
-    organization: "Chemical Supply",
-    location: "Annaba",
-    deadline: "29/12/2024",
-    publicationDate: "15/12/2024"
-  }
-];
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const Index = () => {
   const [favorites, setFavorites] = useState<string[]>([]);
-  const [filteredTenders, setFilteredTenders] = useState(mockTenders);
+  const [filters, setFilters] = useState<FilterType>({
+    search: "",
+    announcers: "",
+    marketType: "",
+    announcementType: "",
+    category: "",
+    region: "",
+    microEnterprises: false,
+    publicationDate: "",
+  });
+  
   const isMobile = useIsMobile();
   const { session } = useAuth();
 
-  const handleSearch = (filters: FilterType) => {
-    let filtered = mockTenders;
+  const { data: tenders = [], isLoading } = useQuery({
+    queryKey: ['tenders', filters],
+    queryFn: async () => {
+      console.log('Fetching tenders with filters:', filters);
+      let query = supabase
+        .from('tenders')
+        .select('*');
 
-    if (filters.search) {
-      filtered = filtered.filter(tender => 
-        tender.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-        tender.organization.toLowerCase().includes(filters.search.toLowerCase())
-      );
+      if (filters.search) {
+        query = query.ilike('title', `%${filters.search}%`);
+      }
+
+      if (filters.region) {
+        query = query.eq('region', filters.region);
+      }
+
+      if (filters.category) {
+        query = query.eq('category', filters.category);
+      }
+
+      if (filters.publicationDate) {
+        query = query.eq('publication_date', filters.publicationDate);
+      }
+
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('Error fetching tenders:', error);
+        toast.error('Failed to load tenders');
+        return [];
+      }
+
+      console.log('Fetched tenders:', data);
+      return data || [];
     }
+  });
 
-    if (filters.region) {
-      filtered = filtered.filter(tender => 
-        tender.location.toLowerCase() === filters.region.toLowerCase()
-      );
-    }
-
-    if (filters.publicationDate) {
-      filtered = filtered.filter(tender => 
-        tender.publicationDate === filters.publicationDate
-      );
-    }
-
-    setFilteredTenders(filtered);
+  const handleSearch = (newFilters: FilterType) => {
+    console.log('Applying filters:', newFilters);
+    setFilters(newFilters);
   };
 
   const toggleFavorite = (id: string) => {
@@ -120,14 +107,25 @@ const Index = () => {
         </div>
 
         <div className="max-w-4xl mx-auto px-4">
-          {filteredTenders.map((tender) => (
-            <TenderCard
-              key={tender.id}
-              {...tender}
-              isFavorite={favorites.includes(tender.id)}
-              onFavorite={() => toggleFavorite(tender.id)}
-            />
-          ))}
+          {isLoading ? (
+            <div className="text-center py-8">Loading tenders...</div>
+          ) : tenders.length === 0 ? (
+            <div className="text-center py-8">No tenders found</div>
+          ) : (
+            tenders.map((tender) => (
+              <TenderCard
+                key={tender.id}
+                id={tender.id}
+                title={tender.title}
+                organization={tender.category || "Unknown"}
+                location={tender.region || tender.wilaya || "Unknown"}
+                deadline={tender.deadline || "Not specified"}
+                publicationDate={tender.publication_date}
+                isFavorite={favorites.includes(tender.id)}
+                onFavorite={() => toggleFavorite(tender.id)}
+              />
+            ))
+          )}
         </div>
       </div>
     </div>
