@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -76,8 +76,6 @@ const Profile = () => {
     const { error } = await supabase
       .from("profiles")
       .update({
-        first_name: profile.first_name,
-        last_name: profile.last_name,
         phone_number: profile.phone_number,
       })
       .eq("id", session.user.id);
@@ -143,12 +141,23 @@ const Profile = () => {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
+            <Input 
+              value={session?.user.email || ""}
+              disabled
+              className="bg-gray-100"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               First Name
             </label>
             <Input 
               value={profile.first_name}
-              onChange={(e) => setProfile({ ...profile, first_name: e.target.value })}
-              placeholder="Enter first name"
+              disabled
+              className="bg-gray-100"
             />
           </div>
           
@@ -158,8 +167,8 @@ const Profile = () => {
             </label>
             <Input 
               value={profile.last_name}
-              onChange={(e) => setProfile({ ...profile, last_name: e.target.value })}
-              placeholder="Enter last name"
+              disabled
+              className="bg-gray-100"
             />
           </div>
           
