@@ -60,25 +60,21 @@ Deno.serve(async (req) => {
     for (const tender of tenders) {
       console.log('Processing tender:', tender.id)
       
-      // Ensure required fields have default values and proper formatting
+      // Format the tender data
       const formattedTender = {
-        id: crypto.randomUUID(), // Generate a new UUID for each tender
-        title: tender.title || 'Untitled Tender', // Provide default for required field
-        wilaya: tender.region_verbose?.name || 'Unknown', // Provide default for required field
+        title: tender.title || 'Untitled Tender',
+        wilaya: tender.region_verbose?.name || 'Unknown',
         deadline: tender.expiration_date ? new Date(tender.expiration_date).toISOString() : null,
         category: tender.categories_verbose?.[0]?.name || null,
         publication_date: tender.publishing_date ? new Date(tender.publishing_date).toISOString() : null,
         specifications_price: tender.cc_price?.toString() || null,
-        tender_id: tender.id?.toString() || crypto.randomUUID(), // Fallback to UUID if no tender_id
+        tender_id: tender.id?.toString() || crypto.randomUUID(),
         type: tender.type || null,
         region: tender.region_verbose?.name || null,
         withdrawal_address: tender.cc_address || null,
         link: tender.files_verbose?.[0] || null,
-        image_url: null // Set to null as it's not provided in the API response
+        image_url: null
       }
-
-      // Log the formatted tender for debugging
-      console.log('Formatted tender:', JSON.stringify(formattedTender, null, 2))
 
       try {
         const { error } = await supabase
