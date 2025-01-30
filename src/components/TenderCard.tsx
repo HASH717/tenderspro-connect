@@ -34,8 +34,9 @@ const TenderCard = ({
       "Education": "education",
       "Chemical Supply": "chemical"
     };
-    const category = categoryMap[org] || org.toLowerCase();
-    return t(`tender.categories.${category}`);
+    const category = categoryMap[org];
+    // Return the translation if it exists, otherwise return the original value
+    return category ? t(`tender.categories.${category}`) : org;
   };
 
   const getTitleTranslation = (title: string) => {
@@ -46,8 +47,9 @@ const TenderCard = ({
       "Transport de matériaux": "tender4",
       "Fourniture et transport d'une quantité minimale de 1300 tonnes et quantité de 2500 tonnes de sulfate d'alumine granulé": "tender5"
     };
-    const titleKey = titleMap[title] || title;
-    return t(`tender.titles.${titleKey}`);
+    const titleKey = titleMap[title];
+    // Return the translation if it exists, otherwise return the original value
+    return titleKey ? t(`tender.titles.${titleKey}`) : title;
   };
 
   const getLocationTranslation = (loc: string) => {
@@ -58,8 +60,9 @@ const TenderCard = ({
       "Algiers": "algiers",
       "Annaba": "annaba"
     };
-    const locationKey = locationMap[loc] || loc.toLowerCase();
-    return t(`tender.locations.${locationKey}`);
+    const locationKey = locationMap[loc];
+    // Return the translation if it exists, otherwise return the original value
+    return locationKey ? t(`tender.locations.${locationKey}`) : loc;
   };
 
   return (
