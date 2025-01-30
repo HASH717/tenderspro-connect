@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
   try {
     // First, authenticate with dztenders.com API
     console.log('Authenticating with dztenders.com API')
-    const loginResponse = await fetch('https://api.dztenders.com/auth/login', {
+    const loginResponse = await fetch('https://dztenders.com/api/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
 
     // Fetch tenders from the API with JSON format
     console.log('Fetching tenders from API')
-    const tendersResponse = await fetch('https://api.dztenders.com/tenders/?format=json', {
+    const tendersResponse = await fetch('https://dztenders.com/api/tenders/?format=json', {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
