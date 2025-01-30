@@ -17,17 +17,29 @@ Deno.serve(async (req) => {
       apiKey: Deno.env.get('FIRECRAWL_API_KEY') || '' 
     })
 
-    // First, authenticate with dztenders.com
+    // First, authenticate with dztenders.com using browser emulation
     console.log('Authenticating with dztenders.com')
     const loginResponse = await firecrawlApp.crawlUrl('https://www.dztenders.com/en/login/', {
       limit: 1,
-      method: 'POST',
-      formData: {
-        username: Deno.env.get('DZTENDERS_USERNAME') || '',
-        password: Deno.env.get('DZTENDERS_PASSWORD') || '',
-        'remember-me': 'on'
-      },
-      followRedirects: true
+      scrapeOptions: {
+        browserEmulation: true,
+        actions: [
+          {
+            type: 'input',
+            selector: 'input[name="username"]',
+            value: Deno.env.get('DZTENDERS_USERNAME') || ''
+          },
+          {
+            type: 'input',
+            selector: 'input[name="password"]',
+            value: Deno.env.get('DZTENDERS_PASSWORD') || ''
+          },
+          {
+            type: 'click',
+            selector: 'button[type="submit"]'
+          }
+        ]
+      }
     })
 
     if (!loginResponse.success) {
@@ -39,6 +51,7 @@ Deno.serve(async (req) => {
     const crawlResponse = await firecrawlApp.crawlUrl('https://www.dztenders.com/en/tenders/', {
       limit: 5, // Reduced limit to stay within free tier
       scrapeOptions: {
+        browserEmulation: true, // Enable browser emulation for authenticated session
         selectors: {
           title: '.tender-title',
           deadline: '.tender-deadline',
@@ -48,9 +61,7 @@ Deno.serve(async (req) => {
           specifications: '.tender-specifications',
         },
         formats: ['html', 'markdown']
-      },
-      // Use the same session from login
-      usePreviousSession: true
+      }
     })
 
     if (!crawlResponse.success) {
