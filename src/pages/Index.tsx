@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Navigation from "@/components/Navigation";
 import TenderCard from "@/components/TenderCard";
 import TenderFilters, { TenderFilters as FilterType } from "@/components/TenderFilters";
@@ -6,7 +6,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Separator } from "@/components/ui/separator";
 import { AdminScraper } from "@/components/AdminScraper";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -14,7 +14,8 @@ const Index = () => {
   const [filters, setFilters] = useState<FilterType>({
     search: "",
     announcers: "",
-    type: "",
+    tenderType: "",
+    announcementType: "",
     category: "",
     wilaya: "",
     priceRange: "",
@@ -25,6 +26,7 @@ const Index = () => {
   
   const isMobile = useIsMobile();
   const { session } = useAuth();
+  const queryClient = useQueryClient();
 
   // Query to fetch tenders
   const { data: tenders = [], isLoading: isLoadingTenders } = useQuery({
@@ -47,8 +49,8 @@ const Index = () => {
         query = query.ilike('category', `%${filters.category}%`);
       }
 
-      if (filters.type) {
-        query = query.ilike('type', `%${filters.type}%`);
+      if (filters.tenderType) {
+        query = query.ilike('type', `%${filters.tenderType}%`);
       }
 
       if (filters.publicationDate) {
