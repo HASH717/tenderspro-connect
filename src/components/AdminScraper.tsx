@@ -128,26 +128,16 @@ export const AdminScraper = () => {
 
   return (
     <Card className="p-4">
-      <h2 className="text-lg font-semibold mb-4">{t("scraper.title")}</h2>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm text-muted-foreground">
-            {currentPage > 1 ? 
-              t("scraper.progress", { current: currentPage - 1, total: TOTAL_PAGES }) :
-              t("scraper.ready")}
-          </span>
-        </div>
-        <Button 
-          onClick={handleScrape} 
-          disabled={isLoading}
-          className="w-full"
-        >
-          {isLoading ? t("scraper.loading") : t("scraper.start")}
-        </Button>
-        {isLoading && (
-          <Progress value={progress} className="w-full" />
-        )}
-      </div>
+      <Button 
+        onClick={handleScrape} 
+        disabled={isLoading}
+        className="w-full"
+      >
+        {isLoading ? t("scraper.loading") : "SYNC TENDERS"}
+      </Button>
+      {isLoading && (
+        <Progress value={progress} className="mt-4 w-full" />
+      )}
     </Card>
   );
 };
