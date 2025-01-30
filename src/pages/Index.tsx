@@ -36,7 +36,14 @@ const Index = () => {
   return (
     <div className="pb-20">
       <div className="sticky top-0 bg-white z-10 p-4 shadow-sm">
-        <h1 className="text-2xl font-bold text-primary mb-4">TindersPro</h1>
+        <div className="flex flex-col items-center mb-4">
+          <img 
+            src="/lovable-uploads/c1c4772c-d5f0-499c-b16f-ae8dcefaa6c3.png" 
+            alt="TendersPro Logo" 
+            className="h-12 mb-1"
+          />
+          <h2 className="text-sm text-gray-600">#1 Algerian Tenders</h2>
+        </div>
         <div className="relative">
           <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
           <Input
