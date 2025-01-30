@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
 
     console.log('Successfully authenticated, starting crawl of dztenders.com')
     const crawlResponse = await firecrawlApp.crawlUrl('https://www.dztenders.com/en/tenders/', {
-      limit: 5, // Reduced limit to stay within free tier
+      limit: 1, // Minimum limit to stay within free tier
       scrapeOptions: {
         selectors: {
           title: '.tender-title',
@@ -61,13 +61,18 @@ Deno.serve(async (req) => {
           category: '.tender-category',
           publicationDate: '.tender-publication-date',
           specifications: '.tender-specifications',
-        },
-        formats: ['html', 'markdown']
+        }
       }
     })
 
     if (!crawlResponse.success) {
       console.error('Crawl failed:', crawlResponse.error)
+      
+      // Check specifically for credit limit error
+      if (crawlResponse.error?.includes('Insufficient credits')) {
+        throw new Error('Credit limit reached. Please try again later or upgrade your plan.')
+      }
+      
       throw new Error(crawlResponse.error || 'Crawl failed')
     }
 
