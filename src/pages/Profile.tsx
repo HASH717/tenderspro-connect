@@ -1,43 +1,154 @@
+import { useEffect, useState } from "react";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+
+interface Profile {
+  first_name: string;
+  last_name: string;
+  phone_number: string;
+}
 
 const Profile = () => {
+  const { session } = useAuth();
+  const [profile, setProfile] = useState<Profile>({
+    first_name: "",
+    last_name: "",
+    phone_number: "",
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const getProfile = async () => {
+      if (!session?.user.id) return;
+      
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("first_name, last_name, phone_number")
+        .eq("id", session.user.id)
+        .single();
+
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load profile",
+        });
+        return;
+      }
+
+      if (data) {
+        setProfile(data);
+      }
+    };
+
+    getProfile();
+  }, [session?.user.id, toast]);
+
+  const handleUpdateProfile = async () => {
+    if (!session?.user.id) return;
+    
+    setIsLoading(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        first_name: profile.first_name,
+        last_name: profile.last_name,
+        phone_number: profile.phone_number,
+      })
+      .eq("id", session.user.id);
+
+    setIsLoading(false);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update profile",
+      });
+      return;
+    }
+
+    toast({
+      title: "Success",
+      description: "Profile updated successfully",
+    });
+  };
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to sign out",
+      });
+      return;
+    }
+    navigate("/auth");
+  };
+
   return (
     <div className="min-h-screen pb-20">
       <div className="p-4">
-        <h1 className="text-2xl font-bold text-primary mb-4">Profile</h1>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold text-primary">Profile</h1>
+          <Button 
+            variant="outline" 
+            onClick={handleLogout}
+            className="bg-red-500 text-white hover:bg-red-600"
+          >
+            Logout
+          </Button>
+        </div>
         
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Company Name
+              First Name
             </label>
-            <Input placeholder="Enter company name" />
+            <Input 
+              value={profile.first_name}
+              onChange={(e) => setProfile({ ...profile, first_name: e.target.value })}
+              placeholder="Enter first name"
+            />
           </div>
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
+              Last Name
             </label>
-            <Input type="email" placeholder="Enter email" />
+            <Input 
+              value={profile.last_name}
+              onChange={(e) => setProfile({ ...profile, last_name: e.target.value })}
+              placeholder="Enter last name"
+            />
           </div>
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Phone
+              Phone Number
             </label>
-            <Input type="tel" placeholder="Enter phone number" />
+            <Input 
+              value={profile.phone_number}
+              onChange={(e) => setProfile({ ...profile, phone_number: e.target.value })}
+              placeholder="Enter phone number"
+            />
           </div>
           
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Business Category
-            </label>
-            <Input placeholder="Enter business category" />
-          </div>
-          
-          <Button className="w-full">Save Changes</Button>
+          <Button 
+            className="w-full" 
+            onClick={handleUpdateProfile}
+            disabled={isLoading}
+          >
+            {isLoading ? "Updating..." : "Save Changes"}
+          </Button>
         </div>
       </div>
       <Navigation />
