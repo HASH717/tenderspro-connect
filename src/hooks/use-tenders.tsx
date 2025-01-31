@@ -2,16 +2,48 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { TenderFilters } from "@/components/TenderFilters";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const useTenders = (filters: TenderFilters) => {
+  const { session } = useAuth();
+
+  // First query to get user's subscription and preferred categories
+  const { data: userSubscriptionData } = useQuery({
+    queryKey: ['subscription-and-categories', session?.user?.id],
+    enabled: !!session?.user?.id,
+    queryFn: async () => {
+      // Get subscription
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', session?.user?.id)
+        .eq('status', 'active')
+        .single();
+
+      // Get profile with preferred categories
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('preferred_categories')
+        .eq('id', session?.user?.id)
+        .single();
+
+      return {
+        subscription,
+        preferredCategories: profile?.preferred_categories || []
+      };
+    }
+  });
+
+  // Main query for tenders with category filtering
   return useQuery({
-    queryKey: ['tenders', filters],
+    queryKey: ['tenders', filters, userSubscriptionData],
     queryFn: async () => {
       console.log('Fetching tenders with filters:', filters);
       let query = supabase
         .from('tenders')
         .select('*');
 
+      // Apply basic filters
       if (filters.search) {
         query = query.ilike('title', `%${filters.search}%`);
       }
@@ -20,6 +52,17 @@ export const useTenders = (filters: TenderFilters) => {
         query = query.ilike('wilaya', `%${filters.wilaya}%`);
       }
 
+      // Category filtering based on subscription
+      if (session?.user?.id && userSubscriptionData?.subscription) {
+        const { subscription, preferredCategories } = userSubscriptionData;
+        
+        // If user has a subscription and preferred categories, filter by them
+        if (preferredCategories.length > 0) {
+          query = query.in('category', preferredCategories);
+        }
+      }
+      
+      // Apply remaining filters
       if (filters.category) {
         query = query.ilike('category', `%${filters.category}%`);
       }
