@@ -9,14 +9,14 @@ const Footer = () => {
       <div className="max-w-4xl mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
-            <h3 className="font-semibold mb-4">{t("footer.aboutUs")}</h3>
+            <h3 className="font-semibold mb-4">{t("About Us")}</h3>
             <p className="text-sm text-muted-foreground">
-              {t("footer.aboutUsText")}
+              TendersPro is your trusted platform for discovering and managing tender opportunities in Algeria. We streamline the process of finding and tracking tenders, making it easier for businesses to grow and succeed.
             </p>
           </div>
           
           <div>
-            <h3 className="font-semibold mb-4">{t("footer.contact")}</h3>
+            <h3 className="font-semibold mb-4">{t("Contact")}</h3>
             <div className="space-y-2">
               <a href="mailto:contact@tenderspro.dz" className="text-sm text-muted-foreground hover:text-primary flex items-center gap-2">
                 <Mail className="w-4 h-4" />
@@ -30,7 +30,7 @@ const Footer = () => {
           </div>
           
           <div>
-            <h3 className="font-semibold mb-4">{t("footer.followUs")}</h3>
+            <h3 className="font-semibold mb-4">{t("Follow Us")}</h3>
             <div className="flex space-x-4">
               <a href="#" className="text-muted-foreground hover:text-primary">
                 <Facebook className="w-5 h-5" />
