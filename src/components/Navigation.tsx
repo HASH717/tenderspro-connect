@@ -12,6 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 const Navigation = () => {
   const location = useLocation();
@@ -20,19 +21,26 @@ const Navigation = () => {
   const { currentLanguage, changeLanguage } = useLanguage();
   const { session } = useAuth();
 
-  const { data: subscription } = useQuery({
+  const { data: subscription, error: subscriptionError } = useQuery({
     queryKey: ['subscription', session?.user?.id],
     enabled: !!session?.user?.id,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', session?.user?.id)
-        .maybeSingle();
+      try {
+        const { data, error } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', session?.user?.id)
+          .maybeSingle();
 
-      if (error) throw error;
-      return data;
-    }
+        if (error) throw error;
+        return data;
+      } catch (error: any) {
+        console.error('Error fetching subscription:', error);
+        toast('Failed to load subscription data');
+        return null;
+      }
+    },
+    retry: 1
   });
 
   const isActive = (path: string) => location.pathname === path;

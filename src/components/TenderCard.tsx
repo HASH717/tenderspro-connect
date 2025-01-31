@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface TenderCardProps {
   id: string;
@@ -31,19 +32,26 @@ export const TenderCard = ({
   const { t } = useTranslation();
   const { session } = useAuth();
 
-  const { data: subscription } = useQuery({
+  const { data: subscription, error: subscriptionError } = useQuery({
     queryKey: ['subscription', session?.user?.id],
     enabled: !!session?.user?.id,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', session?.user?.id)
-        .maybeSingle();
+      try {
+        const { data, error } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', session?.user?.id)
+          .maybeSingle();
 
-      if (error) throw error;
-      return data;
-    }
+        if (error) throw error;
+        return data;
+      } catch (error: any) {
+        console.error('Error fetching subscription:', error);
+        toast('Failed to load subscription data');
+        return null;
+      }
+    },
+    retry: 1
   });
 
   const shouldBlur = session?.user && !subscription?.status;
