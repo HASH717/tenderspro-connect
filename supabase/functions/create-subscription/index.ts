@@ -56,8 +56,8 @@ serve(async (req) => {
     console.log('User profile:', profile)
     console.log('User email:', userEmail)
 
-    // Convert amount to smallest currency unit (cents) and ensure it's at least 100 (1 DZD)
-    const priceInCents = Math.max(100, Math.round(parseFloat(amount) * 100))
+    // Convert amount to smallest currency unit (cents)
+    const priceInCents = parseInt(amount)
     console.log('Price in cents:', priceInCents)
     
     // Create payment request to Chargily Pay
