@@ -77,7 +77,7 @@ export default {
       backgroundImage: {
         'gradient-primary': 'linear-gradient(135deg, #5B6AD0 0%, #6366F1 100%)',
         'gradient-secondary': 'linear-gradient(135deg, #FF6B6B 0%, #FF8787 100%)',
-        'gradient-accent': 'linear-gradient(135deg, #F4F6F8 0%, #E2E8F0 100%)',
+        'gradient-accent': 'linear-gradient(135deg, #E2E8F0 0%, #CBD5E1 100%)',
       },
     },
   },
