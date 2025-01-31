@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -41,24 +41,37 @@ const Profile = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Fetch subscription data
-  const { data: subscription } = useQuery({
+  // Fetch subscription data with proper error handling
+  const { data: subscription, error: subscriptionError } = useQuery({
     queryKey: ['subscription', session?.user?.id],
     enabled: !!session?.user?.id,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', session?.user?.id)
-        .maybeSingle();
+      try {
+        const { data, error } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', session?.user?.id)
+          .maybeSingle();
 
-      if (error) throw error;
-      return data as Subscription;
+        if (error) throw error;
+        return data as Subscription;
+      } catch (error: any) {
+        console.error('Error fetching subscription:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load subscription data",
+        });
+        return null;
+      }
     }
   });
 
   useEffect(() => {
-    if (!session?.user.id) return;
+    if (!session?.user?.id) {
+      navigate('/auth');
+      return;
+    }
     
     const getProfile = async () => {
       try {
@@ -70,29 +83,19 @@ const Profile = () => {
           .maybeSingle();
 
         if (error) {
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to load profile",
-          });
-          return;
+          throw error;
         }
 
         if (data) {
           setProfile(data);
           setEmail(session.user.email || "");
-        } else {
-          toast({
-            variant: "destructive",
-            title: "Profile Not Found",
-            description: "Your profile information could not be found",
-          });
         }
-      } catch (error) {
+      } catch (error: any) {
+        console.error('Error fetching profile:', error);
         toast({
           variant: "destructive",
           title: "Error",
-          description: "An unexpected error occurred",
+          description: "Failed to load profile data",
         });
       } finally {
         setIsLoadingProfile(false);
@@ -100,10 +103,13 @@ const Profile = () => {
     };
 
     getProfile();
-  }, [session?.user.id, session?.user.email, toast]);
+  }, [session?.user?.id, session?.user?.email, toast, navigate]);
 
   const handleUpdateProfile = async () => {
-    if (!session?.user.id) return;
+    if (!session?.user?.id) {
+      navigate('/auth');
+      return;
+    }
     
     setIsLoading(true);
     try {
@@ -137,6 +143,7 @@ const Profile = () => {
 
       setNewPassword("");
     } catch (error: any) {
+      console.error('Error updating profile:', error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -148,17 +155,23 @@ const Profile = () => {
   };
 
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      navigate("/auth");
+    } catch (error: any) {
+      console.error('Error signing out:', error);
       toast({
         variant: "destructive",
         title: "Error",
         description: "Failed to sign out",
       });
-      return;
     }
-    navigate("/auth");
   };
+
+  if (!session?.user?.id) {
+    return null;
+  }
 
   if (isLoadingProfile) {
     return (
@@ -335,6 +348,7 @@ const Profile = () => {
       <Footer />
     </div>
   );
+
 };
 
 export default Profile;
