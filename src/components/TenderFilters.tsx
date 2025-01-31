@@ -77,7 +77,7 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
 
   // Fetch all unique categories from tenders
   const { data: categories = [] } = useQuery({
-    queryKey: ['tender-categories'],
+    queryKey: ['tender-categories', userSubscriptionData],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('tenders')
@@ -103,7 +103,7 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
 
       return uniqueCategories;
     },
-    enabled: true // Always fetch categories
+    enabled: true
   });
 
   useEffect(() => {
@@ -163,24 +163,6 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
             <SelectItem value="expression_interest">{t("filters.types.expression_interest")}</SelectItem>
             <SelectItem value="national_preselection">{t("filters.types.national_preselection")}</SelectItem>
             <SelectItem value="adjudication">{t("filters.types.adjudication")}</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={filters.announcementType}
-          onValueChange={(value) => handleFilterChange("announcementType", value)}
-        >
-          <SelectTrigger className="bg-white/80 backdrop-blur-sm border-muted/50">
-            <SelectValue placeholder={t("filters.announcementType")} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="tenders">{t("filters.announcement.tenders")}</SelectItem>
-            <SelectItem value="results">{t("filters.announcement.results")}</SelectItem>
-            <SelectItem value="attribution">{t("filters.announcement.attribution")}</SelectItem>
-            <SelectItem value="extension">{t("filters.announcement.extension")}</SelectItem>
-            <SelectItem value="fruitless">{t("filters.announcement.fruitless")}</SelectItem>
-            <SelectItem value="cancellation">{t("filters.announcement.cancellation")}</SelectItem>
-            <SelectItem value="update">{t("filters.announcement.update")}</SelectItem>
           </SelectContent>
         </Select>
 

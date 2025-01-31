@@ -54,30 +54,30 @@ export const useTenders = (filters: TenderFilters) => {
 
       // Category filtering based on subscription
       if (session?.user?.id && userSubscriptionData?.subscription) {
-        const { subscription, preferredCategories } = userSubscriptionData;
+        const { preferredCategories } = userSubscriptionData;
         
-        // If user has a subscription and preferred categories, filter by them
-        if (preferredCategories.length > 0) {
+        // If user has preferred categories, filter by them
+        if (preferredCategories && preferredCategories.length > 0) {
           if (filters.category) {
-            // If a category filter is applied, ensure it's one of the user's preferred categories
+            // If a specific category is selected, ensure it's in preferred categories
             if (preferredCategories.includes(filters.category)) {
               query = query.eq('category', filters.category);
             } else {
-              return []; // Return empty if filtered category isn't in user's preferences
+              return []; // Return empty if filtered category isn't in preferences
             }
           } else {
-            // If no specific category filter, show all tenders from preferred categories
+            // Show all tenders from preferred categories
             query = query.in('category', preferredCategories);
           }
         }
       } else if (filters.category) {
-        // For users without subscription or guests
+        // For non-subscribed users, still apply category filter if selected
         query = query.eq('category', filters.category);
       }
       
       // Apply remaining filters
       if (filters.tenderType) {
-        query = query.ilike('type', `%${filters.tenderType}%`);
+        query = query.eq('type', filters.tenderType);
       }
 
       if (filters.publicationDate) {
@@ -86,19 +86,6 @@ export const useTenders = (filters: TenderFilters) => {
 
       if (filters.deadlineDate) {
         query = query.eq('deadline', filters.deadlineDate);
-      }
-
-      if (filters.priceRange) {
-        const [min, max] = filters.priceRange.split('-').map(Number);
-        const priceField = 'specifications_price';
-        
-        if (max) {
-          query = query
-            .gte(priceField, min.toString())
-            .lte(priceField, max.toString());
-        } else {
-          query = query.gte(priceField, min.toString());
-        }
       }
 
       const { data, error } = await query;
