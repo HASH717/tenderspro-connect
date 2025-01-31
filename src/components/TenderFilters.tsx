@@ -51,52 +51,11 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
   const { t } = useTranslation();
   const { session } = useAuth();
 
-  // Fetch user's subscription and preferred categories
-  const { data: userSubscriptionData } = useQuery({
-    queryKey: ['subscription-and-categories', session?.user?.id],
-    enabled: !!session?.user?.id,
-    queryFn: async () => {
-      if (!session?.user?.id) return null;
-
-      const { data: subscription, error: subError } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (subError) {
-        console.error('Error fetching subscription:', subError);
-        toast.error('Failed to load subscription data');
-        return null;
-      }
-
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('preferred_categories')
-        .eq('id', session.user.id)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error('Error fetching profile:', profileError);
-        toast.error('Failed to load profile data');
-        return null;
-      }
-
-      return {
-        subscription,
-        preferredCategories: profile?.preferred_categories || []
-      };
-    }
-  });
-
-  // Fetch categories based on subscription
+  // Fetch categories directly from tenders table
   const { data: categories = [] } = useQuery({
-    queryKey: ['tender-categories', session?.user?.id, userSubscriptionData],
-    enabled: true,
+    queryKey: ['tender-categories'],
     queryFn: async () => {
+      console.log('Fetching categories...');
       const { data, error } = await supabase
         .from('tenders')
         .select('category')
@@ -113,13 +72,7 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
         .filter(category => category)
         .sort();
 
-      // If user has subscription and preferred categories, filter the categories
-      if (session?.user?.id && userSubscriptionData?.subscription && userSubscriptionData.preferredCategories.length > 0) {
-        return uniqueCategories.filter(category => 
-          userSubscriptionData.preferredCategories.includes(category)
-        );
-      }
-
+      console.log('Fetched categories:', uniqueCategories);
       return uniqueCategories;
     }
   });
