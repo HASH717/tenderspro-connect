@@ -63,6 +63,8 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
         .select('*')
         .eq('user_id', session.user.id)
         .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (subError) {
@@ -75,7 +77,7 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
         .from('profiles')
         .select('preferred_categories')
         .eq('id', session.user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         console.error('Error fetching profile:', profileError);
