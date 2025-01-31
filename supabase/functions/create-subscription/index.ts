@@ -57,11 +57,14 @@ serve(async (req) => {
     console.log('User email:', userEmail)
 
     // Create payment link request to Chargily Pay
+    // Convert amount to integer (cents)
+    const amountInCents = Math.round(amount * 100)
+    
     const paymentData = {
       name: `${plan} Plan Subscription`,
       items: [{
         name: `${plan} Plan`,
-        price: amount,
+        price: amountInCents,
         quantity: 1,
         currency: "dzd",
         adjustable_quantity: false

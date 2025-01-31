@@ -24,7 +24,7 @@ const Subscriptions = () => {
   const { toast } = useToast();
   const { session } = useAuth();
 
-  // Fetch current subscription
+  // Fetch current subscription using maybeSingle()
   const { data: subscription } = useQuery({
     queryKey: ['subscription', session?.user?.id],
     enabled: !!session?.user?.id,
@@ -33,7 +33,7 @@ const Subscriptions = () => {
         .from('subscriptions')
         .select('*')
         .eq('user_id', session?.user?.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;
