@@ -52,11 +52,11 @@ serve(async (req) => {
     console.log('User profile:', profile)
     console.log('User email:', userEmail)
 
-    // Map plan names to prices in DZD (cents)
+    // Using minimal test amounts (1-5 DZD)
     const planPrices = {
-      'Basic': 1000, // 10 DZD
-      'Professional': 2000, // 20 DZD
-      'Enterprise': 10000 // 100 DZD
+      'Basic': 100, // 1 DZD
+      'Professional': 200, // 2 DZD
+      'Enterprise': 500 // 5 DZD
     }
     
     const paymentData = {
