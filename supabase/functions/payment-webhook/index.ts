@@ -67,26 +67,31 @@ serve(async (req) => {
     if (event.type === 'checkout.paid') {
       const checkout = event.data
       const metadata = checkout.metadata || {}
-      const { plan, user_id } = metadata
+      
+      // Map product names to plan names
+      const productNameToPlan = {
+        'TendersPro Basic': 'basic',
+        'TendersPro Professional': 'professional',
+        'TendersPro Enterprise': 'enterprise'
+      }
 
-      if (!plan || !user_id) {
-        throw new Error('Missing required metadata in checkout')
+      const planName = productNameToPlan[checkout.items[0].name]
+      if (!planName) {
+        throw new Error('Invalid plan name')
       }
 
       // Calculate subscription period based on plan
       const now = new Date()
       const currentPeriodStart = now
       let currentPeriodEnd = new Date(now)
-      
-      // Set period end based on plan (assuming monthly plans)
       currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1)
 
       // Update or create subscription
       const { data: subscription, error: subscriptionError } = await supabase
         .from('subscriptions')
         .upsert({
-          user_id,
-          plan,
+          user_id: metadata.user_id,
+          plan: planName,
           status: 'active',
           current_period_start: currentPeriodStart.toISOString(),
           current_period_end: currentPeriodEnd.toISOString(),
@@ -100,7 +105,7 @@ serve(async (req) => {
         throw subscriptionError
       }
 
-      console.log('Successfully updated subscription for user:', user_id)
+      console.log('Successfully updated subscription for user:', metadata.user_id)
     }
 
     // Return success response

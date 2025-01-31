@@ -41,57 +41,59 @@ const Subscriptions = () => {
 
   const plans = [
     {
-      name: "Basic",
-      priceInDZD: 20000, // 200 DZD in cents
+      name: "TendersPro Basic",
+      priceInDZD: 100000, // 1000 DZD in cents
       description: "Perfect for getting started",
       features: [
-        "Access to all public tenders",
+        "7 days free trial",
+        "Follow up to 3 categories",
         "Basic search functionality",
         "Email notifications",
       ],
+      paymentLink: "https://pay.chargily.com/test/payment-links/01jjynyqzm8f91d5n07368dxj7"
     },
     {
-      name: "Pro",
-      priceInDZD: 50000, // 500 DZD in cents
+      name: "TendersPro Professional",
+      priceInDZD: 200000, // 2000 DZD in cents
       description: "For growing businesses",
       features: [
-        "Everything in Basic",
+        "7 days free trial",
+        "Follow up to 10 categories",
         "Advanced search filters",
         "Priority notifications",
         "Tender analytics",
       ],
+      paymentLink: "https://pay.chargily.com/test/payment-links/01jjynzxx4jhzfggp55t4stfsa"
     },
     {
-      name: "Enterprise",
-      priceInDZD: 100000, // 1000 DZD in cents
+      name: "TendersPro Enterprise",
+      priceInDZD: 1000000, // 10000 DZD in cents
       description: "For large organizations",
       features: [
-        "Everything in Pro",
+        "7 days free trial",
+        "Follow unlimited categories",
         "Custom alerts",
         "API access",
         "Dedicated support",
         "Custom integrations",
       ],
+      paymentLink: "https://pay.chargily.com/test/payment-links/01jjyp0j13w6qtq7x4yfzr0nc2"
     },
   ];
 
-  const handleSubscribe = async (planName: string, priceInDZD: number) => {
+  const handleSubscribe = async (planName: string, paymentLink: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke('create-subscription', {
-        body: {
-          plan: planName,
-          amount: priceInDZD,
-          userId: session?.user?.id,
-        },
-      });
-
-      if (error) throw error;
-
-      if (data.paymentUrl) {
-        window.location.href = data.paymentUrl;
-      } else {
-        throw new Error('No payment URL received');
+      if (!session?.user?.id) {
+        toast({
+          variant: "destructive",
+          title: "Authentication required",
+          description: "Please login to subscribe to a plan",
+        });
+        return;
       }
+
+      // Redirect to the Chargily payment link
+      window.location.href = paymentLink;
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -154,7 +156,7 @@ const Subscriptions = () => {
                 <CardFooter>
                   <Button
                     className="w-full"
-                    onClick={() => handleSubscribe(plan.name, plan.priceInDZD)}
+                    onClick={() => handleSubscribe(plan.name, plan.paymentLink)}
                     disabled={subscription?.status === 'active' && subscription?.plan === plan.name}
                   >
                     {subscription?.status === 'active' && subscription?.plan === plan.name
