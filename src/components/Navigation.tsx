@@ -86,7 +86,7 @@ const Navigation = () => {
               className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
                 isActive(path)
                   ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent"
+                  : "text-muted-foreground hover:bg-accent hover:text-white"
               }`}
             >
               <Icon className="w-5 h-5" />
@@ -94,7 +94,7 @@ const Navigation = () => {
             </Link>
           ))}
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-accent">
+            <DropdownMenuTrigger className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-accent hover:text-white">
               <Globe className="w-5 h-5" />
               <span className="text-sm font-medium">
                 {languages.find(lang => lang.code === currentLanguage)?.label}
