@@ -13,6 +13,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Card,
@@ -24,7 +25,8 @@ import {
 } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 
 const CATEGORIES = [
   { value: "construction", label: "Construction" },
@@ -42,6 +44,7 @@ const Subscriptions = () => {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const { session } = useAuth();
+  const [searchParams] = useSearchParams();
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<{
@@ -49,6 +52,26 @@ const Subscriptions = () => {
     priceId: string;
     categoryLimit?: number;
   } | null>(null);
+
+  // Check for success parameter in URL
+  useEffect(() => {
+    const success = searchParams.get('success');
+    const plan = searchParams.get('plan');
+    
+    if (success === 'true' && plan) {
+      toast({
+        title: "Subscription successful!",
+        description: `You are now subscribed to the ${plan} plan.`,
+        variant: "default",
+      });
+    } else if (success === 'false') {
+      toast({
+        title: "Subscription cancelled",
+        description: "Your subscription was not completed.",
+        variant: "destructive",
+      });
+    }
+  }, [searchParams, toast]);
 
   const { data: subscription } = useQuery({
     queryKey: ['subscription', session?.user?.id],
@@ -154,18 +177,18 @@ const Subscriptions = () => {
 
   const proceedToPayment = async (planName: string, priceId: string) => {
     try {
-      // Call the Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('create-subscription', {
         body: {
           plan: planName,
           priceId: priceId,
           userId: session!.user.id,
-          backUrl: `${window.location.origin}/subscriptions`,
+          backUrl: window.location.href,
           categories: selectedCategories
         }
       });
 
       if (error) {
+        console.error('Payment error:', error);
         throw error;
       }
 

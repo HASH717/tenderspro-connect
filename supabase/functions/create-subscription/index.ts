@@ -45,27 +45,6 @@ serve(async (req) => {
       }
     }
 
-    const [profileResponse, userResponse] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', userId).single(),
-      supabase.auth.admin.getUserById(userId)
-    ])
-
-    if (profileResponse.error) {
-      console.error('Profile fetch error:', profileResponse.error)
-      throw new Error('Failed to fetch user profile')
-    }
-
-    if (userResponse.error) {
-      console.error('User fetch error:', userResponse.error)
-      throw new Error('Failed to fetch user data')
-    }
-
-    const profile = profileResponse.data
-    const userEmail = userResponse.data.user.email
-
-    console.log('User profile:', profile)
-    console.log('User email:', userEmail)
-
     // Using test amounts for development
     const planPrices = {
       'Basic': 1000, // 10 DZD
@@ -78,12 +57,12 @@ serve(async (req) => {
       amount: planPrices[plan],
       currency: "dzd",
       payment_method: "edahabia",
-      success_url: backUrl,
+      success_url: `${backUrl}?success=true&plan=${plan}`,
+      cancel_url: `${backUrl}?success=false`,
       webhook_endpoint: `${SUPABASE_URL}/functions/v1/payment-webhook`,
       metadata: {
         plan,
         user_id: userId,
-        email: userEmail,
         categories: categories || []
       }
     }
