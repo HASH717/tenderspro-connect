@@ -3,6 +3,8 @@ import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Select,
   SelectContent,
@@ -45,6 +47,29 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
   });
 
   const { t } = useTranslation();
+
+  // Fetch all unique categories from tenders
+  const { data: categories = [] } = useQuery({
+    queryKey: ['tender-categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('tenders')
+        .select('category')
+        .not('category', 'is', null);
+
+      if (error) {
+        console.error('Error fetching categories:', error);
+        return [];
+      }
+
+      // Get unique categories and remove nulls
+      const uniqueCategories = Array.from(new Set(data.map(tender => tender.category)))
+        .filter(category => category) // Remove null/undefined values
+        .sort(); // Sort alphabetically
+
+      return uniqueCategories;
+    }
+  });
 
   useEffect(() => {
     if (initialFilters) {
@@ -132,13 +157,11 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
             <SelectValue placeholder={t("filters.category")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="hydraulics">{t("tender.categories.hydraulics")}</SelectItem>
-            <SelectItem value="plastic">{t("tender.categories.plastic")}</SelectItem>
-            <SelectItem value="steel">{t("tender.categories.steel")}</SelectItem>
-            <SelectItem value="renewable">{t("tender.categories.renewable")}</SelectItem>
-            <SelectItem value="paper">{t("tender.categories.paper")}</SelectItem>
-            <SelectItem value="construction">{t("tender.categories.construction")}</SelectItem>
-            <SelectItem value="others">{t("tender.categories.others")}</SelectItem>
+            {categories.map((category) => (
+              <SelectItem key={category} value={category}>
+                {t(`tender.categories.${category.toLowerCase()}`, category)}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
 
