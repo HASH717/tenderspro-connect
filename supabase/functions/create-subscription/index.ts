@@ -64,15 +64,13 @@ serve(async (req) => {
       amount: planPrices[plan],
       currency: "dzd",
       payment_method: "edahabia",
-      client: userEmail,
-      webhook_endpoint: `${SUPABASE_URL}/functions/v1/payment-webhook`,
       success_url: backUrl,
-      back_url: backUrl,
+      webhook_endpoint: `${SUPABASE_URL}/functions/v1/payment-webhook`,
       metadata: {
         plan,
-        user_id: userId
-      },
-      webhook_endpoint_token: CHARGILY_PAY_SECRET_KEY
+        user_id: userId,
+        email: userEmail
+      }
     }
 
     console.log('Creating checkout with data:', checkoutData)
