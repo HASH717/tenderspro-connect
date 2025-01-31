@@ -18,7 +18,7 @@ export const useTenders = (filters: TenderFilters) => {
         .select('*')
         .eq('user_id', session?.user?.id)
         .eq('status', 'active')
-        .single();
+        .maybeSingle();
 
       // Get profile with preferred categories
       const { data: profile } = await supabase
@@ -58,15 +58,24 @@ export const useTenders = (filters: TenderFilters) => {
         
         // If user has a subscription and preferred categories, filter by them
         if (preferredCategories.length > 0) {
-          query = query.in('category', preferredCategories);
+          if (filters.category) {
+            // If a category filter is applied, ensure it's one of the user's preferred categories
+            if (preferredCategories.includes(filters.category)) {
+              query = query.eq('category', filters.category);
+            } else {
+              return []; // Return empty if filtered category isn't in user's preferences
+            }
+          } else {
+            // If no specific category filter, show all tenders from preferred categories
+            query = query.in('category', preferredCategories);
+          }
         }
+      } else if (filters.category) {
+        // For users without subscription or guests
+        query = query.eq('category', filters.category);
       }
       
       // Apply remaining filters
-      if (filters.category) {
-        query = query.ilike('category', `%${filters.category}%`);
-      }
-
       if (filters.tenderType) {
         query = query.ilike('type', `%${filters.tenderType}%`);
       }

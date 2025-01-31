@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Select,
   SelectContent,
@@ -47,6 +48,32 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
   });
 
   const { t } = useTranslation();
+  const { session } = useAuth();
+
+  // Fetch user's subscription and preferred categories
+  const { data: userSubscriptionData } = useQuery({
+    queryKey: ['subscription-and-categories', session?.user?.id],
+    enabled: !!session?.user?.id,
+    queryFn: async () => {
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', session?.user?.id)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('preferred_categories')
+        .eq('id', session?.user?.id)
+        .single();
+
+      return {
+        subscription,
+        preferredCategories: profile?.preferred_categories || []
+      };
+    }
+  });
 
   // Fetch all unique categories from tenders
   const { data: categories = [] } = useQuery({
@@ -67,8 +94,16 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
         .filter(category => category) // Remove null/undefined values
         .sort(); // Sort alphabetically
 
+      // If user has subscription and preferred categories, filter the categories
+      if (session?.user?.id && userSubscriptionData?.subscription && userSubscriptionData.preferredCategories.length > 0) {
+        return uniqueCategories.filter(category => 
+          userSubscriptionData.preferredCategories.includes(category)
+        );
+      }
+
       return uniqueCategories;
-    }
+    },
+    enabled: true // Always fetch categories
   });
 
   useEffect(() => {
