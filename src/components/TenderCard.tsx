@@ -64,7 +64,7 @@ export const TenderCard = ({
 
   return (
     <Card 
-      className="p-4 mb-4 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 bg-gradient-to-br from-white to-muted/30 backdrop-blur-sm border border-muted/50"
+      className="p-4 mb-4 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 bg-gradient-to-br from-white via-white to-muted/30 backdrop-blur-sm border border-muted/50"
       onClick={() => navigate(`/tender/${id}`)}
     >
       <div className="flex justify-between items-start">
@@ -73,11 +73,11 @@ export const TenderCard = ({
             {getTitleTranslation(title)}
           </h3>
           <div className="space-y-2">
-            <div className="flex items-center text-accent">
+            <div className="flex items-center text-primary">
               <Building className="w-4 h-4 mr-2" />
               <span className="text-sm">{getCategoryTranslation(organization)}</span>
             </div>
-            <div className="flex items-center text-primary">
+            <div className="flex items-center text-accent">
               <MapPin className="w-4 h-4 mr-2" />
               <span className="text-sm">{getLocationTranslation(location)}</span>
             </div>
@@ -93,7 +93,7 @@ export const TenderCard = ({
             onFavorite?.();
           }}
           className={`p-2 rounded-full transition-colors ${
-            isFavorite ? "text-red-500 hover:text-red-600" : "text-gray-400 hover:text-gray-500"
+            isFavorite ? "text-secondary hover:text-secondary/80" : "text-gray-400 hover:text-gray-500"
           }`}
         >
           <Heart className={`w-6 h-6 ${isFavorite ? "fill-current" : ""}`} />
