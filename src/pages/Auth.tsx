@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import Footer from "@/components/Footer";
 
@@ -45,9 +45,9 @@ const Auth = () => {
         
         if (signUpError) throw signUpError;
         
-        // If signup was successful and we have a session, navigate to home
+        // If signup was successful and we have a session, navigate to onboarding
         if (signUpData.session) {
-          navigate("/");
+          navigate("/onboarding");
           toast({
             title: "Welcome!",
             description: "Your account has been created successfully.",
