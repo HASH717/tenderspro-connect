@@ -58,9 +58,12 @@ serve(async (req) => {
 
     // Create payment request to Chargily Pay
     const paymentData = {
-      amount: amount,
-      currency: 'DZD',
-      description: `Subscription to ${plan} Plan`,
+      name: `${plan} Plan Subscription`,
+      items: [{
+        name: `${plan} Plan`,
+        price: amount,
+        quantity: 1
+      }],
       webhook_url: `${SUPABASE_URL}/functions/v1/payment-webhook`,
       back_url: 'https://dztenders.com/payment-success',
       mode: 'CIB',
