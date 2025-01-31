@@ -73,7 +73,7 @@ export const TenderCard = ({
             {getTitleTranslation(title)}
           </h3>
           <div className="space-y-2">
-            <div className="flex items-center text-primary">
+            <div className="flex items-center text-[#166534]">
               <Building className="w-4 h-4 mr-2" />
               <span className="text-sm">{getCategoryTranslation(organization)}</span>
             </div>
