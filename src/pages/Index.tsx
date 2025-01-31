@@ -38,8 +38,8 @@ const Index = () => {
     <div className={`min-h-screen flex flex-col ${isMobile ? 'pb-32' : 'pb-24'}`}>
       <Navigation />
       <div className="flex-grow">
-        <div className="bg-background z-10 pt-8">
-          <div className="max-w-4xl mx-auto px-4">
+        <div className="bg-background z-10 pt-24">
+          <div className="max-w-5xl mx-auto px-6">
             {isMobile && (
               <div className="flex flex-col items-center mb-4">
                 <img 
@@ -50,7 +50,7 @@ const Index = () => {
               </div>
             )}
             {session?.user.email === "motraxagency@gmail.com" && (
-              <div className="mb-6">
+              <div className="mb-8">
                 <AdminScraper />
               </div>
             )}
@@ -58,11 +58,11 @@ const Index = () => {
           </div>
         </div>
 
-        <div className="max-w-4xl mx-auto px-4">
-          <Separator className="my-6" />
+        <div className="max-w-5xl mx-auto px-6">
+          <Separator className="my-8" />
         </div>
 
-        <div className="max-w-4xl mx-auto px-4">
+        <div className="max-w-5xl mx-auto px-6">
           <TenderList 
             tenders={tenders} 
             isLoading={isLoadingTenders}
