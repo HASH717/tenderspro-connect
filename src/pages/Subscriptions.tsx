@@ -24,7 +24,6 @@ const Subscriptions = () => {
   const { toast } = useToast();
   const { session } = useAuth();
 
-  // Fetch current subscription using maybeSingle()
   const { data: subscription } = useQuery({
     queryKey: ['subscription', session?.user?.id],
     enabled: !!session?.user?.id,
@@ -43,7 +42,7 @@ const Subscriptions = () => {
   const plans = [
     {
       name: "Basic",
-      price: 100000, // Price in DZD cents (1000 DZD)
+      price: 200, // Price in DZD (minimum required by Chargily)
       description: "Perfect for getting started",
       features: [
         "Access to all public tenders",
@@ -53,7 +52,7 @@ const Subscriptions = () => {
     },
     {
       name: "Pro",
-      price: 200000, // Price in DZD cents (2000 DZD)
+      price: 500, // Price in DZD
       description: "For growing businesses",
       features: [
         "Everything in Basic",
@@ -64,7 +63,7 @@ const Subscriptions = () => {
     },
     {
       name: "Enterprise",
-      price: 500000, // Price in DZD cents (5000 DZD)
+      price: 1000, // Price in DZD
       description: "For large organizations",
       features: [
         "Everything in Pro",
@@ -78,7 +77,6 @@ const Subscriptions = () => {
 
   const handleSubscribe = async (planName: string, price: number) => {
     try {
-      // Price is already in cents, send it directly
       const { data, error } = await supabase.functions.invoke('create-subscription', {
         body: {
           plan: planName,
@@ -140,7 +138,7 @@ const Subscriptions = () => {
                 <CardContent className="flex-grow">
                   <div className="mb-4">
                     <span className="text-3xl font-bold">
-                      {(plan.price / 100).toLocaleString()} DZD
+                      {plan.price.toLocaleString()} DZD
                     </span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
