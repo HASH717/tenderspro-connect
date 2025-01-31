@@ -73,19 +73,34 @@ serve(async (req) => {
         throw new Error('Missing required metadata in checkout')
       }
 
-      // Here you would typically:
-      // 1. Update user's subscription status
-      // 2. Create a record of the payment
-      // 3. Send confirmation email
-      // For now, we'll just log the successful payment
-      console.log('Processing successful payment:', {
-        user_id,
-        plan,
-        amount: checkout.amount,
-        created_at: new Date(checkout.created_at * 1000).toISOString()
-      })
+      // Calculate subscription period based on plan
+      const now = new Date()
+      const currentPeriodStart = now
+      let currentPeriodEnd = new Date(now)
+      
+      // Set period end based on plan (assuming monthly plans)
+      currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1)
 
-      // TODO: Update user's subscription status in your database
+      // Update or create subscription
+      const { data: subscription, error: subscriptionError } = await supabase
+        .from('subscriptions')
+        .upsert({
+          user_id,
+          plan,
+          status: 'active',
+          current_period_start: currentPeriodStart.toISOString(),
+          current_period_end: currentPeriodEnd.toISOString(),
+        }, {
+          onConflict: 'user_id',
+          returning: 'minimal'
+        })
+
+      if (subscriptionError) {
+        console.error('Error updating subscription:', subscriptionError)
+        throw subscriptionError
+      }
+
+      console.log('Successfully updated subscription for user:', user_id)
     }
 
     // Return success response

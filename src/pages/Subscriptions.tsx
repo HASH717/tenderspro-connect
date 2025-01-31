@@ -6,6 +6,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -22,6 +23,22 @@ const Subscriptions = () => {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const { session } = useAuth();
+
+  // Fetch current subscription
+  const { data: subscription } = useQuery({
+    queryKey: ['subscription', session?.user?.id],
+    enabled: !!session?.user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', session?.user?.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    }
+  });
 
   const plans = [
     {
@@ -90,6 +107,16 @@ const Subscriptions = () => {
       <Navigation />
       <div className={`flex-grow ${isMobile ? "pt-6" : "pt-24"}`}>
         <div className="max-w-6xl mx-auto px-4">
+          {subscription && (
+            <Alert variant="default" className="mb-6 border-green-500 bg-green-50">
+              <AlertCircle className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-600">
+                You are currently subscribed to the {subscription.plan} plan.
+                Your subscription will renew on {new Date(subscription.current_period_end).toLocaleDateString()}.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <Alert variant="default" className="mb-6 border-yellow-500 bg-yellow-50">
             <AlertCircle className="h-4 w-4 text-yellow-600" />
             <AlertDescription className="text-yellow-600">
@@ -129,8 +156,11 @@ const Subscriptions = () => {
                   <Button
                     className="w-full"
                     onClick={() => handleSubscribe(plan.name, plan.price)}
+                    disabled={subscription?.status === 'active' && subscription?.plan === plan.name}
                   >
-                    {t("subscription.subscribe", "Subscribe")} (Test)
+                    {subscription?.status === 'active' && subscription?.plan === plan.name
+                      ? t("subscription.current_plan", "Current Plan")
+                      : t("subscription.subscribe", "Subscribe")} (Test)
                   </Button>
                 </CardFooter>
               </Card>
