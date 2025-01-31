@@ -10,25 +10,16 @@ import { useTranslation } from "react-i18next";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
-import { ProfileForm } from "@/components/profile/ProfileForm";
-import { SubscriptionInfo } from "@/components/profile/SubscriptionInfo";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { ProfileTab } from "@/components/profile/ProfileTab";
+import { SubscriptionTab } from "@/components/profile/SubscriptionTab";
+import { PreferencesTab } from "@/components/profile/PreferencesTab";
 
 interface Profile {
   first_name: string;
   last_name: string;
   phone_number: string;
   preferred_categories?: string[];
-}
-
-interface Subscription {
-  plan: string;
-  status: string;
-  current_period_start: string;
-  current_period_end: string;
 }
 
 const Profile = () => {
@@ -47,7 +38,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { currentLanguage, changeLanguage } = useLanguage();
 
-  const { data: subscription, error: subscriptionError } = useQuery({
+  const { data: subscription } = useQuery({
     queryKey: ['subscription', session?.user?.id],
     enabled: !!session?.user?.id,
     queryFn: async () => {
@@ -59,7 +50,7 @@ const Profile = () => {
           .single();
 
         if (error) throw error;
-        return data as Subscription;
+        return data;
       } catch (error: any) {
         console.error('Error fetching subscription:', error);
         return null;
@@ -179,8 +170,8 @@ const Profile = () => {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="profile" className="space-y-4 bg-white p-6 rounded-lg border">
-              <ProfileForm 
+            <TabsContent value="profile">
+              <ProfileTab 
                 email={email}
                 profile={profile}
                 setEmail={setEmail}
@@ -189,58 +180,19 @@ const Profile = () => {
               />
             </TabsContent>
 
-            <TabsContent value="subscription" className="bg-white rounded-lg border">
-              <SubscriptionInfo 
+            <TabsContent value="subscription">
+              <SubscriptionTab 
                 subscription={subscription}
                 isMobile={isMobile}
               />
             </TabsContent>
 
-            <TabsContent value="preferences" className="bg-white p-6 rounded-lg border space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">{t("profile.preferences.language")}</h3>
-                <RadioGroup
-                  value={currentLanguage}
-                  onValueChange={(value: 'en' | 'fr' | 'ar') => handleLanguageChange(value)}
-                  className="flex flex-col space-y-2"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="en" id="en" />
-                    <Label htmlFor="en">English</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="fr" id="fr" />
-                    <Label htmlFor="fr">Français</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="ar" id="ar" />
-                    <Label htmlFor="ar">العربية</Label>
-                  </div>
-                </RadioGroup>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">{t("profile.preferences.categories")}</h3>
-                <div className="flex flex-wrap gap-2">
-                  {profile.preferred_categories?.map((category) => (
-                    <Badge key={category} variant="secondary">
-                      {category}
-                    </Badge>
-                  ))}
-                  {(!profile.preferred_categories || profile.preferred_categories.length === 0) && (
-                    <p className="text-sm text-muted-foreground">
-                      {t("profile.preferences.no_categories")}
-                    </p>
-                  )}
-                </div>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate('/onboarding')}
-                  className="mt-2"
-                >
-                  {t("profile.preferences.update_categories")}
-                </Button>
-              </div>
+            <TabsContent value="preferences">
+              <PreferencesTab 
+                currentLanguage={currentLanguage}
+                onLanguageChange={handleLanguageChange}
+                preferredCategories={profile.preferred_categories}
+              />
             </TabsContent>
           </Tabs>
         </div>
