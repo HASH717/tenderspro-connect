@@ -29,7 +29,7 @@ serve(async (req) => {
       throw new Error('Supabase credentials not configured')
     }
 
-    console.log(`Creating subscription for plan: ${plan} with amount: ${amount} for user: ${userId}`)
+    console.log(`Creating payment link for plan: ${plan} with amount: ${amount} for user: ${userId}`)
 
     // Initialize Supabase client with service role key
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
@@ -55,28 +55,26 @@ serve(async (req) => {
 
     console.log('User profile:', profile)
     console.log('User email:', userEmail)
-    
-    // Create payment request to Chargily Pay
+
+    // Create payment link request to Chargily Pay
     const paymentData = {
       name: `${plan} Plan Subscription`,
       items: [{
         name: `${plan} Plan`,
         price: amount,
         quantity: 1,
-        currency: "dzd"
+        currency: "dzd",
+        adjustable_quantity: false
       }],
-      webhook_url: `${SUPABASE_URL}/functions/v1/payment-webhook`,
-      back_url: 'https://dztenders.com/payment-success',
-      mode: 'CIB',
-      customer: {
-        name: `${profile.first_name} ${profile.last_name}`,
-        email: userEmail,
-        phone: profile.phone_number || '213xxxxxxxxx'
-      },
+      locale: "ar",
+      pass_fees_to_customer: false,
+      collect_shipping_address: false,
       metadata: {
-        plan: plan,
+        plan,
         user_id: userId
-      }
+      },
+      after_completion_message: "Thank you for subscribing to our service.",
+      active: 1
     }
 
     console.log('Payment request data:', paymentData)
@@ -101,7 +99,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ 
-        paymentUrl: responseData.checkout_url,
+        paymentUrl: responseData.url,
         message: 'Payment link created successfully'
       }),
       { 
@@ -110,7 +108,7 @@ serve(async (req) => {
       },
     )
   } catch (error) {
-    console.error('Error creating subscription:', error)
+    console.error('Error creating payment link:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       {

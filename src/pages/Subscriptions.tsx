@@ -26,7 +26,7 @@ const Subscriptions = () => {
   const plans = [
     {
       name: "Basic",
-      price: 2000, // 2000 DZD
+      price: 2000,
       description: "Perfect for getting started",
       features: [
         "Access to all public tenders",
@@ -36,7 +36,7 @@ const Subscriptions = () => {
     },
     {
       name: "Pro",
-      price: 5000, // 5000 DZD
+      price: 5000,
       description: "For growing businesses",
       features: [
         "Everything in Basic",
@@ -47,7 +47,7 @@ const Subscriptions = () => {
     },
     {
       name: "Enterprise",
-      price: 10000, // 10000 DZD
+      price: 10000,
       description: "For large organizations",
       features: [
         "Everything in Pro",
@@ -71,8 +71,11 @@ const Subscriptions = () => {
 
       if (error) throw error;
 
-      // Redirect to payment URL
-      window.location.href = data.paymentUrl;
+      if (data.paymentUrl) {
+        window.location.href = data.paymentUrl;
+      } else {
+        throw new Error('No payment URL received');
+      }
     } catch (error: any) {
       toast({
         variant: "destructive",
