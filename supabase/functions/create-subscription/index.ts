@@ -54,9 +54,9 @@ serve(async (req) => {
 
     // Map plan names to prices in DZD (cents)
     const planPrices = {
-      'Basic': 100000, // 1000 DZD
-      'Professional': 200000, // 2000 DZD
-      'Enterprise': 1000000 // 10000 DZD
+      'Basic': 1000, // 10 DZD
+      'Professional': 2000, // 20 DZD
+      'Enterprise': 10000 // 100 DZD
     }
     
     const paymentData = {
