@@ -90,7 +90,10 @@ const Profile = () => {
         }
       } catch (error: any) {
         console.error('Error fetching profile:', error);
-        toast.error("Failed to load profile data");
+        toast({
+          variant: "destructive",
+          description: "Failed to load profile data"
+        });
       } finally {
         setIsLoadingProfile(false);
       }
@@ -106,13 +109,18 @@ const Profile = () => {
       navigate("/auth");
     } catch (error: any) {
       console.error('Error signing out:', error);
-      toast.error("Failed to sign out");
+      toast({
+        variant: "destructive",
+        description: "Failed to sign out"
+      });
     }
   };
 
   const handleLanguageChange = (value: 'en' | 'fr' | 'ar') => {
     changeLanguage(value);
-    toast.success(t("profile.language_updated"));
+    toast({
+      description: t("profile.language_updated")
+    });
   };
 
   if (!session?.user?.id) {
