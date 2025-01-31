@@ -14,3 +14,6 @@ port = 54323
 
 [functions.payment-links]
 verify_jwt = true
+
+[functions.create-subscription]
+verify_jwt = true

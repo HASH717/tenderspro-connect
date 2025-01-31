@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Card,
   CardContent,
@@ -58,22 +59,16 @@ const Subscriptions = () => {
 
   const handleSubscribe = async (planName: string, price: string) => {
     try {
-      const response = await fetch("/api/create-subscription", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('create-subscription', {
+        body: {
           plan: planName,
           amount: parseInt(price),
-        }),
+        },
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to create subscription");
-      }
+      if (error) throw error;
 
-      const data = await response.json();
+      // Redirect to payment URL
       window.location.href = data.paymentUrl;
     } catch (error: any) {
       toast({
