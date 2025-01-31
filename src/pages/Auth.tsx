@@ -29,7 +29,8 @@ const Auth = () => {
         if (error) throw error;
         navigate("/");
       } else {
-        const { error } = await supabase.auth.signUp({
+        // Sign up the user
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -40,11 +41,23 @@ const Auth = () => {
             },
           },
         });
-        if (error) throw error;
-        toast({
-          title: "Success!",
-          description: "Please check your email to verify your account.",
-        });
+        
+        if (signUpError) throw signUpError;
+        
+        // If signup was successful and we have a session, navigate to home
+        if (signUpData.session) {
+          navigate("/");
+          toast({
+            title: "Welcome!",
+            description: "Your account has been created successfully.",
+          });
+        } else {
+          // If no session (email confirmation required), show appropriate message
+          toast({
+            title: "Success!",
+            description: "Please check your email to verify your account.",
+          });
+        }
       }
     } catch (error: any) {
       toast({
