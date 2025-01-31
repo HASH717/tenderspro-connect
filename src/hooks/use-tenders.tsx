@@ -53,7 +53,6 @@ export const useTenders = (filters: TenderFilters) => {
         } else {
           // Show a message about upgrading if trying to view non-preferred categories
           toast({
-            title: "Category not in your plan",
             description: "Please upgrade your subscription to view more categories",
             action: {
               label: "Upgrade",
