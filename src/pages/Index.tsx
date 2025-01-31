@@ -35,7 +35,7 @@ const Index = () => {
   const logoSrc = "/lovable-uploads/c1c4772c-d5f0-499c-b16f-ae8dcefaa6c3.png";
 
   return (
-    <div className={`min-h-screen flex flex-col ${isMobile ? 'pb-32' : 'pb-24'}`}>
+    <div className={`min-h-screen flex flex-col ${isMobile ? 'pb-16' : 'pb-12'}`}>
       <Navigation />
       <div className="flex-grow">
         <div className={`bg-background z-10 ${isMobile ? 'pt-6' : 'pt-24'}`}>
@@ -62,7 +62,7 @@ const Index = () => {
           <Separator className="my-8" />
         </div>
 
-        <div className="max-w-5xl mx-auto px-6">
+        <div className="max-w-5xl mx-auto px-6 mb-8">
           <TenderList 
             tenders={tenders} 
             isLoading={isLoadingTenders}
