@@ -89,7 +89,13 @@
     "saving": "جاري التحديث...",
     "logout": "تسجيل الخروج",
     "enterEmail": "أدخل البريد الإلكتروني",
-    "enterPhoneNumber": "أدخل رقم الهاتف"
+    "enterPhoneNumber": "أدخل رقم الهاتف",
+    "language_updated": "تم تحديث اللغة بنجاح",
+    "tabs": {
+      "profile": "الملف الشخصي",
+      "subscription": "الاشتراك",
+      "preferences": "التفضيلات"
+    }
   },
   "alerts": {
     "configuration": "إعدادات التنبيهات",

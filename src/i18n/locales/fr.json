@@ -89,7 +89,13 @@
     "saving": "Mise à jour...",
     "logout": "Déconnexion",
     "enterEmail": "Entrez votre email",
-    "enterPhoneNumber": "Entrez votre numéro de téléphone"
+    "enterPhoneNumber": "Entrez votre numéro de téléphone",
+    "language_updated": "Langue mise à jour avec succès",
+    "tabs": {
+      "profile": "Profil",
+      "subscription": "Abonnement",
+      "preferences": "Préférences"
+    }
   },
   "alerts": {
     "configuration": "Configuration des alertes",

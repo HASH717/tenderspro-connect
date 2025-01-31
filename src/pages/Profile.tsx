@@ -144,7 +144,7 @@ const Profile = () => {
           </div>
 
           <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="w-full mb-6 bg-gray-100 p-1 flex">
+            <TabsList className="w-full mb-6 bg-gray-100 p-1 flex space-x-1">
               <TabsTrigger 
                 value="profile" 
                 className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all"

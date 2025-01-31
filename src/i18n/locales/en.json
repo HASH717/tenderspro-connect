@@ -89,7 +89,13 @@
     "saving": "Updating...",
     "logout": "Logout",
     "enterEmail": "Enter email",
-    "enterPhoneNumber": "Enter phone number"
+    "enterPhoneNumber": "Enter phone number",
+    "language_updated": "Language updated successfully",
+    "tabs": {
+      "profile": "Profile",
+      "subscription": "Subscription",
+      "preferences": "Preferences"
+    }
   },
   "alerts": {
     "configuration": "Alerts Configuration",
