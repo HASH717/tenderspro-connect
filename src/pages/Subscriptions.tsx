@@ -104,9 +104,9 @@ const Subscriptions = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col pb-20">
+    <div className="min-h-screen flex flex-col">
       <Navigation />
-      <div className={`flex-grow ${isMobile ? "pt-6" : "pt-24"}`}>
+      <div className={`flex-grow ${isMobile ? "pt-6" : "pt-24"} pb-24`}>
         <div className="max-w-6xl mx-auto px-4">
           {subscription && (
             <Alert variant="default" className="mb-6 border-green-500 bg-green-50">
