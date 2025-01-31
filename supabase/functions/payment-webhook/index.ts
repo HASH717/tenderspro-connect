@@ -15,13 +15,6 @@ serve(async (req) => {
   }
 
   try {
-    // Verify Chargily signature
-    const signature = req.headers.get('signature')
-    if (!signature) {
-      console.error('No signature found in webhook request')
-      throw new Error('No signature found')
-    }
-
     // Parse the webhook payload
     const payload = await req.json()
     console.log('Received webhook payload:', payload)
@@ -33,33 +26,19 @@ serve(async (req) => {
       const checkout = event.data
       console.log('Processing paid checkout:', checkout)
       
-      // Map product names to plan names
-      const productNameToPlan = {
-        'Basic': 'basic',
-        'Professional': 'professional',
-        'Enterprise': 'enterprise'
-      }
-
-      const planName = productNameToPlan[checkout.items[0].name]
-      if (!planName) {
-        console.error('Invalid plan name:', checkout.items[0].name)
-        throw new Error('Invalid plan name')
-      }
-
-      // Extract user_id from metadata
+      // Extract user_id and plan from metadata
       const userId = checkout.metadata?.user_id
-      if (!userId) {
-        console.error('No user_id found in metadata:', checkout.metadata)
-        throw new Error('No user_id found in metadata')
+      const planName = checkout.metadata?.plan
+
+      if (!userId || !planName) {
+        console.error('Missing user_id or plan in metadata:', checkout.metadata)
+        throw new Error('Missing required metadata')
       }
 
       // Calculate subscription period
       const now = new Date()
       const currentPeriodStart = now
-      let currentPeriodEnd = new Date(now)
-      
-      // Add 7 days for trial period, then add a month
-      currentPeriodEnd.setDate(currentPeriodEnd.getDate() + 7) // 7 days trial
+      const currentPeriodEnd = new Date(now)
       currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1) // 1 month subscription
 
       console.log('Creating subscription:', {
