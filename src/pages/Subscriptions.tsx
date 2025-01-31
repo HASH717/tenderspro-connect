@@ -49,7 +49,7 @@ const Subscriptions = () => {
         "Basic search functionality",
         "Email notifications",
       ],
-      paymentLink: "https://pay.chargily.com/test/payment-links/01jjynyqzm8f91d5n07368dxj7"
+      priceId: "01jjynsfaqmh26p7738may84eq"
     },
     {
       name: "Professional",
@@ -61,7 +61,7 @@ const Subscriptions = () => {
         "Priority notifications",
         "Tender analytics",
       ],
-      paymentLink: "https://pay.chargily.com/test/payment-links/01jjynzxx4jhzfggp55t4stfsa"
+      priceId: "01jjyntr26nrbx34t2s9kq6mn4"
     },
     {
       name: "Enterprise",
@@ -74,11 +74,11 @@ const Subscriptions = () => {
         "Dedicated support",
         "Custom integrations",
       ],
-      paymentLink: "https://pay.chargily.com/test/payment-links/01jjyp0j13w6qtq7x4yfzr0nc2"
+      priceId: "01jjynvj74dk1ktj8z4h30yge1"
     },
   ];
 
-  const handleSubscribe = async (planName: string, paymentLink: string) => {
+  const handleSubscribe = async (planName: string, priceId: string) => {
     try {
       if (!session?.user?.id) {
         toast({
@@ -89,8 +89,28 @@ const Subscriptions = () => {
         return;
       }
 
-      // Redirect to the Chargily payment link
-      window.location.href = paymentLink;
+      // Create a payment link using the Edge Function
+      const response = await fetch('/api/create-subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          plan: planName,
+          priceId: priceId,
+          userId: session.user.id
+        })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create payment link');
+      }
+
+      // Redirect to the payment page
+      window.location.href = data.paymentUrl;
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -153,7 +173,7 @@ const Subscriptions = () => {
                 <CardFooter>
                   <Button
                     className="w-full"
-                    onClick={() => handleSubscribe(plan.name, plan.paymentLink)}
+                    onClick={() => handleSubscribe(plan.name, plan.priceId)}
                     disabled={subscription?.status === 'active' && subscription?.plan === plan.name}
                   >
                     {subscription?.status === 'active' && subscription?.plan === plan.name
