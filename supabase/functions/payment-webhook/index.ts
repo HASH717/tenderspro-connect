@@ -9,6 +9,7 @@ const chargilySecretKey = Deno.env.get('CHARGILY_PAY_SECRET_KEY')!
 const supabase = createClient(supabaseUrl, supabaseServiceRoleKey)
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
