@@ -9,11 +9,20 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useQuery } from "@tanstack/react-query";
 
 interface Profile {
   first_name: string;
   last_name: string;
   phone_number: string;
+}
+
+interface Subscription {
+  plan: string;
+  status: string;
+  current_period_start: string;
+  current_period_end: string;
 }
 
 const Profile = () => {
@@ -31,6 +40,22 @@ const Profile = () => {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Fetch subscription data
+  const { data: subscription } = useQuery({
+    queryKey: ['subscription', session?.user?.id],
+    enabled: !!session?.user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', session?.user?.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data as Subscription;
+    }
+  });
 
   useEffect(() => {
     if (!session?.user.id) return;
@@ -156,90 +181,134 @@ const Profile = () => {
         <div className="max-w-4xl mx-auto px-4">
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-2xl font-bold text-primary">{t("pages.profile")}</h1>
-            <div className="space-x-4">
-              <Button
-                variant="outline"
-                onClick={() => navigate("/payment-links")}
-                className="bg-primary text-white hover:bg-primary/90"
-              >
-                Payment Links
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={handleLogout}
-                className="bg-red-500 text-white hover:bg-red-600"
-              >
-                {t("profile.logout")}
-              </Button>
-            </div>
-          </div>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t("profile.email")}
-              </label>
-              <Input 
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={t("profile.enterEmail")}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t("profile.newPassword")} {t("profile.newPasswordHint")}
-              </label>
-              <Input 
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder={t("profile.newPasswordPlaceholder")}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t("profile.firstName")}
-              </label>
-              <Input 
-                value={profile.first_name}
-                disabled
-                className="bg-gray-100"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t("profile.lastName")}
-              </label>
-              <Input 
-                value={profile.last_name}
-                disabled
-                className="bg-gray-100"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t("profile.phoneNumber")}
-              </label>
-              <Input 
-                value={profile.phone_number}
-                onChange={(e) => setProfile({ ...profile, phone_number: e.target.value })}
-                placeholder={t("profile.enterPhoneNumber")}
-              />
-            </div>
-            
             <Button 
-              className="w-full" 
-              onClick={handleUpdateProfile}
-              disabled={isLoading}
+              variant="outline" 
+              onClick={handleLogout}
+              className="bg-red-500 text-white hover:bg-red-600"
             >
-              {isLoading ? t("profile.saving") : t("profile.saveChanges")}
+              {t("profile.logout")}
             </Button>
           </div>
+
+          <Tabs defaultValue="profile" className="w-full">
+            <TabsList className="w-full">
+              <TabsTrigger value="profile" className="flex-1">Profile</TabsTrigger>
+              <TabsTrigger value="subscription" className="flex-1">Subscription</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="profile" className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t("profile.email")}
+                </label>
+                <Input 
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t("profile.enterEmail")}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t("profile.newPassword")} {t("profile.newPasswordHint")}
+                </label>
+                <Input 
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder={t("profile.newPasswordPlaceholder")}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t("profile.firstName")}
+                </label>
+                <Input 
+                  value={profile.first_name}
+                  disabled
+                  className="bg-gray-100"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t("profile.lastName")}
+                </label>
+                <Input 
+                  value={profile.last_name}
+                  disabled
+                  className="bg-gray-100"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t("profile.phoneNumber")}
+                </label>
+                <Input 
+                  value={profile.phone_number}
+                  onChange={(e) => setProfile({ ...profile, phone_number: e.target.value })}
+                  placeholder={t("profile.enterPhoneNumber")}
+                />
+              </div>
+              
+              <Button 
+                className="w-full" 
+                onClick={handleUpdateProfile}
+                disabled={isLoading}
+              >
+                {isLoading ? t("profile.saving") : t("profile.saveChanges")}
+              </Button>
+            </TabsContent>
+
+            <TabsContent value="subscription">
+              <div className="space-y-4">
+                <div className="p-6 bg-white rounded-lg border">
+                  {subscription ? (
+                    <>
+                      <h3 className="text-lg font-semibold mb-4">Current Subscription</h3>
+                      <div className="space-y-2">
+                        <p>
+                          <span className="font-medium">Plan:</span>{" "}
+                          <span className="text-primary">{subscription.plan}</span>
+                        </p>
+                        <p>
+                          <span className="font-medium">Status:</span>{" "}
+                          <span className={`capitalize ${subscription.status === 'active' ? 'text-green-600' : 'text-yellow-600'}`}>
+                            {subscription.status}
+                          </span>
+                        </p>
+                        <p>
+                          <span className="font-medium">Current Period:</span>{" "}
+                          {new Date(subscription.current_period_start).toLocaleDateString()} - {new Date(subscription.current_period_end).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <Button 
+                        className="mt-4"
+                        onClick={() => navigate('/subscriptions')}
+                      >
+                        Manage Subscription
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="text-lg font-semibold mb-4">No Active Subscription</h3>
+                      <p className="text-gray-600 mb-4">
+                        You currently don't have an active subscription. Subscribe to access more features.
+                      </p>
+                      <Button 
+                        onClick={() => navigate('/subscriptions')}
+                      >
+                        View Plans
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
       <Footer />
