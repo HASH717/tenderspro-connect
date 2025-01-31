@@ -52,7 +52,7 @@ serve(async (req) => {
     console.log('User profile:', profile)
     console.log('User email:', userEmail)
 
-    // Convert amount to cents for Chargily Pay (minimum 200 DZD)
+    // Ensure minimum amount of 200 DZD and convert to cents
     const amountInCents = Math.max(200, Math.round(amount)) * 100
     console.log('Amount in cents:', amountInCents)
     

@@ -42,7 +42,7 @@ const Subscriptions = () => {
   const plans = [
     {
       name: "Basic",
-      price: 200, // Price in DZD (minimum required by Chargily)
+      priceInDZD: 200,
       description: "Perfect for getting started",
       features: [
         "Access to all public tenders",
@@ -52,7 +52,7 @@ const Subscriptions = () => {
     },
     {
       name: "Pro",
-      price: 500, // Price in DZD
+      priceInDZD: 500,
       description: "For growing businesses",
       features: [
         "Everything in Basic",
@@ -63,7 +63,7 @@ const Subscriptions = () => {
     },
     {
       name: "Enterprise",
-      price: 1000, // Price in DZD
+      priceInDZD: 1000,
       description: "For large organizations",
       features: [
         "Everything in Pro",
@@ -75,12 +75,12 @@ const Subscriptions = () => {
     },
   ];
 
-  const handleSubscribe = async (planName: string, price: number) => {
+  const handleSubscribe = async (planName: string, priceInDZD: number) => {
     try {
       const { data, error } = await supabase.functions.invoke('create-subscription', {
         body: {
           plan: planName,
-          amount: price,
+          amount: priceInDZD,
           userId: session?.user?.id,
         },
       });
@@ -138,7 +138,7 @@ const Subscriptions = () => {
                 <CardContent className="flex-grow">
                   <div className="mb-4">
                     <span className="text-3xl font-bold">
-                      {plan.price.toLocaleString()} DZD
+                      {plan.priceInDZD.toLocaleString()} DZD
                     </span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
@@ -154,7 +154,7 @@ const Subscriptions = () => {
                 <CardFooter>
                   <Button
                     className="w-full"
-                    onClick={() => handleSubscribe(plan.name, plan.price)}
+                    onClick={() => handleSubscribe(plan.name, plan.priceInDZD)}
                     disabled={subscription?.status === 'active' && subscription?.plan === plan.name}
                   >
                     {subscription?.status === 'active' && subscription?.plan === plan.name
