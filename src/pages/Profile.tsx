@@ -191,12 +191,22 @@ const Profile = () => {
           </div>
 
           <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="w-full">
-              <TabsTrigger value="profile" className="flex-1">Profile</TabsTrigger>
-              <TabsTrigger value="subscription" className="flex-1">Subscription</TabsTrigger>
+            <TabsList className="w-full mb-6 bg-gray-100 p-1">
+              <TabsTrigger 
+                value="profile" 
+                className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all"
+              >
+                Profile
+              </TabsTrigger>
+              <TabsTrigger 
+                value="subscription" 
+                className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all"
+              >
+                Subscription
+              </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="profile" className="space-y-4">
+            <TabsContent value="profile" className="space-y-4 bg-white p-6 rounded-lg border">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   {t("profile.email")}
@@ -263,49 +273,50 @@ const Profile = () => {
               </Button>
             </TabsContent>
 
-            <TabsContent value="subscription">
-              <div className="space-y-4">
-                <div className="p-6 bg-white rounded-lg border">
-                  {subscription ? (
-                    <>
-                      <h3 className="text-lg font-semibold mb-4">Current Subscription</h3>
-                      <div className="space-y-2">
-                        <p>
-                          <span className="font-medium">Plan:</span>{" "}
-                          <span className="text-primary">{subscription.plan}</span>
-                        </p>
-                        <p>
-                          <span className="font-medium">Status:</span>{" "}
-                          <span className={`capitalize ${subscription.status === 'active' ? 'text-green-600' : 'text-yellow-600'}`}>
-                            {subscription.status}
-                          </span>
-                        </p>
-                        <p>
-                          <span className="font-medium">Current Period:</span>{" "}
-                          {new Date(subscription.current_period_start).toLocaleDateString()} - {new Date(subscription.current_period_end).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <Button 
-                        className="mt-4"
-                        onClick={() => navigate('/subscriptions')}
-                      >
-                        Manage Subscription
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <h3 className="text-lg font-semibold mb-4">No Active Subscription</h3>
-                      <p className="text-gray-600 mb-4">
-                        You currently don't have an active subscription. Subscribe to access more features.
+            <TabsContent value="subscription" className="bg-white rounded-lg border">
+              <div className="p-6">
+                {subscription ? (
+                  <>
+                    <h3 className="text-lg font-semibold mb-4">Current Subscription</h3>
+                    <div className="space-y-3">
+                      <p className="flex justify-between items-center">
+                        <span className="font-medium">Plan:</span>
+                        <span className="text-primary font-semibold">{subscription.plan}</span>
                       </p>
-                      <Button 
-                        onClick={() => navigate('/subscriptions')}
-                      >
-                        View Plans
-                      </Button>
-                    </>
-                  )}
-                </div>
+                      <p className="flex justify-between items-center">
+                        <span className="font-medium">Status:</span>
+                        <span className={`capitalize font-semibold ${subscription.status === 'active' ? 'text-green-600' : 'text-yellow-600'}`}>
+                          {subscription.status}
+                        </span>
+                      </p>
+                      <p className="flex justify-between items-center">
+                        <span className="font-medium">Current Period:</span>
+                        <span className="text-gray-600">
+                          {new Date(subscription.current_period_start).toLocaleDateString()} - {new Date(subscription.current_period_end).toLocaleDateString()}
+                        </span>
+                      </p>
+                    </div>
+                    <Button 
+                      className="mt-6 w-full"
+                      onClick={() => navigate('/subscriptions')}
+                    >
+                      Manage Subscription
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-lg font-semibold mb-4">No Active Subscription</h3>
+                    <p className="text-gray-600 mb-6">
+                      You currently don't have an active subscription. Subscribe to access more features.
+                    </p>
+                    <Button 
+                      className="w-full"
+                      onClick={() => navigate('/subscriptions')}
+                    >
+                      View Plans
+                    </Button>
+                  </>
+                )}
               </div>
             </TabsContent>
           </Tabs>
