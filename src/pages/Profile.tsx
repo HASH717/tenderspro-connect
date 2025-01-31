@@ -1,7 +1,7 @@
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -34,7 +34,6 @@ const Profile = () => {
   });
   const [email, setEmail] = useState("");
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-  const { toast } = useToast();
   const navigate = useNavigate();
   const { currentLanguage, changeLanguage } = useLanguage();
 
@@ -81,9 +80,8 @@ const Profile = () => {
         }
       } catch (error: any) {
         console.error('Error fetching profile:', error);
-        toast({
-          variant: "destructive",
-          description: "Failed to load profile data"
+        toast("Failed to load profile data", {
+          description: error.message,
         });
       } finally {
         setIsLoadingProfile(false);
@@ -91,7 +89,7 @@ const Profile = () => {
     };
 
     getProfile();
-  }, [session?.user?.id, session?.user?.email, toast, navigate]);
+  }, [session?.user?.id, session?.user?.email, navigate]);
 
   const handleLogout = async () => {
     try {
@@ -100,18 +98,15 @@ const Profile = () => {
       navigate("/auth");
     } catch (error: any) {
       console.error('Error signing out:', error);
-      toast({
-        variant: "destructive",
-        description: "Failed to sign out"
+      toast("Failed to sign out", {
+        description: error.message,
       });
     }
   };
 
   const handleLanguageChange = (value: 'en' | 'fr' | 'ar') => {
     changeLanguage(value);
-    toast({
-      description: t("profile.language_updated")
-    });
+    toast(t("profile.language_updated"));
   };
 
   if (!session?.user?.id) {
@@ -149,7 +144,7 @@ const Profile = () => {
           </div>
 
           <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="w-full mb-6 bg-gray-100 p-1">
+            <TabsList className="w-full mb-6 bg-gray-100 p-1 flex">
               <TabsTrigger 
                 value="profile" 
                 className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all"
