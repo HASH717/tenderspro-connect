@@ -77,7 +77,7 @@ serve(async (req) => {
 
     console.log('Payment request data:', paymentData)
 
-    const response = await fetch('https://pay.chargily.net/api/v2/payment-links', {
+    const response = await fetch('https://pay.chargily.net/test/api/v2/payment-links', {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
