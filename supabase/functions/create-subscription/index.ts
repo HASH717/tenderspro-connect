@@ -56,9 +56,9 @@ serve(async (req) => {
     console.log('User profile:', profile)
     console.log('User email:', userEmail)
 
-    // Create payment link request to Chargily Pay
-    // Ensure amount is an integer in cents
-    const amountInCents = Math.round(amount)
+    // Ensure amount is a valid integer for Chargily Pay (minimum 100 DZD in cents)
+    const amountInCents = Math.max(100, Math.round(amount))
+    console.log('Amount in cents:', amountInCents)
     
     const paymentData = {
       name: `${plan} Plan Subscription`,
