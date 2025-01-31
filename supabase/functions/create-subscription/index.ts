@@ -58,7 +58,6 @@ serve(async (req) => {
       currency: "dzd",
       payment_method: "edahabia",
       success_url: `${backUrl}?success=true&plan=${plan}`,
-      cancel_url: `${backUrl}?success=false`,
       webhook_endpoint: `${SUPABASE_URL}/functions/v1/payment-webhook`,
       metadata: {
         plan,
