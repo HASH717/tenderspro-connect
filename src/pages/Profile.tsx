@@ -175,9 +175,9 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col pb-20">
+    <div className="min-h-screen flex flex-col">
       <Navigation />
-      <div className={`flex-grow ${isMobile ? "pt-6" : "pt-24"}`}>
+      <div className={`flex-grow ${isMobile ? "pt-6" : "pt-24"} pb-24`}>
         <div className="max-w-4xl mx-auto px-4">
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-2xl font-bold text-primary">{t("pages.profile")}</h1>
