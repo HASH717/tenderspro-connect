@@ -29,6 +29,8 @@ serve(async (req) => {
       throw new Error('Supabase credentials not configured')
     }
 
+    console.log(`Creating subscription for plan: ${plan} with amount: ${amount} for user: ${userId}`)
+
     // Initialize Supabase client with service role key
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
@@ -51,16 +53,17 @@ serve(async (req) => {
     const profile = profileResponse.data
     const userEmail = userResponse.data.user.email
 
-    console.log(`Creating subscription for plan: ${plan} with amount: ${amount} for user: ${userId}`)
+    console.log('User profile:', profile)
+    console.log('User email:', userEmail)
 
     // Create payment request to Chargily Pay
     const paymentData = {
-      amount: amount, // Amount in DZD
+      amount: amount,
       currency: 'DZD',
       description: `Subscription to ${plan} Plan`,
-      webhook_url: `${SUPABASE_URL}/functions/v1/payment-webhook`, // Webhook endpoint
-      back_url: 'https://dztenders.com/payment-success', // Success page URL
-      mode: 'CIB', // CIB/EDAHABIA
+      webhook_url: `${SUPABASE_URL}/functions/v1/payment-webhook`,
+      back_url: 'https://dztenders.com/payment-success',
+      mode: 'CIB',
       customer: {
         name: `${profile.first_name} ${profile.last_name}`,
         email: userEmail,
@@ -79,23 +82,22 @@ serve(async (req) => {
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${CHARGILY_PAY_SECRET_KEY}`, // Changed from X-Authorization to Authorization
+        'Authorization': `Bearer ${CHARGILY_PAY_SECRET_KEY}`,
       },
       body: JSON.stringify(paymentData)
     })
 
-    if (!response.ok) {
-      const errorData = await response.json()
-      console.error('Chargily Pay API error:', errorData)
-      throw new Error(`Chargily Pay API error: ${JSON.stringify(errorData)}`)
-    }
+    console.log('Chargily API response status:', response.status)
+    const responseData = await response.json()
+    console.log('Chargily API response:', responseData)
 
-    const data = await response.json()
-    console.log('Payment link created:', data)
+    if (!response.ok) {
+      throw new Error(`Chargily Pay API error: ${JSON.stringify(responseData)}`)
+    }
 
     return new Response(
       JSON.stringify({ 
-        paymentUrl: data.checkout_url,
+        paymentUrl: responseData.checkout_url,
         message: 'Payment link created successfully'
       }),
       { 
