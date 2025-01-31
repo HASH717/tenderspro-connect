@@ -27,7 +27,7 @@ serve(async (req) => {
       throw new Error('Supabase credentials not configured')
     }
 
-    console.log(`Creating payment link for plan: ${plan} with priceId: ${priceId} for user: ${userId}`)
+    console.log(`Creating checkout for plan: ${plan} with priceId: ${priceId} for user: ${userId}`)
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
@@ -52,43 +52,38 @@ serve(async (req) => {
     console.log('User profile:', profile)
     console.log('User email:', userEmail)
 
-    // Using minimal test amounts (1-5 DZD)
+    // Using test amounts for development
     const planPrices = {
-      'Basic': 100, // 1 DZD
-      'Professional': 200, // 2 DZD
-      'Enterprise': 500 // 5 DZD
+      'Basic': 2500, // 25 DZD
+      'Professional': 5000, // 50 DZD
+      'Enterprise': 10000 // 100 DZD
     }
-    
-    const paymentData = {
-      name: `${plan} Plan Subscription`,
-      items: [{
-        name: `${plan} Plan`,
-        price: planPrices[plan],
-        quantity: 1,
-        currency: "dzd",
-        adjustable_quantity: false
-      }],
-      locale: "ar",
-      pass_fees_to_customer: false,
-      collect_shipping_address: false,
+
+    // Create checkout data according to Chargily Pay API specs
+    const checkoutData = {
+      amount: planPrices[plan],
+      currency: "dzd",
+      payment_method: "edahabia",
+      client: userEmail,
+      webhook_endpoint: `${SUPABASE_URL}/functions/v1/payment-webhook`,
       metadata: {
         plan,
         user_id: userId
       },
-      after_completion_message: "Thank you for subscribing to our service.",
-      active: 1
+      back_url: window.location.origin + "/subscriptions",
+      webhook_endpoint_token: CHARGILY_PAY_SECRET_KEY
     }
 
-    console.log('Payment request data:', paymentData)
+    console.log('Creating checkout with data:', checkoutData)
 
-    const response = await fetch('https://pay.chargily.net/test/api/v2/payment-links', {
+    const response = await fetch('https://pay.chargily.net/test/api/v2/checkouts', {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${CHARGILY_PAY_SECRET_KEY}`,
       },
-      body: JSON.stringify(paymentData)
+      body: JSON.stringify(checkoutData)
     })
 
     console.log('Chargily API response status:', response.status)
@@ -101,8 +96,8 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ 
-        paymentUrl: responseData.url,
-        message: 'Payment link created successfully'
+        checkoutUrl: responseData.checkout_url,
+        message: 'Checkout created successfully'
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -110,7 +105,7 @@ serve(async (req) => {
       },
     )
   } catch (error) {
-    console.error('Error creating payment link:', error)
+    console.error('Error creating checkout:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       {

@@ -42,7 +42,7 @@ const Subscriptions = () => {
   const plans = [
     {
       name: "Basic",
-      priceInDZD: 100000, // 1000 DZD in cents
+      priceInDZD: 2500, // 25 DZD
       description: "Perfect for getting started",
       features: [
         "Follow up to 3 categories",
@@ -53,7 +53,7 @@ const Subscriptions = () => {
     },
     {
       name: "Professional",
-      priceInDZD: 200000, // 2000 DZD in cents
+      priceInDZD: 5000, // 50 DZD
       description: "For growing businesses",
       features: [
         "Follow up to 10 categories",
@@ -65,7 +65,7 @@ const Subscriptions = () => {
     },
     {
       name: "Enterprise",
-      priceInDZD: 1000000, // 10000 DZD in cents
+      priceInDZD: 10000, // 100 DZD
       description: "For large organizations",
       features: [
         "Follow unlimited categories",
@@ -89,7 +89,7 @@ const Subscriptions = () => {
         return;
       }
 
-      // Call the Supabase Edge Function instead of a regular API endpoint
+      // Call the Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('create-subscription', {
         body: {
           plan: planName,
@@ -102,11 +102,11 @@ const Subscriptions = () => {
         throw error;
       }
 
-      // Redirect to the payment page
-      if (data?.paymentUrl) {
-        window.location.href = data.paymentUrl;
+      // Redirect to the checkout page
+      if (data?.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
       } else {
-        throw new Error('No payment URL received');
+        throw new Error('No checkout URL received');
       }
     } catch (error: any) {
       console.error('Subscription error:', error);
