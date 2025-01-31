@@ -18,6 +18,7 @@ serve(async (req) => {
     // Verify Chargily signature
     const signature = req.headers.get('signature')
     if (!signature) {
+      console.error('No signature found in webhook request')
       throw new Error('No signature found')
     }
 
@@ -30,13 +31,13 @@ serve(async (req) => {
     // Handle different event types
     if (event.type === 'checkout.paid') {
       const checkout = event.data
-      console.log('Checkout data:', checkout)
+      console.log('Processing paid checkout:', checkout)
       
       // Map product names to plan names
       const productNameToPlan = {
-        'TendersPro Basic': 'basic',
-        'TendersPro Professional': 'professional',
-        'TendersPro Enterprise': 'enterprise'
+        'Basic': 'basic',
+        'Professional': 'professional',
+        'Enterprise': 'enterprise'
       }
 
       const planName = productNameToPlan[checkout.items[0].name]
@@ -90,16 +91,14 @@ serve(async (req) => {
         throw subscriptionError
       }
 
-      console.log('Successfully updated subscription for user:', userId)
+      console.log('Successfully updated subscription:', subscription)
 
-      // Redirect URL after successful payment
-      const redirectUrl = new URL(checkout.success_url)
-      redirectUrl.searchParams.append('status', 'success')
-      
+      // Return success response with subscription data
       return new Response(
         JSON.stringify({ 
           success: true,
-          redirect_url: redirectUrl.toString()
+          subscription,
+          message: 'Subscription updated successfully'
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -108,7 +107,7 @@ serve(async (req) => {
       )
     }
 
-    // Return success response
+    // Return success response for other event types
     return new Response(
       JSON.stringify({ success: true }),
       { 
