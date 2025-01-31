@@ -28,7 +28,9 @@ export const ProfileForm = ({ email, profile, setEmail, setProfile, userId }: Pr
     
     setIsLoading(true);
     try {
-      if (email !== supabase.auth.getUser()) {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (email !== user?.email) {
         const { error: emailError } = await supabase.auth.updateUser({
           email: email,
         });
