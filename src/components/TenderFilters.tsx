@@ -56,17 +56,19 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
     queryKey: ['subscription-and-categories', session?.user?.id],
     enabled: !!session?.user?.id,
     queryFn: async () => {
+      if (!session?.user?.id) return null;
+
       const { data: subscription } = await supabase
         .from('subscriptions')
         .select('*')
-        .eq('user_id', session?.user?.id)
+        .eq('user_id', session.user.id)
         .eq('status', 'active')
         .maybeSingle();
 
       const { data: profile } = await supabase
         .from('profiles')
         .select('preferred_categories')
-        .eq('id', session?.user?.id)
+        .eq('id', session.user.id)
         .single();
 
       return {
@@ -76,9 +78,10 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
     }
   });
 
-  // Fetch all unique categories from tenders
+  // Fetch categories based on subscription
   const { data: categories = [] } = useQuery({
     queryKey: ['tender-categories', userSubscriptionData],
+    enabled: true,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('tenders')
@@ -93,8 +96,8 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
 
       // Get unique categories and remove nulls
       const uniqueCategories = Array.from(new Set(data.map(tender => tender.category)))
-        .filter(category => category) // Remove null/undefined values
-        .sort(); // Sort alphabetically
+        .filter(category => category)
+        .sort();
 
       // If user has subscription and preferred categories, filter the categories
       if (session?.user?.id && userSubscriptionData?.subscription && userSubscriptionData.preferredCategories.length > 0) {
@@ -104,8 +107,7 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
       }
 
       return uniqueCategories;
-    },
-    enabled: true
+    }
   });
 
   useEffect(() => {

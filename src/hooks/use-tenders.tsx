@@ -12,11 +12,13 @@ export const useTenders = (filters: TenderFilters) => {
     queryKey: ['subscription-and-categories', session?.user?.id],
     enabled: !!session?.user?.id,
     queryFn: async () => {
+      if (!session?.user?.id) return null;
+
       // Get subscription
       const { data: subscription } = await supabase
         .from('subscriptions')
         .select('*')
-        .eq('user_id', session?.user?.id)
+        .eq('user_id', session.user.id)
         .eq('status', 'active')
         .maybeSingle();
 
@@ -24,7 +26,7 @@ export const useTenders = (filters: TenderFilters) => {
       const { data: profile } = await supabase
         .from('profiles')
         .select('preferred_categories')
-        .eq('id', session?.user?.id)
+        .eq('id', session.user.id)
         .single();
 
       return {
@@ -59,7 +61,7 @@ export const useTenders = (filters: TenderFilters) => {
         // If user has preferred categories, filter by them
         if (preferredCategories && preferredCategories.length > 0) {
           if (filters.category) {
-            // If a specific category is selected, ensure it's in preferred categories
+            // If a specific category is selected and it's in preferred categories
             if (preferredCategories.includes(filters.category)) {
               query = query.eq('category', filters.category);
             } else {
@@ -71,7 +73,7 @@ export const useTenders = (filters: TenderFilters) => {
           }
         }
       } else if (filters.category) {
-        // For non-subscribed users, still apply category filter if selected
+        // For non-subscribed users or when no subscription is active
         query = query.eq('category', filters.category);
       }
       
