@@ -7,6 +7,13 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
+import { MultiSelect } from "@/components/ui/multi-select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Card,
   CardContent,
@@ -17,12 +24,31 @@ import {
 } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useState } from "react";
+
+const CATEGORIES = [
+  { value: "construction", label: "Construction" },
+  { value: "it", label: "IT & Technology" },
+  { value: "medical", label: "Medical Equipment" },
+  { value: "office", label: "Office Supplies" },
+  { value: "transport", label: "Transport" },
+  { value: "energy", label: "Energy" },
+  { value: "education", label: "Education" },
+  { value: "consulting", label: "Consulting" },
+];
 
 const Subscriptions = () => {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const { session } = useAuth();
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<{
+    name: string;
+    priceId: string;
+    categoryLimit?: number;
+  } | null>(null);
 
   const { data: subscription } = useQuery({
     queryKey: ['subscription', session?.user?.id],
@@ -39,21 +65,37 @@ const Subscriptions = () => {
     }
   });
 
+  const { data: profile } = useQuery({
+    queryKey: ['profile', session?.user?.id],
+    enabled: !!session?.user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session?.user?.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    }
+  });
+
   const plans = [
     {
       name: "Basic",
-      priceInDZD: 2500, // 25 DZD
+      priceInDZD: 1000,
       description: "Perfect for getting started",
       features: [
         "Follow up to 3 categories",
         "Basic search functionality",
         "Email notifications",
       ],
-      priceId: "01jjynsfaqmh26p7738may84eq"
+      priceId: "01jjynsfaqmh26p7738may84eq",
+      categoryLimit: 3
     },
     {
       name: "Professional",
-      priceInDZD: 5000, // 50 DZD
+      priceInDZD: 2000,
       description: "For growing businesses",
       features: [
         "Follow up to 10 categories",
@@ -61,11 +103,12 @@ const Subscriptions = () => {
         "Priority notifications",
         "Tender analytics",
       ],
-      priceId: "01jjyntr26nrbx34t2s9kq6mn4"
+      priceId: "01jjyntr26nrbx34t2s9kq6mn4",
+      categoryLimit: 10
     },
     {
       name: "Enterprise",
-      priceInDZD: 10000, // 100 DZD
+      priceInDZD: 10000,
       description: "For large organizations",
       features: [
         "Follow unlimited categories",
@@ -78,7 +121,7 @@ const Subscriptions = () => {
     },
   ];
 
-  const handleSubscribe = async (planName: string, priceId: string) => {
+  const handleSubscribe = async (plan: typeof plans[0]) => {
     try {
       if (!session?.user?.id) {
         toast({
@@ -89,13 +132,36 @@ const Subscriptions = () => {
         return;
       }
 
+      // For Enterprise plan, proceed directly to payment
+      if (plan.name === "Enterprise") {
+        proceedToPayment(plan.name, plan.priceId);
+        return;
+      }
+
+      // For other plans, open category selection dialog
+      setSelectedPlan(plan);
+      setSelectedCategories(profile?.preferred_categories || []);
+      setIsDialogOpen(true);
+    } catch (error: any) {
+      console.error('Subscription error:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to process subscription",
+      });
+    }
+  };
+
+  const proceedToPayment = async (planName: string, priceId: string) => {
+    try {
       // Call the Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('create-subscription', {
         body: {
           plan: planName,
           priceId: priceId,
-          userId: session.user.id,
-          backUrl: `${window.location.origin}/subscriptions`
+          userId: session!.user.id,
+          backUrl: `${window.location.origin}/subscriptions`,
+          categories: selectedCategories
         }
       });
 
@@ -110,13 +176,29 @@ const Subscriptions = () => {
         throw new Error('No checkout URL received');
       }
     } catch (error: any) {
-      console.error('Subscription error:', error);
+      console.error('Payment error:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "Failed to process subscription",
+        description: error.message || "Failed to process payment",
       });
     }
+  };
+
+  const handleConfirmCategories = async () => {
+    if (!selectedPlan) return;
+
+    if (selectedCategories.length > (selectedPlan.categoryLimit || Infinity)) {
+      toast({
+        variant: "destructive",
+        title: "Too many categories",
+        description: `You can only select up to ${selectedPlan.categoryLimit} categories with the ${selectedPlan.name} plan.`,
+      });
+      return;
+    }
+
+    setIsDialogOpen(false);
+    await proceedToPayment(selectedPlan.name, selectedPlan.priceId);
   };
 
   return (
@@ -156,7 +238,7 @@ const Subscriptions = () => {
                 <CardContent className="flex-grow">
                   <div className="mb-4">
                     <span className="text-3xl font-bold">
-                      {(plan.priceInDZD / 100).toLocaleString()} DZD
+                      {plan.priceInDZD.toLocaleString()} DZD
                     </span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
@@ -172,7 +254,7 @@ const Subscriptions = () => {
                 <CardFooter>
                   <Button
                     className="w-full"
-                    onClick={() => handleSubscribe(plan.name, plan.priceId)}
+                    onClick={() => handleSubscribe(plan)}
                     disabled={subscription?.status === 'active' && subscription?.plan === plan.name}
                   >
                     {subscription?.status === 'active' && subscription?.plan === plan.name
@@ -185,6 +267,36 @@ const Subscriptions = () => {
           </div>
         </div>
       </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Select Your Categories</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <MultiSelect
+              options={CATEGORIES}
+              selectedValues={selectedCategories}
+              onChange={setSelectedCategories}
+              label={`Select up to ${selectedPlan?.categoryLimit} categories`}
+            />
+            {selectedCategories.length > (selectedPlan?.categoryLimit || Infinity) && (
+              <p className="text-red-500 text-sm mt-2">
+                You can only select up to {selectedPlan?.categoryLimit} categories with the {selectedPlan?.name} plan.
+              </p>
+            )}
+          </div>
+          <div className="flex justify-end gap-4">
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmCategories}>
+              Continue to Payment
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Footer />
     </div>
   );

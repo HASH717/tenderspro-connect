@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { plan, priceId, userId, backUrl } = await req.json()
+    const { plan, priceId, userId, backUrl, categories } = await req.json()
     
     const CHARGILY_PAY_SECRET_KEY = Deno.env.get('CHARGILY_PAY_SECRET_KEY')
     const CHARGILY_PAY_PUBLIC_KEY = Deno.env.get('CHARGILY_PAY_PUBLIC_KEY')
@@ -28,8 +28,22 @@ serve(async (req) => {
     }
 
     console.log(`Creating checkout for plan: ${plan} with priceId: ${priceId} for user: ${userId}`)
+    console.log('Selected categories:', categories)
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+    // Update user's preferred categories if provided
+    if (categories && Array.isArray(categories)) {
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ preferred_categories: categories })
+        .eq('id', userId)
+
+      if (updateError) {
+        console.error('Error updating categories:', updateError)
+        throw new Error('Failed to update categories')
+      }
+    }
 
     const [profileResponse, userResponse] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', userId).single(),
@@ -54,8 +68,8 @@ serve(async (req) => {
 
     // Using test amounts for development
     const planPrices = {
-      'Basic': 2500, // 25 DZD
-      'Professional': 5000, // 50 DZD
+      'Basic': 1000, // 10 DZD
+      'Professional': 2000, // 20 DZD
       'Enterprise': 10000 // 100 DZD
     }
 
@@ -69,7 +83,8 @@ serve(async (req) => {
       metadata: {
         plan,
         user_id: userId,
-        email: userEmail
+        email: userEmail,
+        categories: categories || []
       }
     }
 
