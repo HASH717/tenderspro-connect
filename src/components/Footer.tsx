@@ -11,7 +11,7 @@ const Footer = () => {
           <div>
             <h3 className="font-semibold mb-4">{t("About Us")}</h3>
             <p className="text-sm text-muted-foreground">
-              TendersPro is your trusted platform for discovering and managing tender opportunities in Algeria. We streamline the process of finding and tracking tenders, making it easier for businesses to grow and succeed.
+              Your trusted platform for discovering and managing tender opportunities in Algeria.
             </p>
           </div>
           
@@ -46,7 +46,7 @@ const Footer = () => {
         </div>
         
         <div className="mt-8 pt-4 border-t text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} TendersPro. {t("footer.allRightsReserved")}
+          © {new Date().getFullYear()} TendersPro. All Rights Reserved
         </div>
       </div>
     </footer>
