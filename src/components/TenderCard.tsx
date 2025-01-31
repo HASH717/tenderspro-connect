@@ -64,24 +64,24 @@ export const TenderCard = ({
 
   return (
     <Card 
-      className="p-4 mb-4 hover:shadow-lg transition-shadow cursor-pointer"
+      className="p-4 mb-4 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 bg-gradient-to-br from-white to-muted/30 backdrop-blur-sm border border-muted/50"
       onClick={() => navigate(`/tender/${id}`)}
     >
       <div className="flex justify-between items-start">
         <div className="flex-1">
-          <h3 className="font-semibold text-lg text-foreground mb-2">
+          <h3 className="font-semibold text-lg text-foreground mb-2 line-clamp-2">
             {getTitleTranslation(title)}
           </h3>
           <div className="space-y-2">
-            <div className="flex items-center text-muted-foreground">
+            <div className="flex items-center text-accent">
               <Building className="w-4 h-4 mr-2" />
               <span className="text-sm">{getCategoryTranslation(organization)}</span>
             </div>
-            <div className="flex items-center text-muted-foreground">
+            <div className="flex items-center text-primary">
               <MapPin className="w-4 h-4 mr-2" />
               <span className="text-sm">{getLocationTranslation(location)}</span>
             </div>
-            <div className="flex items-center text-muted-foreground">
+            <div className="flex items-center text-secondary">
               <Calendar className="w-4 h-4 mr-2" />
               <span className="text-sm">{t('tender.deadline')}: {deadline}</span>
             </div>
@@ -92,11 +92,11 @@ export const TenderCard = ({
             e.stopPropagation();
             onFavorite?.();
           }}
-          className={`p-2 rounded-full ${
-            isFavorite ? "text-red-500" : "text-gray-400"
+          className={`p-2 rounded-full transition-colors ${
+            isFavorite ? "text-red-500 hover:text-red-600" : "text-gray-400 hover:text-gray-500"
           }`}
         >
-          <Heart className="w-6 h-6" />
+          <Heart className={`w-6 h-6 ${isFavorite ? "fill-current" : ""}`} />
         </button>
       </div>
     </Card>

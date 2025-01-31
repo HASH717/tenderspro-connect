@@ -6,33 +6,24 @@
   :root {
     --background: 252 5% 95%;
     --foreground: 0 0% 10%;
-
     --card: 0 0% 100%;
     --card-foreground: 0 0% 10%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 10%;
-
-    --primary: 0 0% 10%;
+    --primary: 260 80% 74%;
     --primary-foreground: 0 0% 100%;
-
-    --secondary: 32 75% 68%;
+    --secondary: 32 98% 81%;
     --secondary-foreground: 0 0% 10%;
-
-    --muted: 252 5% 95%;
+    --muted: 84 71% 94%;
     --muted-foreground: 0 0% 40%;
-
-    --accent: 32 75% 68%;
-    --accent-foreground: 0 0% 10%;
-
+    --accent: 196 76% 49%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-
     --border: 252 5% 90%;
     --input: 252 5% 90%;
-    --ring: 32 75% 68%;
-
-    --radius: 0.5rem;
+    --ring: 196 76% 49%;
+    --radius: 1rem;
   }
 }
 
@@ -42,6 +33,14 @@
   }
 
   body {
-    @apply bg-muted text-foreground;
+    @apply bg-gradient-to-br from-background to-muted text-foreground min-h-screen;
+  }
+
+  .glass {
+    @apply bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl;
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
   }
 }

@@ -24,11 +24,11 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "#1A1A1A",
+          DEFAULT: "#9b87f5",
           foreground: "#FFFFFF",
         },
         secondary: {
-          DEFAULT: "#E9A870",
+          DEFAULT: "#FEC6A1",
           foreground: "#1A1A1A",
         },
         destructive: {
@@ -36,12 +36,12 @@ export default {
           foreground: "hsl(var(--destructive-foreground))",
         },
         muted: {
-          DEFAULT: "#F3F2F7",
+          DEFAULT: "#F2FCE2",
           foreground: "#666666",
         },
         accent: {
-          DEFAULT: "#E9A870",
-          foreground: "#1A1A1A",
+          DEFAULT: "#1EAEDB",
+          foreground: "#FFFFFF",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
@@ -49,11 +49,16 @@ export default {
         },
         card: {
           DEFAULT: "#FFFFFF",
-          foreground: "#1A1A1A",
+          foreground: "#333333",
         },
       },
       fontFamily: {
         sans: ["Inter", "sans-serif"],
+      },
+      borderRadius: {
+        lg: "1rem",
+        md: "0.75rem",
+        sm: "0.5rem",
       },
       keyframes: {
         "accordion-down": {
@@ -68,6 +73,11 @@ export default {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+      },
+      backgroundImage: {
+        'gradient-primary': 'linear-gradient(90deg, hsla(277, 75%, 84%, 1) 0%, hsla(297, 50%, 51%, 1) 100%)',
+        'gradient-secondary': 'linear-gradient(90deg, hsla(46, 73%, 75%, 1) 0%, hsla(176, 73%, 88%, 1) 100%)',
+        'gradient-accent': 'linear-gradient(90deg, hsla(186, 33%, 94%, 1) 0%, hsla(216, 41%, 79%, 1) 100%)',
       },
     },
   },
