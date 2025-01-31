@@ -1,5 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import Navigation from "@/components/Navigation";
+import Footer from "@/components/Footer";
 import { TenderList } from "@/components/TenderList";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -101,9 +102,9 @@ const Favorites = () => {
   }
 
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen flex flex-col pb-20">
       <Navigation />
-      <div className={`${isMobile ? "pt-6" : "pt-24"}`}>
+      <div className={`flex-grow ${isMobile ? "pt-6" : "pt-24"}`}>
         <div className="max-w-4xl mx-auto px-4">
           <h1 className="text-2xl font-bold text-primary mb-4">{t("pages.favorites")}</h1>
           <TenderList 
@@ -112,6 +113,7 @@ const Favorites = () => {
           />
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

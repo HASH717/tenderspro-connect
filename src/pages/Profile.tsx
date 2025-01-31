@@ -1,4 +1,5 @@
 import Navigation from "@/components/Navigation";
+import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -153,9 +154,9 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen flex flex-col pb-20">
       <Navigation />
-      <div className={`${isMobile ? "pt-6" : "pt-24"}`}>
+      <div className={`flex-grow ${isMobile ? "pt-6" : "pt-24"}`}>
         <div className="max-w-4xl mx-auto px-4">
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-2xl font-bold text-primary">{t("pages.profile")}</h1>
@@ -236,6 +237,7 @@ const Profile = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

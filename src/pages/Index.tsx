@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Navigation from "@/components/Navigation";
+import Footer from "@/components/Footer";
 import TenderFilters, { TenderFilters as FilterType } from "@/components/TenderFilters";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Separator } from "@/components/ui/separator";
@@ -36,7 +37,7 @@ const Index = () => {
   return (
     <div className={`min-h-screen flex flex-col ${isMobile ? 'pb-32' : 'pb-24'}`}>
       <Navigation />
-      <div className={`flex-grow ${isMobile ? '' : 'mt-20'}`}>
+      <div className="flex-grow">
         <div className="bg-background z-10">
           <div className="max-w-4xl mx-auto px-4">
             {isMobile && (
@@ -68,12 +69,7 @@ const Index = () => {
           />
         </div>
       </div>
-      
-      <footer className="w-full py-6 mt-auto bg-background border-t">
-        <div className="max-w-4xl mx-auto px-4 text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} TendersPro. All rights reserved.
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
