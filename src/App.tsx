@@ -13,6 +13,7 @@ import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import TenderDetails from "./pages/TenderDetails";
+import PaymentLinks from "./pages/PaymentLinks";
 
 const queryClient = new QueryClient();
 
@@ -76,6 +77,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/payment-links"
+                element={
+                  <ProtectedRoute>
+                    <PaymentLinks />
                   </ProtectedRoute>
                 }
               />

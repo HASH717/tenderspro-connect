@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -82,7 +82,6 @@ const Profile = () => {
     
     setIsLoading(true);
     try {
-      // Update email if changed
       if (email !== session.user.email) {
         const { error: emailError } = await supabase.auth.updateUser({
           email: email,
@@ -90,7 +89,6 @@ const Profile = () => {
         if (emailError) throw emailError;
       }
 
-      // Update password if provided
       if (newPassword) {
         const { error: passwordError } = await supabase.auth.updateUser({
           password: newPassword,
@@ -98,7 +96,6 @@ const Profile = () => {
         if (passwordError) throw passwordError;
       }
 
-      // Update phone number
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
@@ -113,7 +110,6 @@ const Profile = () => {
         description: "Profile updated successfully",
       });
 
-      // Clear password field after successful update
       setNewPassword("");
     } catch (error: any) {
       toast({
@@ -160,13 +156,22 @@ const Profile = () => {
         <div className="max-w-4xl mx-auto px-4">
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-2xl font-bold text-primary">{t("pages.profile")}</h1>
-            <Button 
-              variant="outline" 
-              onClick={handleLogout}
-              className="bg-red-500 text-white hover:bg-red-600"
-            >
-              {t("profile.logout")}
-            </Button>
+            <div className="space-x-4">
+              <Button
+                variant="outline"
+                onClick={() => navigate("/payment-links")}
+                className="bg-primary text-white hover:bg-primary/90"
+              >
+                Payment Links
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={handleLogout}
+                className="bg-red-500 text-white hover:bg-red-600"
+              >
+                {t("profile.logout")}
+              </Button>
+            </div>
           </div>
           
           <div className="space-y-4">
