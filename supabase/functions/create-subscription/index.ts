@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { plan, amount, userId } = await req.json()
+    const { plan, priceId, userId } = await req.json()
     
     const CHARGILY_PAY_SECRET_KEY = Deno.env.get('CHARGILY_PAY_SECRET_KEY')
     const CHARGILY_PAY_PUBLIC_KEY = Deno.env.get('CHARGILY_PAY_PUBLIC_KEY')
@@ -27,7 +27,7 @@ serve(async (req) => {
       throw new Error('Supabase credentials not configured')
     }
 
-    console.log(`Creating payment link for plan: ${plan} with amount: ${amount} for user: ${userId}`)
+    console.log(`Creating payment link for plan: ${plan} with priceId: ${priceId} for user: ${userId}`)
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
@@ -51,12 +51,19 @@ serve(async (req) => {
 
     console.log('User profile:', profile)
     console.log('User email:', userEmail)
+
+    // Map plan names to prices in DZD (cents)
+    const planPrices = {
+      'Basic': 100000, // 1000 DZD
+      'Professional': 200000, // 2000 DZD
+      'Enterprise': 1000000 // 10000 DZD
+    }
     
     const paymentData = {
       name: `${plan} Plan Subscription`,
       items: [{
         name: `${plan} Plan`,
-        price: amount,
+        price: planPrices[plan],
         quantity: 1,
         currency: "dzd",
         adjustable_quantity: false
