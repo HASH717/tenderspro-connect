@@ -43,7 +43,7 @@ const Subscriptions = () => {
   const plans = [
     {
       name: "Basic",
-      price: 20000, // Price in DZD cents (200 DZD)
+      price: 100000, // Price in DZD cents (1000 DZD)
       description: "Perfect for getting started",
       features: [
         "Access to all public tenders",
@@ -53,7 +53,7 @@ const Subscriptions = () => {
     },
     {
       name: "Pro",
-      price: 50000, // Price in DZD cents (500 DZD)
+      price: 200000, // Price in DZD cents (2000 DZD)
       description: "For growing businesses",
       features: [
         "Everything in Basic",
@@ -64,7 +64,7 @@ const Subscriptions = () => {
     },
     {
       name: "Enterprise",
-      price: 100000, // Price in DZD cents (1000 DZD)
+      price: 500000, // Price in DZD cents (5000 DZD)
       description: "For large organizations",
       features: [
         "Everything in Pro",

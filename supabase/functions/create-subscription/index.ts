@@ -7,7 +7,6 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -15,7 +14,6 @@ serve(async (req) => {
   try {
     const { plan, amount, userId } = await req.json()
     
-    // Get environment variables
     const CHARGILY_PAY_SECRET_KEY = Deno.env.get('CHARGILY_PAY_SECRET_KEY')
     const CHARGILY_PAY_PUBLIC_KEY = Deno.env.get('CHARGILY_PAY_PUBLIC_KEY')
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
@@ -31,10 +29,8 @@ serve(async (req) => {
 
     console.log(`Creating payment link for plan: ${plan} with amount: ${amount} for user: ${userId}`)
 
-    // Initialize Supabase client with service role key
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    // Get user profile and auth information
     const [profileResponse, userResponse] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', userId).single(),
       supabase.auth.admin.getUserById(userId)
@@ -56,8 +52,8 @@ serve(async (req) => {
     console.log('User profile:', profile)
     console.log('User email:', userEmail)
 
-    // Ensure amount is a valid integer for Chargily Pay (minimum 100 DZD in cents)
-    const amountInCents = Math.max(100, Math.round(amount))
+    // Ensure amount is a valid integer for Chargily Pay (minimum 1000 DZD in cents)
+    const amountInCents = Math.max(1000, Math.round(amount))
     console.log('Amount in cents:', amountInCents)
     
     const paymentData = {
