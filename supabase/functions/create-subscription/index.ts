@@ -66,11 +66,12 @@ serve(async (req) => {
       payment_method: "edahabia",
       client: userEmail,
       webhook_endpoint: `${SUPABASE_URL}/functions/v1/payment-webhook`,
+      success_url: backUrl,
+      back_url: backUrl,
       metadata: {
         plan,
         user_id: userId
       },
-      back_url: backUrl,
       webhook_endpoint_token: CHARGILY_PAY_SECRET_KEY
     }
 
