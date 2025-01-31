@@ -66,7 +66,7 @@ serve(async (req) => {
     // Handle different event types
     if (event.type === 'checkout.paid') {
       const checkout = event.data
-      const metadata = checkout.metadata || {}
+      console.log('Checkout data:', checkout)
       
       // Map product names to plan names
       const productNameToPlan = {
@@ -77,20 +77,40 @@ serve(async (req) => {
 
       const planName = productNameToPlan[checkout.items[0].name]
       if (!planName) {
+        console.error('Invalid plan name:', checkout.items[0].name)
         throw new Error('Invalid plan name')
       }
 
-      // Calculate subscription period based on plan
+      // Extract user_id from metadata
+      const userId = checkout.metadata?.user_id
+      if (!userId) {
+        console.error('No user_id found in metadata:', checkout.metadata)
+        throw new Error('No user_id found in metadata')
+      }
+
+      // Calculate subscription period
       const now = new Date()
       const currentPeriodStart = now
       let currentPeriodEnd = new Date(now)
-      currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1)
+      
+      // Add 7 days for trial period, then add a month
+      currentPeriodEnd.setDate(currentPeriodEnd.getDate() + 7) // 7 days trial
+      currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1) // 1 month subscription
+
+      console.log('Creating subscription:', {
+        user_id: userId,
+        plan: planName,
+        period: {
+          start: currentPeriodStart.toISOString(),
+          end: currentPeriodEnd.toISOString()
+        }
+      })
 
       // Update or create subscription
       const { data: subscription, error: subscriptionError } = await supabase
         .from('subscriptions')
         .upsert({
-          user_id: metadata.user_id,
+          user_id: userId,
           plan: planName,
           status: 'active',
           current_period_start: currentPeriodStart.toISOString(),
@@ -105,7 +125,7 @@ serve(async (req) => {
         throw subscriptionError
       }
 
-      console.log('Successfully updated subscription for user:', metadata.user_id)
+      console.log('Successfully updated subscription for user:', userId)
     }
 
     // Return success response
