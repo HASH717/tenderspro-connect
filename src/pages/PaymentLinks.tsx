@@ -4,11 +4,13 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { AlertCircle } from "lucide-react";
 
 interface PaymentLink {
   id: string;
@@ -49,6 +51,13 @@ const PaymentLinks = () => {
         body: JSON.stringify({
           name,
           description,
+          items: [
+            {
+              entity: "Test Item",
+              amount: 1000, // 10.00 DZD in test mode
+              quantity: 1,
+            },
+          ],
         }),
       });
 
@@ -94,6 +103,13 @@ const PaymentLinks = () => {
       <Navigation />
       <div className={`flex-grow ${isMobile ? "pt-6" : "pt-24"}`}>
         <div className="max-w-4xl mx-auto px-4">
+          <Alert variant="warning" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              You are currently in test mode. Any payment links created will be test links and won't process real payments.
+            </AlertDescription>
+          </Alert>
+
           <h1 className="text-2xl font-bold text-primary mb-8">Payment Links</h1>
 
           <form onSubmit={handleSubmit} className="space-y-4 mb-8">
@@ -124,7 +140,7 @@ const PaymentLinks = () => {
               disabled={createPaymentLink.isPending}
               className="w-full"
             >
-              {createPaymentLink.isPending ? "Creating..." : "Create Payment Link"}
+              {createPaymentLink.isPending ? "Creating..." : "Create Test Payment Link"}
             </Button>
           </form>
 
@@ -155,7 +171,7 @@ const PaymentLinks = () => {
                           : "bg-gray-100 text-gray-800"
                       }`}
                     >
-                      {link.status}
+                      {link.status} (Test)
                     </span>
                   </div>
                 </div>
