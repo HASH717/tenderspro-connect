@@ -38,7 +38,7 @@ const Index = () => {
     <div className={`min-h-screen flex flex-col ${isMobile ? 'pb-32' : 'pb-24'}`}>
       <Navigation />
       <div className="flex-grow">
-        <div className="bg-background z-10">
+        <div className="bg-background z-10 pt-8">
           <div className="max-w-4xl mx-auto px-4">
             {isMobile && (
               <div className="flex flex-col items-center mb-4">
