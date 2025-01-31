@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { plan, priceId, userId } = await req.json()
+    const { plan, priceId, userId, backUrl } = await req.json()
     
     const CHARGILY_PAY_SECRET_KEY = Deno.env.get('CHARGILY_PAY_SECRET_KEY')
     const CHARGILY_PAY_PUBLIC_KEY = Deno.env.get('CHARGILY_PAY_PUBLIC_KEY')
@@ -70,7 +70,7 @@ serve(async (req) => {
         plan,
         user_id: userId
       },
-      back_url: window.location.origin + "/subscriptions",
+      back_url: backUrl,
       webhook_endpoint_token: CHARGILY_PAY_SECRET_KEY
     }
 

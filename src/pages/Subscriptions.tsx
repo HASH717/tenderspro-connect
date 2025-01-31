@@ -94,7 +94,8 @@ const Subscriptions = () => {
         body: {
           plan: planName,
           priceId: priceId,
-          userId: session.user.id
+          userId: session.user.id,
+          backUrl: `${window.location.origin}/subscriptions`
         }
       });
 
