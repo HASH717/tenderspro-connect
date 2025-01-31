@@ -15,19 +15,29 @@ export const useTenders = (filters: TenderFilters) => {
       if (!session?.user?.id) return null;
 
       // Get subscription
-      const { data: subscription } = await supabase
+      const { data: subscription, error: subError } = await supabase
         .from('subscriptions')
         .select('*')
         .eq('user_id', session.user.id)
         .eq('status', 'active')
         .maybeSingle();
 
+      if (subError) {
+        console.error('Error fetching subscription:', subError);
+        return null;
+      }
+
       // Get profile with preferred categories
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('preferred_categories')
         .eq('id', session.user.id)
         .single();
+
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        return null;
+      }
 
       return {
         subscription,
@@ -54,40 +64,26 @@ export const useTenders = (filters: TenderFilters) => {
         query = query.eq('wilaya', filters.wilaya);
       }
 
+      if (filters.tenderType) {
+        query = query.eq('type', filters.tenderType);
+      }
+
       // Category filtering based on subscription
       if (session?.user?.id && userSubscriptionData?.subscription) {
         const { preferredCategories } = userSubscriptionData;
         
         // If user has preferred categories, filter by them
         if (preferredCategories && preferredCategories.length > 0) {
+          query = query.in('category', preferredCategories);
+          
           if (filters.category) {
-            // If a specific category is selected and it's in preferred categories
-            if (preferredCategories.includes(filters.category)) {
-              query = query.eq('category', filters.category);
-            } else {
-              return []; // Return empty if filtered category isn't in preferences
-            }
-          } else {
-            // Show all tenders from preferred categories
-            query = query.in('category', preferredCategories);
+            // Additional category filter if specified
+            query = query.eq('category', filters.category);
           }
         }
       } else if (filters.category) {
         // For non-subscribed users or when no subscription is active
         query = query.eq('category', filters.category);
-      }
-      
-      // Apply remaining filters
-      if (filters.tenderType) {
-        query = query.eq('type', filters.tenderType);
-      }
-
-      if (filters.publicationDate) {
-        query = query.eq('publication_date', filters.publicationDate);
-      }
-
-      if (filters.deadlineDate) {
-        query = query.eq('deadline', filters.deadlineDate);
       }
 
       const { data, error } = await query;

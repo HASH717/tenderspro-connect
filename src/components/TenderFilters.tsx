@@ -58,18 +58,28 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
     queryFn: async () => {
       if (!session?.user?.id) return null;
 
-      const { data: subscription } = await supabase
+      const { data: subscription, error: subError } = await supabase
         .from('subscriptions')
         .select('*')
         .eq('user_id', session.user.id)
         .eq('status', 'active')
         .maybeSingle();
 
-      const { data: profile } = await supabase
+      if (subError) {
+        console.error('Error fetching subscription:', subError);
+        return null;
+      }
+
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('preferred_categories')
         .eq('id', session.user.id)
         .single();
+
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        return null;
+      }
 
       return {
         subscription,
@@ -80,7 +90,7 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
 
   // Fetch categories based on subscription
   const { data: categories = [] } = useQuery({
-    queryKey: ['tender-categories', userSubscriptionData],
+    queryKey: ['tender-categories'],
     enabled: true,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -143,10 +153,10 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
     <div className="space-y-4 bg-gradient-accent p-6 rounded-lg shadow-sm border border-muted/50">
       <div className="relative">
         <Input
-          placeholder={t("filters.announcers")}
+          placeholder={t("filters.search")}
           className="bg-white/80 backdrop-blur-sm border-muted/50"
-          value={filters.announcers}
-          onChange={(e) => handleFilterChange("announcers", e.target.value)}
+          value={filters.search}
+          onChange={(e) => handleFilterChange("search", e.target.value)}
         />
       </div>
 
