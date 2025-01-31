@@ -41,7 +41,7 @@ const Subscriptions = () => {
 
   const plans = [
     {
-      name: "TendersPro Basic",
+      name: "Basic",
       priceInDZD: 100000, // 1000 DZD in cents
       description: "Perfect for getting started",
       features: [
@@ -52,7 +52,7 @@ const Subscriptions = () => {
       paymentLink: "https://pay.chargily.com/test/payment-links/01jjynyqzm8f91d5n07368dxj7"
     },
     {
-      name: "TendersPro Professional",
+      name: "Professional",
       priceInDZD: 200000, // 2000 DZD in cents
       description: "For growing businesses",
       features: [
@@ -64,7 +64,7 @@ const Subscriptions = () => {
       paymentLink: "https://pay.chargily.com/test/payment-links/01jjynzxx4jhzfggp55t4stfsa"
     },
     {
-      name: "TendersPro Enterprise",
+      name: "Enterprise",
       priceInDZD: 1000000, // 10000 DZD in cents
       description: "For large organizations",
       features: [
