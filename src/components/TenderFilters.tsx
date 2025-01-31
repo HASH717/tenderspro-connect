@@ -67,6 +67,7 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
 
       if (subError) {
         console.error('Error fetching subscription:', subError);
+        toast.error('Failed to load subscription data');
         return null;
       }
 
@@ -78,6 +79,7 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
 
       if (profileError) {
         console.error('Error fetching profile:', profileError);
+        toast.error('Failed to load profile data');
         return null;
       }
 
@@ -90,7 +92,7 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
 
   // Fetch categories based on subscription
   const { data: categories = [] } = useQuery({
-    queryKey: ['tender-categories'],
+    queryKey: ['tender-categories', session?.user?.id, userSubscriptionData],
     enabled: true,
     queryFn: async () => {
       const { data, error } = await supabase
