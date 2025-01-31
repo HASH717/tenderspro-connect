@@ -64,7 +64,7 @@ export const TenderCard = ({
 
   return (
     <Card 
-      className="p-4 mb-4 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 bg-gradient-to-br from-white via-white to-muted/30 backdrop-blur-sm border border-muted/50"
+      className="p-4 mb-4 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 bg-gradient-to-br from-white via-white to-muted/30 backdrop-blur-sm border border-muted/50 cursor-pointer"
       onClick={() => navigate(`/tender/${id}`)}
     >
       <div className="flex justify-between items-start">
