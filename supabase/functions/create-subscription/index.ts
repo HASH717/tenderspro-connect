@@ -32,20 +32,48 @@ serve(async (req) => {
     // Initialize Supabase client with service role key
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    // Get user profile information
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
+    // Get user profile and auth information
+    const [profileResponse, userResponse] = await Promise.all([
+      supabase.from('profiles').select('*').eq('id', userId).single(),
+      supabase.auth.admin.getUserById(userId)
+    ])
 
-    if (profileError) {
+    if (profileResponse.error) {
+      console.error('Profile fetch error:', profileResponse.error)
       throw new Error('Failed to fetch user profile')
     }
+
+    if (userResponse.error) {
+      console.error('User fetch error:', userResponse.error)
+      throw new Error('Failed to fetch user data')
+    }
+
+    const profile = profileResponse.data
+    const userEmail = userResponse.data.user.email
 
     console.log(`Creating subscription for plan: ${plan} with amount: ${amount} for user: ${userId}`)
 
     // Create payment request to Chargily Pay
+    const paymentData = {
+      amount: amount, // Amount in DZD
+      currency: 'DZD',
+      description: `Subscription to ${plan} Plan`,
+      webhook_url: `${SUPABASE_URL}/functions/v1/payment-webhook`, // Webhook endpoint
+      back_url: 'https://dztenders.com/payment-success', // Success page URL
+      mode: 'CIB', // CIB/EDAHABIA
+      customer: {
+        name: `${profile.first_name} ${profile.last_name}`,
+        email: userEmail,
+        phone: profile.phone_number || '213xxxxxxxxx'
+      },
+      metadata: {
+        plan: plan,
+        user_id: userId
+      }
+    }
+
+    console.log('Payment request data:', paymentData)
+
     const response = await fetch('https://pay.chargily.net/api/v2/payment-links', {
       method: 'POST',
       headers: {
@@ -53,29 +81,13 @@ serve(async (req) => {
         'Content-Type': 'application/json',
         'X-Authorization': `Bearer ${CHARGILY_PAY_SECRET_KEY}`,
       },
-      body: JSON.stringify({
-        amount: amount, // Amount in DZD
-        currency: 'DZD',
-        description: `Subscription to ${plan} Plan`,
-        webhook_url: `${SUPABASE_URL}/functions/v1/payment-webhook`, // Webhook endpoint
-        back_url: `${SUPABASE_URL}/payment-success`, // Success page URL
-        mode: 'CIB', // CIB/EDAHABIA
-        customer: {
-          name: `${profile.first_name} ${profile.last_name}`,
-          email: profile.email || 'customer@example.com',
-          phone: profile.phone_number || '213xxxxxxxxx'
-        },
-        metadata: {
-          plan: plan,
-          user_id: userId
-        }
-      })
+      body: JSON.stringify(paymentData)
     })
 
     if (!response.ok) {
       const errorData = await response.json()
       console.error('Chargily Pay API error:', errorData)
-      throw new Error('Failed to create payment link')
+      throw new Error(`Chargily Pay API error: ${JSON.stringify(errorData)}`)
     }
 
     const data = await response.json()
