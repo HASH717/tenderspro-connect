@@ -174,8 +174,7 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
     }
 
     if (!isCategoryAccessible(category)) {
-      toast({
-        description: "Please upgrade your subscription to access more categories",
+      toast.error("Please upgrade your subscription to access more categories", {
         action: {
           label: "Upgrade",
           onClick: () => navigate('/subscriptions')

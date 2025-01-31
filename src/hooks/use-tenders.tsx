@@ -51,9 +51,7 @@ export const useTenders = (filters: TenderFilters) => {
         if (profile?.preferred_categories?.includes(filters.category)) {
           return tenders;
         } else {
-          // Show a message about upgrading if trying to view non-preferred categories
-          toast({
-            description: "Please upgrade your subscription to view more categories",
+          toast.error("Please upgrade your subscription to view more categories", {
             action: {
               label: "Upgrade",
               onClick: () => window.location.href = '/subscriptions'
