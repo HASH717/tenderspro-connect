@@ -4,36 +4,44 @@ import { corsHeaders } from '../_shared/cors.ts'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const chargilySecretKey = Deno.env.get('CHARGILY_PAY_SECRET_KEY')!
 
 const supabase = createClient(supabaseUrl, supabaseServiceRoleKey)
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    // Parse the webhook payload
     const payload = await req.json()
-    console.log('Received webhook payload:', payload)
+    console.log('Received webhook payload:', JSON.stringify(payload, null, 2))
 
-    const event = payload.event
+    // Extract the event data
+    const data = payload.data
+    if (!data) {
+      throw new Error('No data in webhook payload')
+    }
 
-    // Handle different event types
-    if (event.type === 'checkout.paid') {
-      const checkout = event.data
-      console.log('Processing paid checkout:', checkout)
+    // Check if this is a successful payment
+    if (data.status === 'paid') {
+      console.log('Processing paid checkout:', data)
       
-      // Extract user_id and plan from metadata
-      const userId = checkout.metadata?.user_id
-      const planName = checkout.metadata?.plan
+      // Extract metadata
+      const metadata = data.metadata
+      if (!metadata) {
+        throw new Error('No metadata in checkout data')
+      }
+
+      const userId = metadata.user_id
+      const planName = metadata.plan
+      const email = metadata.email
 
       if (!userId || !planName) {
-        console.error('Missing user_id or plan in metadata:', checkout.metadata)
-        throw new Error('Missing required metadata')
+        console.error('Missing required metadata:', metadata)
+        throw new Error('Missing required metadata (user_id or plan)')
       }
+
+      console.log('Extracted data:', { userId, planName, email })
 
       // Calculate subscription period
       const now = new Date()
@@ -50,7 +58,7 @@ serve(async (req) => {
         }
       })
 
-      // Update or create subscription using upsert
+      // Update or create subscription
       const { data: subscription, error: subscriptionError } = await supabase
         .from('subscriptions')
         .upsert({
@@ -71,7 +79,6 @@ serve(async (req) => {
 
       console.log('Successfully updated subscription:', subscription)
 
-      // Return success response with subscription data
       return new Response(
         JSON.stringify({ 
           success: true,
@@ -85,9 +92,9 @@ serve(async (req) => {
       )
     }
 
-    // Return success response for other event types
+    // Return success for other events
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, message: 'Event processed' }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200 
