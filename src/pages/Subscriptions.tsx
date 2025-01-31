@@ -43,7 +43,7 @@ const Subscriptions = () => {
   const plans = [
     {
       name: "Basic",
-      price: 2000,
+      price: 2000, // Price in DZD
       description: "Perfect for getting started",
       features: [
         "Access to all public tenders",
@@ -53,7 +53,7 @@ const Subscriptions = () => {
     },
     {
       name: "Pro",
-      price: 5000,
+      price: 5000, // Price in DZD
       description: "For growing businesses",
       features: [
         "Everything in Basic",
@@ -64,7 +64,7 @@ const Subscriptions = () => {
     },
     {
       name: "Enterprise",
-      price: 10000,
+      price: 10000, // Price in DZD
       description: "For large organizations",
       features: [
         "Everything in Pro",
@@ -78,6 +78,7 @@ const Subscriptions = () => {
 
   const handleSubscribe = async (planName: string, price: number) => {
     try {
+      // Price is already in DZD, no need to convert
       const { data, error } = await supabase.functions.invoke('create-subscription', {
         body: {
           plan: planName,
