@@ -13,7 +13,7 @@ import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import TenderDetails from "./pages/TenderDetails";
-import PaymentLinks from "./pages/PaymentLinks";
+import Subscriptions from "./pages/Subscriptions";
 
 const queryClient = new QueryClient();
 
@@ -81,10 +81,10 @@ const App = () => (
                 }
               />
               <Route
-                path="/payment-links"
+                path="/subscriptions"
                 element={
                   <ProtectedRoute>
-                    <PaymentLinks />
+                    <Subscriptions />
                   </ProtectedRoute>
                 }
               />

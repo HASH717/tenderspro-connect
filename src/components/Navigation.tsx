@@ -1,4 +1,4 @@
-import { Home, Heart, Bell, User, Globe } from "lucide-react";
+import { Home, Heart, Bell, User, Globe, CreditCard } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -23,6 +23,7 @@ const Navigation = () => {
     { icon: Heart, path: "/favorites", label: t("navigation.favorites") },
     { icon: Bell, path: "/alerts", label: t("navigation.alerts") },
     { icon: User, path: "/profile", label: t("navigation.profile") },
+    { icon: CreditCard, path: "/subscriptions", label: t("navigation.subscriptions") },
   ];
 
   const logoSrc = "/lovable-uploads/c1c4772c-d5f0-499c-b16f-ae8dcefaa6c3.png";
