@@ -11,7 +11,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceRoleKey)
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
@@ -41,7 +41,7 @@ serve(async (req) => {
       const currentPeriodEnd = new Date(now)
       currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1) // 1 month subscription
 
-      console.log('Creating subscription:', {
+      console.log('Creating/updating subscription:', {
         user_id: userId,
         plan: planName,
         period: {
@@ -50,7 +50,7 @@ serve(async (req) => {
         }
       })
 
-      // Update or create subscription
+      // Update or create subscription using upsert
       const { data: subscription, error: subscriptionError } = await supabase
         .from('subscriptions')
         .upsert({
@@ -58,9 +58,8 @@ serve(async (req) => {
           plan: planName,
           status: 'active',
           current_period_start: currentPeriodStart.toISOString(),
-          current_period_end: currentPeriodEnd.toISOString()
-        }, {
-          onConflict: 'user_id'
+          current_period_end: currentPeriodEnd.toISOString(),
+          updated_at: new Date().toISOString()
         })
         .select()
         .single()
