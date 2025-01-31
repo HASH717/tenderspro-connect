@@ -13,7 +13,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Card,
@@ -301,13 +300,9 @@ const Subscriptions = () => {
               options={CATEGORIES}
               selectedValues={selectedCategories}
               onChange={setSelectedCategories}
-              label={`Select up to ${selectedPlan?.categoryLimit} categories`}
+              label={`Select up to ${selectedPlan?.categoryLimit || 'unlimited'} categories`}
+              maxSelections={selectedPlan?.categoryLimit}
             />
-            {selectedCategories.length > (selectedPlan?.categoryLimit || Infinity) && (
-              <p className="text-red-500 text-sm mt-2">
-                You can only select up to {selectedPlan?.categoryLimit} categories with the {selectedPlan?.name} plan.
-              </p>
-            )}
           </div>
           <div className="flex justify-end gap-4">
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>

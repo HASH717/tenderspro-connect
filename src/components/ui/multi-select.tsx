@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Check } from "lucide-react";
 import { Button } from "./button";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface Option {
   value: string;
@@ -14,6 +15,7 @@ interface MultiSelectProps {
   onChange: (values: string[]) => void;
   label: string;
   className?: string;
+  maxSelections?: number;
 }
 
 export function MultiSelect({
@@ -22,8 +24,33 @@ export function MultiSelect({
   onChange,
   label,
   className,
+  maxSelections,
 }: MultiSelectProps) {
+  const { toast } = useToast();
+
+  // Enforce max selections on mount and when selectedValues change
+  useEffect(() => {
+    if (maxSelections && selectedValues.length > maxSelections) {
+      const truncatedValues = selectedValues.slice(0, maxSelections);
+      onChange(truncatedValues);
+      toast({
+        variant: "destructive",
+        title: "Selection limit exceeded",
+        description: `You can only select up to ${maxSelections} categories with your current plan.`,
+      });
+    }
+  }, [selectedValues, maxSelections, onChange, toast]);
+
   const handleToggle = (value: string) => {
+    if (maxSelections && !selectedValues.includes(value) && selectedValues.length >= maxSelections) {
+      toast({
+        variant: "destructive",
+        title: "Selection limit reached",
+        description: `You can only select up to ${maxSelections} categories with your current plan.`,
+      });
+      return;
+    }
+
     const newValues = selectedValues.includes(value)
       ? selectedValues.filter((v) => v !== value)
       : [...selectedValues, value];
@@ -31,6 +58,15 @@ export function MultiSelect({
   };
 
   const handleSelectAll = () => {
+    if (maxSelections && options.length > maxSelections) {
+      toast({
+        variant: "destructive",
+        title: "Selection limit exceeded",
+        description: `You can only select up to ${maxSelections} categories with your current plan.`,
+      });
+      return;
+    }
+
     if (selectedValues.length === options.length) {
       onChange([]);
     } else {
