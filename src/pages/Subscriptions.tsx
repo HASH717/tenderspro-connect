@@ -26,7 +26,7 @@ const Subscriptions = () => {
   const plans = [
     {
       name: "Basic",
-      price: 200000, // 2000 DZD in cents
+      price: 2000, // 2000 DZD
       description: "Perfect for getting started",
       features: [
         "Access to all public tenders",
@@ -36,7 +36,7 @@ const Subscriptions = () => {
     },
     {
       name: "Pro",
-      price: 500000, // 5000 DZD in cents
+      price: 5000, // 5000 DZD
       description: "For growing businesses",
       features: [
         "Everything in Basic",
@@ -47,7 +47,7 @@ const Subscriptions = () => {
     },
     {
       name: "Enterprise",
-      price: 1000000, // 10000 DZD in cents
+      price: 10000, // 10000 DZD
       description: "For large organizations",
       features: [
         "Everything in Pro",
@@ -64,7 +64,7 @@ const Subscriptions = () => {
       const { data, error } = await supabase.functions.invoke('create-subscription', {
         body: {
           plan: planName,
-          amount: price, // Already in cents
+          amount: price,
           userId: session?.user?.id,
         },
       });
@@ -109,7 +109,7 @@ const Subscriptions = () => {
                 <CardContent className="flex-grow">
                   <div className="mb-4">
                     <span className="text-3xl font-bold">
-                      {(plan.price / 100).toLocaleString()} DZD
+                      {plan.price.toLocaleString()} DZD
                     </span>
                     <span className="text-muted-foreground">/month</span>
                   </div>

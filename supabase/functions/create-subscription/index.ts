@@ -55,18 +55,15 @@ serve(async (req) => {
 
     console.log('User profile:', profile)
     console.log('User email:', userEmail)
-
-    // Ensure price is a positive integer in cents
-    const price = Math.max(1, Math.floor(Number(amount)))
-    console.log('Price in cents:', price)
     
     // Create payment request to Chargily Pay
     const paymentData = {
       name: `${plan} Plan Subscription`,
       items: [{
         name: `${plan} Plan`,
-        price: price,
-        quantity: 1
+        price: amount,
+        quantity: 1,
+        currency: "dzd"
       }],
       webhook_url: `${SUPABASE_URL}/functions/v1/payment-webhook`,
       back_url: 'https://dztenders.com/payment-success',
