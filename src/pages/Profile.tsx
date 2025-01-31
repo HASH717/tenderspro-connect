@@ -1,7 +1,6 @@
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -11,6 +10,8 @@ import { useTranslation } from "react-i18next";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
+import { ProfileForm } from "@/components/profile/ProfileForm";
+import { SubscriptionInfo } from "@/components/profile/SubscriptionInfo";
 
 interface Profile {
   first_name: string;
@@ -35,13 +36,10 @@ const Profile = () => {
     phone_number: "",
   });
   const [email, setEmail] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Fetch subscription data with proper error handling
   const { data: subscription, error: subscriptionError } = useQuery({
     queryKey: ['subscription', session?.user?.id],
     enabled: !!session?.user?.id,
@@ -51,17 +49,12 @@ const Profile = () => {
           .from('subscriptions')
           .select('*')
           .eq('user_id', session?.user?.id)
-          .maybeSingle();
+          .single();
 
         if (error) throw error;
         return data as Subscription;
       } catch (error: any) {
         console.error('Error fetching subscription:', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load subscription data",
-        });
         return null;
       }
     }
@@ -80,11 +73,9 @@ const Profile = () => {
           .from("profiles")
           .select("first_name, last_name, phone_number")
           .eq("id", session.user.id)
-          .maybeSingle();
+          .single();
 
-        if (error) {
-          throw error;
-        }
+        if (error) throw error;
 
         if (data) {
           setProfile(data);
@@ -104,55 +95,6 @@ const Profile = () => {
 
     getProfile();
   }, [session?.user?.id, session?.user?.email, toast, navigate]);
-
-  const handleUpdateProfile = async () => {
-    if (!session?.user?.id) {
-      navigate('/auth');
-      return;
-    }
-    
-    setIsLoading(true);
-    try {
-      if (email !== session.user.email) {
-        const { error: emailError } = await supabase.auth.updateUser({
-          email: email,
-        });
-        if (emailError) throw emailError;
-      }
-
-      if (newPassword) {
-        const { error: passwordError } = await supabase.auth.updateUser({
-          password: newPassword,
-        });
-        if (passwordError) throw passwordError;
-      }
-
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({
-          phone_number: profile.phone_number,
-        })
-        .eq("id", session.user.id);
-
-      if (profileError) throw profileError;
-
-      toast({
-        title: "Success",
-        description: "Profile updated successfully",
-      });
-
-      setNewPassword("");
-    } catch (error: any) {
-      console.error('Error updating profile:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to update profile",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleLogout = async () => {
     try {
@@ -220,127 +162,20 @@ const Profile = () => {
             </TabsList>
 
             <TabsContent value="profile" className="space-y-4 bg-white p-6 rounded-lg border">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t("profile.email")}
-                </label>
-                <Input 
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t("profile.enterEmail")}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t("profile.newPassword")} {t("profile.newPasswordHint")}
-                </label>
-                <Input 
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder={t("profile.newPasswordPlaceholder")}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t("profile.firstName")}
-                </label>
-                <Input 
-                  value={profile.first_name}
-                  disabled
-                  className="bg-gray-100"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t("profile.lastName")}
-                </label>
-                <Input 
-                  value={profile.last_name}
-                  disabled
-                  className="bg-gray-100"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t("profile.phoneNumber")}
-                </label>
-                <Input 
-                  value={profile.phone_number}
-                  onChange={(e) => setProfile({ ...profile, phone_number: e.target.value })}
-                  placeholder={t("profile.enterPhoneNumber")}
-                />
-              </div>
-              
-              <Button 
-                className="w-full" 
-                onClick={handleUpdateProfile}
-                disabled={isLoading}
-              >
-                {isLoading ? t("profile.saving") : t("profile.saveChanges")}
-              </Button>
-
-              {/* Show upgrade button for mobile users without subscription */}
-              {isMobile && !subscription?.status && (
-                <Button
-                  className="w-full bg-green-500 hover:bg-green-600 text-white mt-4"
-                  onClick={() => navigate('/subscriptions')}
-                >
-                  Upgrade
-                </Button>
-              )}
+              <ProfileForm 
+                email={email}
+                profile={profile}
+                setEmail={setEmail}
+                setProfile={setProfile}
+                userId={session.user.id}
+              />
             </TabsContent>
 
             <TabsContent value="subscription" className="bg-white rounded-lg border">
-              <div className="p-6">
-                {subscription ? (
-                  <>
-                    <h3 className="text-lg font-semibold mb-4">Current Subscription</h3>
-                    <div className="space-y-3">
-                      <p className="flex justify-between items-center">
-                        <span className="font-medium">Plan:</span>
-                        <span className="text-primary font-semibold">{subscription.plan}</span>
-                      </p>
-                      <p className="flex justify-between items-center">
-                        <span className="font-medium">Status:</span>
-                        <span className={`capitalize font-semibold ${subscription.status === 'active' ? 'text-green-600' : 'text-yellow-600'}`}>
-                          {subscription.status}
-                        </span>
-                      </p>
-                      <p className="flex justify-between items-center">
-                        <span className="font-medium">Current Period:</span>
-                        <span className="text-gray-600">
-                          {new Date(subscription.current_period_start).toLocaleDateString()} - {new Date(subscription.current_period_end).toLocaleDateString()}
-                        </span>
-                      </p>
-                    </div>
-                    <Button 
-                      className="mt-6 w-full"
-                      onClick={() => navigate('/subscriptions')}
-                    >
-                      Manage Subscription
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <h3 className="text-lg font-semibold mb-4">No Active Subscription</h3>
-                    <p className="text-gray-600 mb-6">
-                      You currently don't have an active subscription. Subscribe to access more features.
-                    </p>
-                    <Button 
-                      className="w-full bg-green-500 hover:bg-green-600 text-white"
-                      onClick={() => navigate('/subscriptions')}
-                    >
-                      Upgrade
-                    </Button>
-                  </>
-                )}
-              </div>
+              <SubscriptionInfo 
+                subscription={subscription}
+                isMobile={isMobile}
+              />
             </TabsContent>
           </Tabs>
         </div>
@@ -348,7 +183,6 @@ const Profile = () => {
       <Footer />
     </div>
   );
-
 };
 
 export default Profile;
