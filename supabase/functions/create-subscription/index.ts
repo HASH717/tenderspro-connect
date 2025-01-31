@@ -79,7 +79,7 @@ serve(async (req) => {
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
-        'X-Authorization': `Bearer ${CHARGILY_PAY_SECRET_KEY}`,
+        'Authorization': `Bearer ${CHARGILY_PAY_SECRET_KEY}`, // Changed from X-Authorization to Authorization
       },
       body: JSON.stringify(paymentData)
     })
