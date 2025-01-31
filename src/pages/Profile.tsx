@@ -162,7 +162,7 @@ const Profile = () => {
 
   if (isLoadingProfile) {
     return (
-      <div className="min-h-screen pb-20">
+      <div className="min-h-screen">
         <Navigation />
         <div className={`p-4 ${isMobile ? "pt-6" : "pt-24"}`}>
           <h1 className="text-2xl font-bold text-primary mb-4">{t("pages.profile")}</h1>
@@ -271,6 +271,16 @@ const Profile = () => {
               >
                 {isLoading ? t("profile.saving") : t("profile.saveChanges")}
               </Button>
+
+              {/* Show upgrade button for mobile users without subscription */}
+              {isMobile && !subscription?.status && (
+                <Button
+                  className="w-full bg-green-500 hover:bg-green-600 text-white mt-4"
+                  onClick={() => navigate('/subscriptions')}
+                >
+                  Upgrade
+                </Button>
+              )}
             </TabsContent>
 
             <TabsContent value="subscription" className="bg-white rounded-lg border">
@@ -310,10 +320,10 @@ const Profile = () => {
                       You currently don't have an active subscription. Subscribe to access more features.
                     </p>
                     <Button 
-                      className="w-full"
+                      className="w-full bg-green-500 hover:bg-green-600 text-white"
                       onClick={() => navigate('/subscriptions')}
                     >
-                      View Plans
+                      Upgrade
                     </Button>
                   </>
                 )}

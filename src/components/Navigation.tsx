@@ -3,6 +3,9 @@ import { Link, useLocation } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +18,22 @@ const Navigation = () => {
   const isMobile = useIsMobile();
   const { t } = useTranslation();
   const { currentLanguage, changeLanguage } = useLanguage();
+  const { session } = useAuth();
+
+  const { data: subscription } = useQuery({
+    queryKey: ['subscription', session?.user?.id],
+    enabled: !!session?.user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', session?.user?.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    }
+  });
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -23,8 +42,16 @@ const Navigation = () => {
     { icon: Heart, path: "/favorites", label: t("navigation.favorites") },
     { icon: Bell, path: "/alerts", label: t("navigation.alerts") },
     { icon: User, path: "/profile", label: t("navigation.profile") },
-    { icon: CreditCard, path: "/subscriptions", label: t("navigation.subscriptions") },
   ];
+
+  // Only show subscription button for non-mobile and non-subscribed users
+  if (!isMobile && !subscription?.status) {
+    navItems.push({ 
+      icon: CreditCard, 
+      path: "/subscriptions", 
+      label: t("navigation.subscriptions") 
+    });
+  }
 
   const logoSrc = "/lovable-uploads/c1c4772c-d5f0-499c-b16f-ae8dcefaa6c3.png";
 
@@ -85,13 +112,17 @@ const Navigation = () => {
               key={path}
               to={path}
               className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
-                isActive(path)
+                path === '/subscriptions'
+                  ? 'bg-green-500 hover:bg-green-600 text-white'
+                  : isActive(path)
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-accent hover:text-white"
               }`}
             >
               <Icon className="w-5 h-5" />
-              <span className="text-sm font-medium">{label}</span>
+              <span className="text-sm font-medium">
+                {path === '/subscriptions' ? 'Upgrade' : label}
+              </span>
             </Link>
           ))}
           <DropdownMenu>
