@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Card,
   CardContent,
@@ -20,6 +21,7 @@ const Subscriptions = () => {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const { toast } = useToast();
+  const { session } = useAuth();
 
   const plans = [
     {
@@ -63,6 +65,7 @@ const Subscriptions = () => {
         body: {
           plan: planName,
           amount: parseInt(price),
+          userId: session?.user?.id,
         },
       });
 

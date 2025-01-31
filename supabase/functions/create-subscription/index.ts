@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,17 +13,37 @@ serve(async (req) => {
   }
 
   try {
-    const { plan, amount } = await req.json()
+    const { plan, amount, userId } = await req.json()
     
     // Get environment variables
     const CHARGILY_PAY_SECRET_KEY = Deno.env.get('CHARGILY_PAY_SECRET_KEY')
     const CHARGILY_PAY_PUBLIC_KEY = Deno.env.get('CHARGILY_PAY_PUBLIC_KEY')
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
     if (!CHARGILY_PAY_SECRET_KEY || !CHARGILY_PAY_PUBLIC_KEY) {
       throw new Error('Chargily Pay credentials not configured')
     }
 
-    console.log(`Creating subscription for plan: ${plan} with amount: ${amount}`)
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error('Supabase credentials not configured')
+    }
+
+    // Initialize Supabase client with service role key
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+    // Get user profile information
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single()
+
+    if (profileError) {
+      throw new Error('Failed to fetch user profile')
+    }
+
+    console.log(`Creating subscription for plan: ${plan} with amount: ${amount} for user: ${userId}`)
 
     // Create payment request to Chargily Pay
     const response = await fetch('https://pay.chargily.net/api/v2/payment-links', {
@@ -36,17 +57,17 @@ serve(async (req) => {
         amount: amount, // Amount in DZD
         currency: 'DZD',
         description: `Subscription to ${plan} Plan`,
-        webhook_url: 'https://your-domain.com/webhook', // You'll need to update this
-        back_url: 'https://your-domain.com/payment-success', // You'll need to update this
+        webhook_url: `${SUPABASE_URL}/functions/v1/payment-webhook`, // Webhook endpoint
+        back_url: `${SUPABASE_URL}/payment-success`, // Success page URL
         mode: 'CIB', // CIB/EDAHABIA
         customer: {
-          name: 'Customer', // We can add user details later
-          email: 'customer@example.com', // We can add user email later
-          phone: '213xxxxxxxxx' // We can add user phone later
+          name: `${profile.first_name} ${profile.last_name}`,
+          email: profile.email || 'customer@example.com',
+          phone: profile.phone_number || '213xxxxxxxxx'
         },
         metadata: {
           plan: plan,
-          user_id: 'user_id' // We can add actual user ID later
+          user_id: userId
         }
       })
     })
