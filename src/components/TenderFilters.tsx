@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
 
 interface TenderFiltersProps {
   onSearch: (filters: TenderFilters) => void;
@@ -86,6 +87,7 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
 
       if (error) {
         console.error('Error fetching categories:', error);
+        toast.error('Failed to load categories');
         return [];
       }
 
@@ -146,7 +148,7 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
         <Select
           value={filters.tenderType}
           onValueChange={(value) => handleFilterChange("tenderType", value)}

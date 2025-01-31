@@ -49,7 +49,7 @@ export const useTenders = (filters: TenderFilters) => {
       }
 
       if (filters.wilaya) {
-        query = query.ilike('wilaya', `%${filters.wilaya}%`);
+        query = query.eq('wilaya', filters.wilaya);
       }
 
       // Category filtering based on subscription
