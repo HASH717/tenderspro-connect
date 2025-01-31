@@ -8,7 +8,7 @@ export const useTenders = (filters: TenderFilters) => {
   const { session } = useAuth();
 
   return useQuery({
-    queryKey: ['tenders', filters],
+    queryKey: ['tenders', filters, session?.user?.id],
     queryFn: async () => {
       console.log('Fetching tenders with filters:', filters);
       let query = supabase
@@ -32,7 +32,7 @@ export const useTenders = (filters: TenderFilters) => {
         query = query.eq('category', filters.category);
       }
 
-      const { data, error } = await query;
+      const { data: tenders, error } = await query;
       
       if (error) {
         console.error('Error fetching tenders:', error);
@@ -40,8 +40,31 @@ export const useTenders = (filters: TenderFilters) => {
         return [];
       }
 
-      console.log('Fetched tenders:', data);
-      return data || [];
+      // If user is logged in and has selected a category, filter by their subscription status
+      if (session?.user?.id && filters.category) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('preferred_categories')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profile?.preferred_categories?.includes(filters.category)) {
+          return tenders;
+        } else {
+          // Show a message about upgrading if trying to view non-preferred categories
+          toast({
+            title: "Category not in your plan",
+            description: "Please upgrade your subscription to view more categories",
+            action: {
+              label: "Upgrade",
+              onClick: () => window.location.href = '/subscriptions'
+            }
+          });
+          return [];
+        }
+      }
+
+      return tenders || [];
     }
   });
 };

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search } from "lucide-react";
+import { Search, Lock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface TenderFiltersProps {
   onSearch: (filters: TenderFilters) => void;
@@ -50,12 +51,50 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
 
   const { t } = useTranslation();
   const { session } = useAuth();
+  const navigate = useNavigate();
 
-  // Fetch categories directly from tenders table
+  // Fetch user's subscription and profile
+  const { data: subscription } = useQuery({
+    queryKey: ['subscription', session?.user?.id],
+    enabled: !!session?.user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', session?.user?.id)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching subscription:', error);
+        return null;
+      }
+      return data;
+    }
+  });
+
+  const { data: profile } = useQuery({
+    queryKey: ['profile', session?.user?.id],
+    enabled: !!session?.user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session?.user?.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return null;
+      }
+      return data;
+    }
+  });
+
+  // Fetch all available categories
   const { data: categories = [] } = useQuery({
     queryKey: ['tender-categories'],
     queryFn: async () => {
-      console.log('Fetching categories...');
       const { data, error } = await supabase
         .from('tenders')
         .select('category')
@@ -67,12 +106,10 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
         return [];
       }
 
-      // Get unique categories and remove nulls
       const uniqueCategories = Array.from(new Set(data.map(tender => tender.category)))
         .filter(category => category)
         .sort();
 
-      console.log('Fetched categories:', uniqueCategories);
       return uniqueCategories;
     }
   });
@@ -104,6 +141,51 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
     };
     setFilters(clearedFilters);
     onSearch(clearedFilters);
+  };
+
+  const getCategoryLimit = () => {
+    if (!subscription) return 3; // Basic plan limit
+    switch (subscription.plan) {
+      case 'Basic':
+        return 3;
+      case 'Professional':
+        return 10;
+      case 'Enterprise':
+        return Infinity;
+      default:
+        return 3;
+    }
+  };
+
+  const isCategoryAccessible = (category: string) => {
+    if (!session?.user?.id) return true; // Show all categories for non-logged-in users
+    if (!profile?.preferred_categories) return false;
+    
+    const categoryLimit = getCategoryLimit();
+    const preferredCategories = profile.preferred_categories;
+    
+    return preferredCategories.includes(category) || preferredCategories.length < categoryLimit;
+  };
+
+  const handleCategorySelect = (category: string) => {
+    if (!session?.user?.id) {
+      toast.error('Please login to filter by category');
+      return;
+    }
+
+    if (!isCategoryAccessible(category)) {
+      toast({
+        title: "Upgrade Required",
+        description: "Please upgrade your subscription to access more categories",
+        action: {
+          label: "Upgrade",
+          onClick: () => navigate('/subscriptions')
+        }
+      });
+      return;
+    }
+
+    handleFilterChange("category", category);
   };
 
   return (
@@ -139,15 +221,23 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
 
         <Select
           value={filters.category}
-          onValueChange={(value) => handleFilterChange("category", value)}
+          onValueChange={handleCategorySelect}
         >
           <SelectTrigger className="bg-white/80 backdrop-blur-sm border-muted/50">
             <SelectValue placeholder={t("filters.category")} />
           </SelectTrigger>
           <SelectContent>
             {categories.map((category) => (
-              <SelectItem key={category} value={category}>
-                {t(`tender.categories.${category.toLowerCase()}`, category)}
+              <SelectItem 
+                key={category} 
+                value={category}
+                className="flex items-center justify-between"
+                disabled={!isCategoryAccessible(category)}
+              >
+                <span>{t(`tender.categories.${category.toLowerCase()}`, category)}</span>
+                {!isCategoryAccessible(category) && (
+                  <Lock className="h-4 w-4 ml-2 inline-block text-muted-foreground" />
+                )}
               </SelectItem>
             ))}
           </SelectContent>
