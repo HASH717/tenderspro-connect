@@ -83,6 +83,86 @@ export type Database = {
           },
         ]
       }
+      payment_link_items: {
+        Row: {
+          adjustable_quantity: boolean | null
+          amount: number
+          created_at: string
+          currency: string
+          entity: string
+          id: string
+          metadata: Json | null
+          payment_link_id: string
+          quantity: number
+          updated_at: string
+        }
+        Insert: {
+          adjustable_quantity?: boolean | null
+          amount: number
+          created_at?: string
+          currency?: string
+          entity: string
+          id?: string
+          metadata?: Json | null
+          payment_link_id: string
+          quantity?: number
+          updated_at?: string
+        }
+        Update: {
+          adjustable_quantity?: boolean | null
+          amount?: number
+          created_at?: string
+          currency?: string
+          entity?: string
+          id?: string
+          metadata?: Json | null
+          payment_link_id?: string
+          quantity?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_link_items_payment_link_id_fkey"
+            columns: ["payment_link_id"]
+            isOneToOne: false
+            referencedRelation: "payment_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_links: {
+        Row: {
+          chargily_id: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chargily_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chargily_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

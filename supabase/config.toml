@@ -1,7 +1,17 @@
 project_id = "achevndenwxikpbabzop"
 
-[functions.scrape-tenders]
-verify_jwt = false
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
 
-[functions.check-new-tenders]
-verify_jwt = false
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+
+[[functions]]
+name = "payment-links"
+verify_jwt = true
