@@ -51,16 +51,12 @@ serve(async (req) => {
 
     console.log('User profile:', profile)
     console.log('User email:', userEmail)
-
-    // Ensure minimum amount of 200 DZD and convert to cents
-    const amountInCents = Math.max(200, Math.round(amount)) * 100
-    console.log('Amount in cents:', amountInCents)
     
     const paymentData = {
       name: `${plan} Plan Subscription`,
       items: [{
         name: `${plan} Plan`,
-        price: amountInCents,
+        price: amount,
         quantity: 1,
         currency: "dzd",
         adjustable_quantity: false

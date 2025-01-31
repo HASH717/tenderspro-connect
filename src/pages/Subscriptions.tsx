@@ -42,7 +42,7 @@ const Subscriptions = () => {
   const plans = [
     {
       name: "Basic",
-      priceInDZD: 200,
+      priceInDZD: 20000, // 200 DZD in cents
       description: "Perfect for getting started",
       features: [
         "Access to all public tenders",
@@ -52,7 +52,7 @@ const Subscriptions = () => {
     },
     {
       name: "Pro",
-      priceInDZD: 500,
+      priceInDZD: 50000, // 500 DZD in cents
       description: "For growing businesses",
       features: [
         "Everything in Basic",
@@ -63,7 +63,7 @@ const Subscriptions = () => {
     },
     {
       name: "Enterprise",
-      priceInDZD: 1000,
+      priceInDZD: 100000, // 1000 DZD in cents
       description: "For large organizations",
       features: [
         "Everything in Pro",
@@ -138,7 +138,7 @@ const Subscriptions = () => {
                 <CardContent className="flex-grow">
                   <div className="mb-4">
                     <span className="text-3xl font-bold">
-                      {plan.priceInDZD.toLocaleString()} DZD
+                      {(plan.priceInDZD / 100).toLocaleString()} DZD
                     </span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
