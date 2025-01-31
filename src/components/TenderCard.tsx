@@ -81,7 +81,7 @@ export const TenderCard = ({
               <MapPin className="w-4 h-4 mr-2" />
               <span className="text-sm">{getLocationTranslation(location)}</span>
             </div>
-            <div className="flex items-center text-secondary">
+            <div className="flex items-center text-[#F97316]">
               <Calendar className="w-4 h-4 mr-2" />
               <span className="text-sm">{t('tender.deadline')}: {deadline}</span>
             </div>
