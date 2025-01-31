@@ -89,9 +89,9 @@ const Subscriptions = () => {
       <Navigation />
       <div className={`flex-grow ${isMobile ? "pt-6" : "pt-24"}`}>
         <div className="max-w-6xl mx-auto px-4">
-          <Alert variant="warning" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
+          <Alert variant="default" className="mb-6 border-yellow-500 bg-yellow-50">
+            <AlertCircle className="h-4 w-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-600">
               You are currently in test mode. Any subscriptions created will be test
               subscriptions and won't process real payments.
             </AlertDescription>
