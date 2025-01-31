@@ -2,6 +2,9 @@ import { Calendar, MapPin, Building, Heart } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TenderCardProps {
   id: string;
@@ -26,6 +29,24 @@ export const TenderCard = ({
 }: TenderCardProps) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { session } = useAuth();
+
+  const { data: subscription } = useQuery({
+    queryKey: ['subscription', session?.user?.id],
+    enabled: !!session?.user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', session?.user?.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const shouldBlur = session?.user && !subscription?.status;
 
   const getCategoryTranslation = (org: string) => {
     const categoryMap: { [key: string]: string } = {
@@ -64,10 +85,12 @@ export const TenderCard = ({
 
   return (
     <Card 
-      className="p-4 mb-4 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 bg-gradient-to-br from-white via-white to-muted/30 backdrop-blur-sm border border-muted/50 cursor-pointer"
+      className={`p-4 mb-4 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 bg-gradient-to-br from-white via-white to-muted/30 backdrop-blur-sm border border-muted/50 cursor-pointer relative ${
+        shouldBlur ? 'pointer-events-none' : ''
+      }`}
       onClick={() => navigate(`/tender/${id}`)}
     >
-      <div className="flex justify-between items-start">
+      <div className={`flex justify-between items-start ${shouldBlur ? 'blur-sm' : ''}`}>
         <div className="flex-1">
           <h3 className="font-semibold text-lg text-foreground mb-2 line-clamp-2">
             {getTitleTranslation(title)}
@@ -99,6 +122,19 @@ export const TenderCard = ({
           <Heart className={`w-6 h-6 ${isFavorite ? "fill-current" : ""}`} />
         </button>
       </div>
+      {shouldBlur && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/5 rounded-lg">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate('/subscriptions');
+            }}
+            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg pointer-events-auto"
+          >
+            Upgrade to View
+          </button>
+        </div>
+      )}
     </Card>
   );
 };
