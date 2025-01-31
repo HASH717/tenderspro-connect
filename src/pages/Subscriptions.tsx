@@ -89,29 +89,27 @@ const Subscriptions = () => {
         return;
       }
 
-      // Create a payment link using the Edge Function
-      const response = await fetch('/api/create-subscription', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
+      // Call the Supabase Edge Function instead of a regular API endpoint
+      const { data, error } = await supabase.functions.invoke('create-subscription', {
+        body: {
           plan: planName,
           priceId: priceId,
           userId: session.user.id
-        })
+        }
       });
 
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create payment link');
+      if (error) {
+        throw error;
       }
 
       // Redirect to the payment page
-      window.location.href = data.paymentUrl;
+      if (data?.paymentUrl) {
+        window.location.href = data.paymentUrl;
+      } else {
+        throw new Error('No payment URL received');
+      }
     } catch (error: any) {
+      console.error('Subscription error:', error);
       toast({
         variant: "destructive",
         title: "Error",
