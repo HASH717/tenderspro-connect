@@ -56,8 +56,9 @@ serve(async (req) => {
     console.log('User profile:', profile)
     console.log('User email:', userEmail)
 
-    // Ensure amount is a valid number and convert to smallest currency unit (cents)
-    const priceInCents = Math.round(parseFloat(amount) * 100)
+    // Convert amount to smallest currency unit (cents) and ensure it's a positive integer
+    const priceInCents = Math.max(1, Math.round(parseFloat(amount)))
+    console.log('Price in cents:', priceInCents)
     
     // Create payment request to Chargily Pay
     const paymentData = {
