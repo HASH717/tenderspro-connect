@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,15 +14,56 @@ serve(async (req) => {
   try {
     const { plan, amount } = await req.json()
     
-    // Initialize Chargily client (we'll implement actual payment integration later)
-    const paymentUrl = `https://pay.chargily.net/test/checkout/${plan}` // Using test URL for now
+    // Get environment variables
+    const CHARGILY_PAY_SECRET_KEY = Deno.env.get('CHARGILY_PAY_SECRET_KEY')
+    const CHARGILY_PAY_PUBLIC_KEY = Deno.env.get('CHARGILY_PAY_PUBLIC_KEY')
+
+    if (!CHARGILY_PAY_SECRET_KEY || !CHARGILY_PAY_PUBLIC_KEY) {
+      throw new Error('Chargily Pay credentials not configured')
+    }
 
     console.log(`Creating subscription for plan: ${plan} with amount: ${amount}`)
 
+    // Create payment request to Chargily Pay
+    const response = await fetch('https://pay.chargily.net/api/v2/payment-links', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-Authorization': `Bearer ${CHARGILY_PAY_SECRET_KEY}`,
+      },
+      body: JSON.stringify({
+        amount: amount, // Amount in DZD
+        currency: 'DZD',
+        description: `Subscription to ${plan} Plan`,
+        webhook_url: 'https://your-domain.com/webhook', // You'll need to update this
+        back_url: 'https://your-domain.com/payment-success', // You'll need to update this
+        mode: 'CIB', // CIB/EDAHABIA
+        customer: {
+          name: 'Customer', // We can add user details later
+          email: 'customer@example.com', // We can add user email later
+          phone: '213xxxxxxxxx' // We can add user phone later
+        },
+        metadata: {
+          plan: plan,
+          user_id: 'user_id' // We can add actual user ID later
+        }
+      })
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('Chargily Pay API error:', errorData)
+      throw new Error('Failed to create payment link')
+    }
+
+    const data = await response.json()
+    console.log('Payment link created:', data)
+
     return new Response(
       JSON.stringify({ 
-        paymentUrl,
-        message: 'Subscription created successfully'
+        paymentUrl: data.checkout_url,
+        message: 'Payment link created successfully'
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
