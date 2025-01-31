@@ -45,7 +45,6 @@ const Subscriptions = () => {
       priceInDZD: 100000, // 1000 DZD in cents
       description: "Perfect for getting started",
       features: [
-        "7 days free trial",
         "Follow up to 3 categories",
         "Basic search functionality",
         "Email notifications",
@@ -57,7 +56,6 @@ const Subscriptions = () => {
       priceInDZD: 200000, // 2000 DZD in cents
       description: "For growing businesses",
       features: [
-        "7 days free trial",
         "Follow up to 10 categories",
         "Advanced search filters",
         "Priority notifications",
@@ -70,7 +68,6 @@ const Subscriptions = () => {
       priceInDZD: 1000000, // 10000 DZD in cents
       description: "For large organizations",
       features: [
-        "7 days free trial",
         "Follow unlimited categories",
         "Custom alerts",
         "API access",
