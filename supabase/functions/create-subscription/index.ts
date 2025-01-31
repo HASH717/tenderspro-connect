@@ -56,12 +56,15 @@ serve(async (req) => {
     console.log('User profile:', profile)
     console.log('User email:', userEmail)
 
+    // Ensure amount is a valid number and convert to smallest currency unit (cents)
+    const priceInCents = Math.round(parseFloat(amount) * 100)
+    
     // Create payment request to Chargily Pay
     const paymentData = {
       name: `${plan} Plan Subscription`,
       items: [{
         name: `${plan} Plan`,
-        price: amount,
+        price: priceInCents,
         quantity: 1
       }],
       webhook_url: `${SUPABASE_URL}/functions/v1/payment-webhook`,
