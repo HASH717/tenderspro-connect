@@ -32,31 +32,31 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    // First, update the subscription to the new plan
+    // First, insert a new subscription record
     try {
-      console.log('Updating subscription...')
+      console.log('Creating new subscription...')
       const { error: subscriptionError } = await supabase
         .from('subscriptions')
-        .update({ 
+        .insert({ 
+          user_id: userId,
           plan: plan,
           status: 'active',
           current_period_start: new Date().toISOString(),
           current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
         })
-        .eq('user_id', userId)
 
       if (subscriptionError) {
-        console.error('Error updating subscription:', subscriptionError)
-        throw new Error(`Failed to update subscription: ${subscriptionError.message}`)
+        console.error('Error creating subscription:', subscriptionError)
+        throw new Error(`Failed to create subscription: ${subscriptionError.message}`)
       }
       
       // Add a small delay to allow the trigger to process
       await new Promise(resolve => setTimeout(resolve, 1000))
       
     } catch (error) {
-      console.error('Subscription update error:', error)
+      console.error('Subscription creation error:', error)
       return new Response(
-        JSON.stringify({ error: `Failed to update subscription: ${error.message}` }),
+        JSON.stringify({ error: `Failed to create subscription: ${error.message}` }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400 
