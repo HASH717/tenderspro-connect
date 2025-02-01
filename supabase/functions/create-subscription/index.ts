@@ -32,7 +32,34 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    // Update user's preferred categories if provided
+    // First, update the subscription to the new plan
+    try {
+      const { error: subscriptionError } = await supabase
+        .from('subscriptions')
+        .update({ 
+          plan: plan,
+          status: 'active',
+          current_period_start: new Date().toISOString(),
+          current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
+        })
+        .eq('user_id', userId)
+
+      if (subscriptionError) {
+        console.error('Error updating subscription:', subscriptionError)
+        throw new Error(`Failed to update subscription: ${subscriptionError.message}`)
+      }
+    } catch (error) {
+      console.error('Subscription update error:', error)
+      return new Response(
+        JSON.stringify({ error: `Failed to update subscription: ${error.message}` }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400 
+        }
+      )
+    }
+
+    // Then update categories if provided
     if (categories && Array.isArray(categories)) {
       try {
         const { error: updateError } = await supabase
