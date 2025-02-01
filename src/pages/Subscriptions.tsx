@@ -18,7 +18,7 @@ import {
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 const Subscriptions = () => {
   const { t } = useTranslation();
@@ -27,6 +27,7 @@ const Subscriptions = () => {
   const { session } = useAuth();
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // Check for success parameter in URL
   useEffect(() => {
@@ -136,8 +137,9 @@ const Subscriptions = () => {
         toast({
           variant: "destructive",
           title: "Categories required",
-          description: "Please select your preferred categories in your profile settings first",
+          description: "Please complete your onboarding first to select your preferred categories",
         });
+        navigate('/onboarding');
         return;
       }
 
