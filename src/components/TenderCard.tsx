@@ -54,7 +54,7 @@ export const TenderCard = ({
     retry: 1
   });
 
-  const shouldBlur = session?.user && !subscription?.status;
+  const shouldBlur = session?.user && (!subscription?.status || subscription?.status === 'trial');
 
   const getCategoryTranslation = (org: string) => {
     const categoryMap: { [key: string]: string } = {
@@ -89,6 +89,12 @@ export const TenderCard = ({
     };
     const locationKey = locationMap[loc];
     return locationKey ? t(`tender.locations.${locationKey}`) : loc;
+  };
+
+  const getUpgradeButtonText = () => {
+    if (!subscription?.status) return "Upgrade to View";
+    if (subscription.status === 'trial') return "Upgrade to Premium";
+    return "Upgrade to View";
   };
 
   return (
@@ -139,7 +145,7 @@ export const TenderCard = ({
             }}
             className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg pointer-events-auto"
           >
-            Upgrade to View
+            {getUpgradeButtonText()}
           </button>
         </div>
       )}
