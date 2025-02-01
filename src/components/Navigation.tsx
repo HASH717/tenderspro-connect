@@ -52,12 +52,19 @@ const Navigation = () => {
     { icon: User, path: "/profile", label: t("navigation.profile") },
   ];
 
-  // Only show subscription button for non-mobile and non-subscribed users
-  if (!isMobile && !subscription?.status) {
+  const getUpgradeButtonText = () => {
+    if (!subscription?.status) return "Upgrade to View";
+    if (subscription?.status === 'trial') return "Upgrade to Premium";
+    return "Upgrade";
+  };
+
+  // Show upgrade button for non-subscribed and trial users
+  const shouldShowUpgrade = !isMobile && (!subscription?.status || subscription?.status === 'trial');
+  if (shouldShowUpgrade) {
     navItems.push({ 
       icon: CreditCard, 
       path: "/subscriptions", 
-      label: t("navigation.subscriptions") 
+      label: getUpgradeButtonText()
     });
   }
 
@@ -128,9 +135,7 @@ const Navigation = () => {
               }`}
             >
               <Icon className="w-5 h-5" />
-              <span className="text-sm font-medium">
-                {path === '/subscriptions' ? 'Upgrade' : label}
-              </span>
+              <span className="text-sm font-medium">{label}</span>
             </Link>
           ))}
           <DropdownMenu>

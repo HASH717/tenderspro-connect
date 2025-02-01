@@ -54,7 +54,7 @@ export const TenderCard = ({
     retry: 1
   });
 
-  const shouldBlur = session?.user && (!subscription?.status || subscription?.status === 'trial');
+  const shouldShowUpgradeButton = session?.user && (!subscription?.status || subscription?.status === 'trial');
 
   const getCategoryTranslation = (org: string) => {
     const categoryMap: { [key: string]: string } = {
@@ -99,12 +99,10 @@ export const TenderCard = ({
 
   return (
     <Card 
-      className={`p-4 mb-4 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 bg-gradient-to-br from-white via-white to-muted/30 backdrop-blur-sm border border-muted/50 cursor-pointer relative ${
-        shouldBlur ? 'pointer-events-none' : ''
-      }`}
+      className="p-4 mb-4 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 bg-gradient-to-br from-white via-white to-muted/30 backdrop-blur-sm border border-muted/50 cursor-pointer"
       onClick={() => navigate(`/tender/${id}`)}
     >
-      <div className={`flex justify-between items-start ${shouldBlur ? 'blur-sm' : ''}`}>
+      <div className="flex justify-between items-start">
         <div className="flex-1">
           <h3 className="font-semibold text-lg text-foreground mb-2 line-clamp-2">
             {getTitleTranslation(title)}
@@ -136,8 +134,8 @@ export const TenderCard = ({
           <Heart className={`w-6 h-6 ${isFavorite ? "fill-current" : ""}`} />
         </button>
       </div>
-      {shouldBlur && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/5 rounded-lg">
+      {shouldShowUpgradeButton && (
+        <div className="mt-4 flex justify-end">
           <button
             onClick={(e) => {
               e.stopPropagation();
