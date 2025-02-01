@@ -29,7 +29,7 @@ const Onboarding = () => {
   const { session } = useAuth();
   const { changeLanguage } = useLanguage();
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [maxCategories, setMaxCategories] = useState<number | null>(3); // Default to Basic plan limit
+  const [maxCategories, setMaxCategories] = useState<number | null>(10); // Default to Professional plan limit
 
   // Fetch user's subscription
   const { data: subscription } = useQuery({
@@ -49,19 +49,23 @@ const Onboarding = () => {
 
   // Set category limit based on subscription plan
   useEffect(() => {
-    if (subscription?.plan) {
-      switch (subscription.plan) {
-        case 'Basic':
-          setMaxCategories(3);
-          break;
-        case 'Professional':
-          setMaxCategories(10);
-          break;
-        case 'Enterprise':
-          setMaxCategories(null);
-          break;
-        default:
-          setMaxCategories(3);
+    if (subscription) {
+      if (subscription.status === 'trial') {
+        setMaxCategories(10); // Trial users get Professional plan limit
+      } else {
+        switch (subscription.plan) {
+          case 'Basic':
+            setMaxCategories(3);
+            break;
+          case 'Professional':
+            setMaxCategories(10);
+            break;
+          case 'Enterprise':
+            setMaxCategories(null);
+            break;
+          default:
+            setMaxCategories(3);
+        }
       }
     }
   }, [subscription]);
