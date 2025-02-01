@@ -52,13 +52,16 @@ serve(async (req) => {
       'Enterprise': 10000 // 100 DZD
     }
 
+    // Construct webhook URL using SUPABASE_URL
+    const webhookUrl = `${SUPABASE_URL}/functions/v1/payment-webhook`
+
     // Create checkout data according to Chargily Pay API specs
     const checkoutData = {
       amount: planPrices[plan],
       currency: "dzd",
       payment_method: "edahabia",
       success_url: `${backUrl}?success=true&plan=${plan}`,
-      webhook_endpoint: `${SUPABASE_URL}/functions/v1/payment-webhook`,
+      webhook_endpoint: webhookUrl,
       metadata: {
         plan,
         user_id: userId,
