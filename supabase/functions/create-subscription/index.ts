@@ -52,12 +52,8 @@ serve(async (req) => {
       'Enterprise': 10000 // 100 DZD
     }
 
-    // Ensure SUPABASE_URL doesn't end with a slash
-    const baseUrl = SUPABASE_URL.endsWith('/')
-      ? SUPABASE_URL.slice(0, -1)
-      : SUPABASE_URL
-
-    // Construct webhook URL ensuring it's a complete, valid URL
+    // Ensure SUPABASE_URL doesn't end with a slash and is a valid URL
+    const baseUrl = new URL(SUPABASE_URL).origin
     const webhookUrl = `${baseUrl}/functions/v1/payment-webhook`
     console.log('Webhook URL:', webhookUrl)
 

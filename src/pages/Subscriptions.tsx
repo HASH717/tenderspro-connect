@@ -32,6 +32,8 @@ const Subscriptions = () => {
         .from('subscriptions')
         .select('*')
         .eq('user_id', session?.user?.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (error) {
@@ -42,7 +44,7 @@ const Subscriptions = () => {
       return data;
     },
     staleTime: 0, // Always fetch fresh data
-    gcTime: 0  // Don't cache the data (formerly cacheTime)
+    gcTime: 0  // Don't cache the data
   });
 
   // Fetch profile data
