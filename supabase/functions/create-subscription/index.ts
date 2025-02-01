@@ -34,14 +34,25 @@ serve(async (req) => {
 
     // Update user's preferred categories if provided
     if (categories && Array.isArray(categories)) {
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ preferred_categories: categories })
-        .eq('id', userId)
+      try {
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ preferred_categories: categories })
+          .eq('id', userId)
 
-      if (updateError) {
-        console.error('Error updating categories:', updateError)
-        throw new Error('Failed to update categories')
+        if (updateError) {
+          console.error('Error updating categories:', updateError)
+          throw new Error(`Failed to update categories: ${updateError.message}`)
+        }
+      } catch (error) {
+        console.error('Categories update error:', error)
+        return new Response(
+          JSON.stringify({ error: `Failed to update categories: ${error.message}` }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400 
+          }
+        )
       }
     }
 
