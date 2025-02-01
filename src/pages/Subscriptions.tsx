@@ -6,14 +6,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery } from "@tanstack/react-query";
-import { MultiSelect } from "@/components/ui/multi-select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -24,19 +17,8 @@ import {
 } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-
-const CATEGORIES = [
-  { value: "construction", label: "Construction" },
-  { value: "it", label: "IT & Technology" },
-  { value: "medical", label: "Medical Equipment" },
-  { value: "office", label: "Office Supplies" },
-  { value: "transport", label: "Transport" },
-  { value: "energy", label: "Energy" },
-  { value: "education", label: "Education" },
-  { value: "consulting", label: "Consulting" },
-];
 
 const Subscriptions = () => {
   const { t } = useTranslation();
@@ -44,13 +26,7 @@ const Subscriptions = () => {
   const { toast } = useToast();
   const { session } = useAuth();
   const [searchParams] = useSearchParams();
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<{
-    name: string;
-    priceId: string;
-    categoryLimit?: number;
-  } | null>(null);
+  const queryClient = useQueryClient();
 
   // Check for success parameter in URL
   useEffect(() => {
@@ -63,6 +39,8 @@ const Subscriptions = () => {
         description: `You are now subscribed to the ${plan} plan.`,
         variant: "default",
       });
+      // Invalidate and refetch subscription data
+      queryClient.invalidateQueries({ queryKey: ['subscription'] });
     } else if (success === 'false') {
       toast({
         title: "Subscription cancelled",
@@ -70,7 +48,7 @@ const Subscriptions = () => {
         variant: "destructive",
       });
     }
-  }, [searchParams, toast]);
+  }, [searchParams, toast, queryClient]);
 
   const { data: subscription } = useQuery({
     queryKey: ['subscription', session?.user?.id],
@@ -154,35 +132,22 @@ const Subscriptions = () => {
         return;
       }
 
-      // For Enterprise plan, proceed directly to payment
-      if (plan.name === "Enterprise") {
-        proceedToPayment(plan.name, plan.priceId);
+      if (!profile?.preferred_categories?.length) {
+        toast({
+          variant: "destructive",
+          title: "Categories required",
+          description: "Please select your preferred categories in your profile settings first",
+        });
         return;
       }
 
-      // For other plans, open category selection dialog
-      setSelectedPlan(plan);
-      setSelectedCategories(profile?.preferred_categories || []);
-      setIsDialogOpen(true);
-    } catch (error: any) {
-      console.error('Subscription error:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to process subscription",
-      });
-    }
-  };
-
-  const proceedToPayment = async (planName: string, priceId: string) => {
-    try {
       const { data, error } = await supabase.functions.invoke('create-subscription', {
         body: {
-          plan: planName,
-          priceId: priceId,
-          userId: session!.user.id,
+          plan: plan.name,
+          priceId: plan.priceId,
+          userId: session.user.id,
           backUrl: window.location.href,
-          categories: selectedCategories
+          categories: profile.preferred_categories
         }
       });
 
@@ -205,22 +170,6 @@ const Subscriptions = () => {
         description: error.message || "Failed to process payment",
       });
     }
-  };
-
-  const handleConfirmCategories = async () => {
-    if (!selectedPlan) return;
-
-    if (selectedCategories.length > (selectedPlan.categoryLimit || Infinity)) {
-      toast({
-        variant: "destructive",
-        title: "Too many categories",
-        description: `You can only select up to ${selectedPlan.categoryLimit} categories with the ${selectedPlan.name} plan.`,
-      });
-      return;
-    }
-
-    setIsDialogOpen(false);
-    await proceedToPayment(selectedPlan.name, selectedPlan.priceId);
   };
 
   return (
@@ -289,32 +238,6 @@ const Subscriptions = () => {
           </div>
         </div>
       </div>
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Select Your Categories</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <MultiSelect
-              options={CATEGORIES}
-              selectedValues={selectedCategories}
-              onChange={setSelectedCategories}
-              label={`Select up to ${selectedPlan?.categoryLimit || 'unlimited'} categories`}
-              maxSelections={selectedPlan?.categoryLimit}
-            />
-          </div>
-          <div className="flex justify-end gap-4">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleConfirmCategories}>
-              Continue to Payment
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       <Footer />
     </div>
   );
