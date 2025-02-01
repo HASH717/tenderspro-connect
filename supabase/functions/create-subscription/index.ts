@@ -32,7 +32,31 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    // First, create the new subscription
+    // First, deactivate old subscriptions
+    try {
+      console.log('Deactivating old subscriptions...')
+      const { error: deactivateError } = await supabase
+        .from('subscriptions')
+        .update({ status: 'inactive' })
+        .eq('user_id', userId)
+        .neq('status', 'inactive')
+
+      if (deactivateError) {
+        console.error('Error deactivating subscriptions:', deactivateError)
+        throw new Error(`Failed to deactivate subscriptions: ${deactivateError.message}`)
+      }
+    } catch (error) {
+      console.error('Subscription deactivation error:', error)
+      return new Response(
+        JSON.stringify({ error: `Failed to deactivate subscriptions: ${error.message}` }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400 
+        }
+      )
+    }
+
+    // Then, create the new subscription
     try {
       console.log('Creating new subscription...')
       const { error: subscriptionError } = await supabase
@@ -56,31 +80,6 @@ serve(async (req) => {
       console.error('Subscription creation error:', error)
       return new Response(
         JSON.stringify({ error: `Failed to create subscription: ${error.message}` }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400 
-        }
-      )
-    }
-
-    // Then, deactivate old subscriptions
-    try {
-      console.log('Deactivating old subscriptions...')
-      const { error: deactivateError } = await supabase
-        .from('subscriptions')
-        .update({ status: 'inactive' })
-        .eq('user_id', userId)
-        .neq('status', 'inactive')
-        .lt('created_at', new Date().toISOString())
-
-      if (deactivateError) {
-        console.error('Error deactivating subscriptions:', deactivateError)
-        throw new Error(`Failed to deactivate subscriptions: ${deactivateError.message}`)
-      }
-    } catch (error) {
-      console.error('Subscription deactivation error:', error)
-      return new Response(
-        JSON.stringify({ error: `Failed to deactivate subscriptions: ${error.message}` }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400 
