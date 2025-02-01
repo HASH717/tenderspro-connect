@@ -52,9 +52,8 @@ serve(async (req) => {
       'Enterprise': 10000 // 100 DZD
     }
 
-    // Ensure SUPABASE_URL doesn't end with a slash and is a valid URL
-    const baseUrl = new URL(SUPABASE_URL).origin
-    const webhookUrl = `${baseUrl}/functions/v1/payment-webhook`
+    // Use a public-facing webhook URL
+    const webhookUrl = 'https://achevndenwxikpbabzop.functions.supabase.co/payment-webhook'
     console.log('Webhook URL:', webhookUrl)
 
     // Create checkout data according to Chargily Pay API specs
