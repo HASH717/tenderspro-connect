@@ -32,7 +32,35 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    // First, insert a new subscription record
+    // First, deactivate any existing subscriptions
+    try {
+      console.log('Deactivating existing subscriptions...')
+      const { error: deactivateError } = await supabase
+        .from('subscriptions')
+        .update({ status: 'inactive' })
+        .eq('user_id', userId)
+        .eq('status', 'active')
+
+      if (deactivateError) {
+        console.error('Error deactivating subscriptions:', deactivateError)
+        throw new Error(`Failed to deactivate subscriptions: ${deactivateError.message}`)
+      }
+
+      // Add a small delay to ensure the deactivation is processed
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+    } catch (error) {
+      console.error('Subscription deactivation error:', error)
+      return new Response(
+        JSON.stringify({ error: `Failed to deactivate subscriptions: ${error.message}` }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400 
+        }
+      )
+    }
+
+    // Then, create a new subscription
     try {
       console.log('Creating new subscription...')
       const { error: subscriptionError } = await supabase
