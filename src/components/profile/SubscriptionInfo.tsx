@@ -39,12 +39,14 @@ export const SubscriptionInfo = ({ subscription, isMobile }: SubscriptionInfoPro
               </span>
             </p>
           </div>
-          <Button 
-            className="mt-6 w-full"
-            onClick={() => navigate('/subscriptions')}
-          >
-            Manage Subscription
-          </Button>
+          {subscription.status === 'trial' && (
+            <Button 
+              className="mt-6 w-full bg-green-500 hover:bg-green-600 text-white"
+              onClick={() => navigate('/subscriptions')}
+            >
+              Upgrade
+            </Button>
+          )}
         </>
       ) : (
         <>

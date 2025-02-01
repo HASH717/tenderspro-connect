@@ -52,19 +52,13 @@ const Navigation = () => {
     { icon: User, path: "/profile", label: t("navigation.profile") },
   ];
 
-  const getUpgradeButtonText = () => {
-    if (!subscription?.status) return "Upgrade to View";
-    if (subscription?.status === 'trial') return "Upgrade to Premium";
-    return "Upgrade";
-  };
-
   // Show upgrade button for non-subscribed and trial users
   const shouldShowUpgrade = !isMobile && (!subscription?.status || subscription?.status === 'trial');
   if (shouldShowUpgrade) {
     navItems.push({ 
       icon: CreditCard, 
       path: "/subscriptions", 
-      label: getUpgradeButtonText()
+      label: "Upgrade"
     });
   }
 
