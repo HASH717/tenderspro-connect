@@ -34,6 +34,7 @@ serve(async (req) => {
 
     // First, update the subscription to the new plan
     try {
+      console.log('Updating subscription...')
       const { error: subscriptionError } = await supabase
         .from('subscriptions')
         .update({ 
@@ -48,6 +49,10 @@ serve(async (req) => {
         console.error('Error updating subscription:', subscriptionError)
         throw new Error(`Failed to update subscription: ${subscriptionError.message}`)
       }
+      
+      // Add a small delay to allow the trigger to process
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
     } catch (error) {
       console.error('Subscription update error:', error)
       return new Response(
@@ -62,6 +67,7 @@ serve(async (req) => {
     // Then update categories if provided
     if (categories && Array.isArray(categories)) {
       try {
+        console.log('Updating categories...')
         const { error: updateError } = await supabase
           .from('profiles')
           .update({ preferred_categories: categories })
