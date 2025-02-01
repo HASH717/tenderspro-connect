@@ -22,43 +22,30 @@ const Subscriptions = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
-  // Check for success parameter in URL
-  useEffect(() => {
-    const success = searchParams.get('success');
-    const plan = searchParams.get('plan');
-    
-    if (success === 'true' && plan) {
-      toast({
-        title: "Subscription successful!",
-        description: `You are now subscribed to the ${plan} plan.`,
-        variant: "default",
-      });
-      // Invalidate and refetch subscription data
-      queryClient.invalidateQueries({ queryKey: ['subscription'] });
-    } else if (success === 'false') {
-      toast({
-        title: "Subscription cancelled",
-        description: "Your subscription was not completed.",
-        variant: "destructive",
-      });
-    }
-  }, [searchParams, toast, queryClient]);
-
-  const { data: subscription } = useQuery({
+  // Fetch subscription data with proper caching
+  const { data: subscription, refetch: refetchSubscription } = useQuery({
     queryKey: ['subscription', session?.user?.id],
     enabled: !!session?.user?.id,
     queryFn: async () => {
+      console.log('Fetching subscription data...');
       const { data, error } = await supabase
         .from('subscriptions')
         .select('*')
         .eq('user_id', session?.user?.id)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching subscription:', error);
+        throw error;
+      }
+      console.log('Subscription data:', data);
       return data;
-    }
+    },
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0  // Don't cache the data
   });
 
+  // Fetch profile data
   const { data: profile } = useQuery({
     queryKey: ['profile', session?.user?.id],
     enabled: !!session?.user?.id,
@@ -73,6 +60,37 @@ const Subscriptions = () => {
       return data;
     }
   });
+
+  // Check URL parameters and handle subscription status
+  useEffect(() => {
+    const success = searchParams.get('success');
+    const plan = searchParams.get('plan');
+    
+    if (success === 'true' && plan) {
+      console.log('Payment successful, refreshing subscription data...');
+      // Immediately refetch subscription data
+      refetchSubscription().then(() => {
+        toast({
+          title: "Subscription successful!",
+          description: `You are now subscribed to the ${plan} plan.`,
+          variant: "default",
+        });
+      }).catch(error => {
+        console.error('Error refreshing subscription:', error);
+        toast({
+          title: "Error updating subscription",
+          description: "Please refresh the page or contact support if the issue persists.",
+          variant: "destructive",
+        });
+      });
+    } else if (success === 'false') {
+      toast({
+        title: "Subscription cancelled",
+        description: "Your subscription was not completed.",
+        variant: "destructive",
+      });
+    }
+  }, [searchParams, toast, queryClient, refetchSubscription]);
 
   const handleSubscribe = async (plan: any) => {
     try {
