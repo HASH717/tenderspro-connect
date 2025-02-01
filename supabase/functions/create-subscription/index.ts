@@ -32,32 +32,7 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    // First, update categories if provided (do this before subscription changes)
-    if (categories && Array.isArray(categories)) {
-      try {
-        console.log('Updating categories...')
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ preferred_categories: categories })
-          .eq('id', userId)
-
-        if (updateError) {
-          console.error('Error updating categories:', updateError)
-          throw new Error(`Failed to update categories: ${updateError.message}`)
-        }
-      } catch (error) {
-        console.error('Categories update error:', error)
-        return new Response(
-          JSON.stringify({ error: `Failed to update categories: ${error.message}` }),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400 
-          }
-        )
-      }
-    }
-
-    // Then, deactivate any existing subscriptions
+    // First, deactivate any existing subscriptions
     try {
       console.log('Deactivating existing subscriptions...')
       const { error: deactivateError } = await supabase
@@ -81,7 +56,7 @@ serve(async (req) => {
       )
     }
 
-    // Finally, create a new subscription
+    // Then, create the new subscription
     try {
       console.log('Creating new subscription...')
       const { error: subscriptionError } = await supabase
@@ -98,6 +73,9 @@ serve(async (req) => {
         console.error('Error creating subscription:', subscriptionError)
         throw new Error(`Failed to create subscription: ${subscriptionError.message}`)
       }
+
+      // Add a delay to ensure the subscription is processed
+      await new Promise(resolve => setTimeout(resolve, 2000))
     } catch (error) {
       console.error('Subscription creation error:', error)
       return new Response(
@@ -107,6 +85,31 @@ serve(async (req) => {
           status: 400 
         }
       )
+    }
+
+    // Finally, update categories if provided
+    if (categories && Array.isArray(categories)) {
+      try {
+        console.log('Updating categories...')
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ preferred_categories: categories })
+          .eq('id', userId)
+
+        if (updateError) {
+          console.error('Error updating categories:', updateError)
+          throw new Error(`Failed to update categories: ${updateError.message}`)
+        }
+      } catch (error) {
+        console.error('Categories update error:', error)
+        return new Response(
+          JSON.stringify({ error: `Failed to update categories: ${error.message}` }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400 
+          }
+        )
+      }
     }
 
     // Using test amounts for development
