@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import Footer from "@/components/Footer";
 
 const TenderDetails = () => {
   const { id } = useParams();
@@ -19,18 +20,31 @@ const TenderDetails = () => {
     queryKey: ['tender', id],
     queryFn: async () => {
       console.log('Fetching tender with ID:', id);
+      if (!id) {
+        toast.error('Invalid tender ID');
+        navigate('/');
+        return null;
+      }
+
       const { data, error } = await supabase
         .from('tenders')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching tender:', error);
+        toast.error('Failed to load tender details');
+        navigate('/');
+        return null;
+      }
+
+      if (!data) {
         toast.error('Tender not found');
         navigate('/');
-        throw error;
+        return null;
       }
+
       return data;
     }
   });
@@ -40,14 +54,19 @@ const TenderDetails = () => {
   }
 
   if (!tender) {
-    return <div className="flex items-center justify-center min-h-screen">Tender not found</div>;
+    return null; // Navigation is handled in the query
   }
+
+  const formatDate = (dateString?: string | null) => {
+    if (!dateString) return 'Not specified';
+    return new Date(dateString).toLocaleDateString();
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Navigation />
+      
       <div className={`${isMobile ? 'pb-20' : 'pt-24'} flex-grow`}>
-        <Navigation />
-        
         <div className="max-w-4xl mx-auto px-4 py-8">
           <Button
             variant="ghost"
@@ -58,10 +77,10 @@ const TenderDetails = () => {
             Back
           </Button>
 
-          <div className="bg-background rounded-lg shadow-lg overflow-hidden">
+          <div className="bg-white rounded-lg shadow-lg overflow-hidden">
             <div className="p-6">
               <div className="mb-6">
-                <h1 className="text-2xl font-semibold text-foreground">{tender.title}</h1>
+                <h1 className="text-2xl font-semibold text-gray-900">{tender.title}</h1>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -70,26 +89,26 @@ const TenderDetails = () => {
                     <h2 className="text-lg font-semibold mb-4">Tender Information</h2>
                     <div className="space-y-3">
                       {tender.tender_number && (
-                        <div className="flex items-center text-muted-foreground">
+                        <div className="flex items-center text-gray-600">
                           <Info className="w-4 h-4 mr-2" />
                           <span>Tender Number: {tender.tender_number}</span>
                         </div>
                       )}
-                      <div className="flex items-center text-muted-foreground">
+                      <div className="flex items-center text-gray-600">
                         <Building className="w-4 h-4 mr-2" />
-                        <span>Category: {tender.category}</span>
+                        <span>Category: {tender.category || 'Not specified'}</span>
                       </div>
-                      <div className="flex items-center text-muted-foreground">
+                      <div className="flex items-center text-gray-600">
                         <MapPin className="w-4 h-4 mr-2" />
-                        <span>Region: {tender.region}</span>
+                        <span>Region: {tender.region || tender.wilaya || 'Not specified'}</span>
                       </div>
-                      <div className="flex items-center text-muted-foreground">
+                      <div className="flex items-center text-gray-600">
                         <Calendar className="w-4 h-4 mr-2" />
-                        <span>Publication Date: {tender.publication_date}</span>
+                        <span>Publication Date: {formatDate(tender.publication_date)}</span>
                       </div>
-                      <div className="flex items-center text-muted-foreground">
+                      <div className="flex items-center text-gray-600">
                         <Calendar className="w-4 h-4 mr-2" />
-                        <span>Deadline: {tender.deadline}</span>
+                        <span>Deadline: {formatDate(tender.deadline)}</span>
                       </div>
                     </div>
                   </div>
@@ -100,12 +119,12 @@ const TenderDetails = () => {
                     <div>
                       <h2 className="text-lg font-semibold mb-4">Qualifications</h2>
                       {tender.qualification_required && (
-                        <p className="text-muted-foreground mb-2">
+                        <p className="text-gray-600 mb-2">
                           <strong>Required:</strong> {tender.qualification_required}
                         </p>
                       )}
                       {tender.qualification_details && (
-                        <p className="text-muted-foreground">
+                        <p className="text-gray-600">
                           <strong>Details:</strong> {tender.qualification_details}
                         </p>
                       )}
@@ -117,7 +136,7 @@ const TenderDetails = () => {
                   {tender.project_description && (
                     <div>
                       <h2 className="text-lg font-semibold mb-4">Project Description</h2>
-                      <p className="text-muted-foreground whitespace-pre-wrap">
+                      <p className="text-gray-600 whitespace-pre-wrap">
                         {tender.project_description}
                       </p>
                     </div>
@@ -139,6 +158,7 @@ const TenderDetails = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };
