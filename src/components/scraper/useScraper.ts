@@ -30,14 +30,16 @@ export const useScraper = () => {
           console.log(`Attempting to scrape page ${currentPage}`);
           const { data, error } = await supabase.functions.invoke('scrape-tenders', {
             body: { page: currentPage },
-            headers: { 'Content-Type': 'application/json' }
           });
 
           if (error) throw error;
           if (!data?.success) throw new Error(data?.error || 'Unknown error occurred');
 
+          console.log('Response from scraper:', data);
+          
           totalSuccessCount += data.count || 0;
-          totalPages = data.totalPages;
+          totalPages = data.totalPages || totalPages;
+          
           const progressPercentage = Math.min((currentPage / totalPages) * 100, 100);
           setProgress(progressPercentage);
           
@@ -60,8 +62,12 @@ export const useScraper = () => {
             }),
           });
 
-          currentPage++;
+          // Important: Increment page before next iteration
+          const nextPage = currentPage + 1;
+          currentPage = nextPage;
           retryCount = 0;
+          
+          // Wait before next request
           await new Promise(resolve => setTimeout(resolve, 2000));
         } catch (error) {
           console.error('Batch error:', error);

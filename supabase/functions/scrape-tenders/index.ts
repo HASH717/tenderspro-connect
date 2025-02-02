@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
     const authHeader = `Basic ${credentials}`;
 
     const requestBody = await req.text().then(text => text ? JSON.parse(text) : {});
-    const { page = 1 } = requestBody;
+    const page = parseInt(requestBody.page) || 1;
     console.log(`Processing page ${page}`);
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
