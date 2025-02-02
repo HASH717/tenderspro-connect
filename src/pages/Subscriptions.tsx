@@ -23,7 +23,23 @@ const Subscriptions = () => {
   const navigate = useNavigate();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Fetch subscription data with proper caching
+  // Fetch profile data with proper error handling
+  const { data: profile } = useQuery({
+    queryKey: ['profile', session?.user?.id],
+    enabled: !!session?.user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session?.user?.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // Fetch subscription data with proper caching disabled
   const { data: subscription, refetch: refetchSubscription } = useQuery({
     queryKey: ['subscription', session?.user?.id],
     enabled: !!session?.user?.id && !isRefreshing,
@@ -38,7 +54,10 @@ const Subscriptions = () => {
         .limit(1)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching subscription:', error);
+        throw error;
+      }
       console.log('Subscription data:', data);
       return data;
     },
@@ -46,22 +65,6 @@ const Subscriptions = () => {
     gcTime: 0,
     retry: 3,
     retryDelay: 1000
-  });
-
-  // Fetch profile data
-  const { data: profile } = useQuery({
-    queryKey: ['profile', session?.user?.id],
-    enabled: !!session?.user?.id,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session?.user?.id)
-        .single();
-
-      if (error) throw error;
-      return data;
-    }
   });
 
   // Check URL parameters and handle subscription status
@@ -91,6 +94,7 @@ const Subscriptions = () => {
               variant: "default",
             });
           } else {
+            console.error('No subscription data found after update');
             throw new Error('No subscription data found after update');
           }
         } catch (error) {
