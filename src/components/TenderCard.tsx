@@ -15,6 +15,7 @@ interface TenderCardProps {
   deadline: string;
   category?: string;
   isFavorite?: boolean;
+  publicationDate?: string;
   onFavorite: () => void;
 }
 
@@ -26,6 +27,7 @@ export const TenderCard = ({
   deadline,
   category,
   isFavorite = false,
+  publicationDate,
   onFavorite
 }: TenderCardProps) => {
   const { session } = useAuth();
