@@ -7,13 +7,14 @@ export const useScraper = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
   const { t } = useTranslation();
 
   const handleScrape = async () => {
     if (isLoading) return;
     
     setIsLoading(true);
+    setProgress(0);
+    let currentPage = 1;
     let retryCount = 0;
     const MAX_RETRIES = 3;
     let totalSuccessCount = 0;
@@ -21,8 +22,9 @@ export const useScraper = () => {
     try {
       while (retryCount < MAX_RETRIES) {
         try {
+          console.log(`Scraping page ${currentPage}`);
           const { data, error } = await supabase.functions.invoke('scrape-tenders', {
-            body: { startPage: currentPage },
+            body: { page: currentPage },
             headers: { 'Content-Type': 'application/json' }
           });
 
@@ -30,29 +32,27 @@ export const useScraper = () => {
           if (!data?.success) throw new Error(data?.error || 'Unknown error occurred');
 
           totalSuccessCount += data.count || 0;
-          const progressPercentage = (currentPage / data.totalPages) * 100;
+          const progressPercentage = Math.min((currentPage / data.totalPages) * 100, 100);
           setProgress(progressPercentage);
           
-          if (data.nextPage) {
+          if (currentPage < data.totalPages) {
             toast({
               title: t("scraper.batchSuccess"),
               description: t("scraper.batchDescription", { 
-                current: data.currentPage,
+                current: currentPage,
                 total: data.totalPages,
                 count: data.count 
               }),
             });
 
-            await new Promise<void>(resolve => {
-              setCurrentPage(data.nextPage);
-              setTimeout(resolve, 2000);
-            });
+            // Increment page before next iteration
+            currentPage++;
+            await new Promise(resolve => setTimeout(resolve, 2000));
           } else {
             toast({
               title: t("scraper.success"),
               description: t("scraper.completedDescription", { count: totalSuccessCount }),
             });
-            setCurrentPage(1);
             setIsLoading(false);
             setProgress(0);
             break;

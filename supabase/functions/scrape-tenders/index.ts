@@ -24,8 +24,8 @@ Deno.serve(async (req) => {
     const authHeader = `Basic ${credentials}`;
 
     const requestBody = await req.text().then(text => text ? JSON.parse(text) : {});
-    const { startPage = 1 } = requestBody;
-    console.log(`Processing page ${startPage}`);
+    const { page = 1 } = requestBody;
+    console.log(`Processing page ${page}`);
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -37,11 +37,11 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
     let successCount = 0;
 
-    const tendersData = await fetchTendersPage(startPage, authHeader);
+    const tendersData = await fetchTendersPage(page, authHeader);
     const tenders = tendersData.results || [];
     const totalPages = Math.ceil(tendersData.count / tenders.length);
     
-    console.log(`Found ${tenders.length} tenders on page ${startPage} of ${totalPages}`);
+    console.log(`Found ${tenders.length} tenders on page ${page} of ${totalPages}`);
 
     for (const tender of tenders) {
       try {
@@ -76,17 +76,16 @@ Deno.serve(async (req) => {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
 
-    const nextPage = startPage < totalPages ? startPage + 1 : null;
-    console.log(`Completed page ${startPage}. Next page: ${nextPage || 'None'}`);
+    console.log(`Completed page ${page}. Total pages: ${totalPages}`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Successfully processed page ${startPage}`,
+        message: `Successfully processed page ${page}`,
         count: successCount,
-        currentPage: startPage,
-        nextPage,
-        totalPages
+        currentPage: page,
+        totalPages,
+        hasMore: page < totalPages
       }), 
       { 
         headers: { 
