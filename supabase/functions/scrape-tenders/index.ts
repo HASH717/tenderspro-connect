@@ -144,12 +144,12 @@ Deno.serve(async (req) => {
             original_image_url: tender.files_verbose?.[0] || null
           }
 
-          const { error: upsertError } = await supabase
+          const { error: insertError } = await supabase
             .from('tenders')
             .insert(formattedTender)
 
-          if (upsertError) {
-            console.error(`Error inserting tender:`, upsertError)
+          if (insertError) {
+            console.error(`Error inserting tender:`, insertError)
           } else {
             successCount++
             console.log(`Successfully processed tender ${tender.id} (${successCount}/${tenders.length})`)

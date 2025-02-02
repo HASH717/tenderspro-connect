@@ -20,16 +20,15 @@ export const AdminScraper = () => {
     let retryCount = 0;
     const MAX_RETRIES = 3;
     let totalSuccessCount = 0;
-    let page = currentPage;
 
     try {
       while (retryCount < MAX_RETRIES) {
-        console.log('Starting scraping process from page:', page);
+        console.log('Starting scraping process from page:', currentPage);
         
         try {
           const { data, error } = await supabase.functions.invoke('scrape-tenders', {
             body: { 
-              startPage: page
+              startPage: currentPage
             },
             headers: {
               'Content-Type': 'application/json',
@@ -48,12 +47,11 @@ export const AdminScraper = () => {
           totalSuccessCount += data.count || 0;
           
           // Update progress based on total pages
-          const progressPercentage = (page / data.totalPages) * 100;
+          const progressPercentage = (currentPage / data.totalPages) * 100;
           setProgress(progressPercentage);
           
           if (data.nextPage) {
             // Update page for next iteration
-            page = data.nextPage;
             setCurrentPage(data.nextPage);
             
             toast({
