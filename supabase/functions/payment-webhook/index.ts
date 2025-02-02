@@ -22,9 +22,21 @@ serve(async (req) => {
       throw new Error('No data in webhook payload')
     }
 
-    // Verify payment status - only proceed if payment is successful AND completed
-    if (data.status !== 'paid' || data.payment_status !== 'completed') {
-      console.log('Payment not successful or incomplete:', data)
+    // Log the payment status details for debugging
+    console.log('Payment status details:', {
+      status: data.status,
+      payment_status: data.payment_status,
+      metadata: data.metadata
+    })
+
+    // Verify payment status - Chargily Pay considers a payment successful when status is 'paid'
+    if (data.status !== 'paid') {
+      console.log('Payment not successful:', {
+        id: data.id,
+        fees: data.fees,
+        amount: data.amount,
+        status: data.status
+      })
       return new Response(
         JSON.stringify({ 
           success: false,
@@ -85,7 +97,7 @@ serve(async (req) => {
       }
     })
 
-    // Create new subscription only after successful payment
+    // Create new subscription
     const { data: subscription, error: subscriptionError } = await supabase
       .from('subscriptions')
       .insert({
