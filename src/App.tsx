@@ -27,7 +27,7 @@ function App() {
               <Route path="/profile" element={<Profile />} />
               <Route path="/favorites" element={<Favorites />} />
               <Route path="/alerts" element={<Alerts />} />
-              <Route path="/tender/:id" element={<TenderDetails />} />
+              <Route path="/tenders/:id" element={<TenderDetails />} />
               <Route path="/subscriptions" element={<Subscriptions />} />
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="*" element={<NotFound />} />
