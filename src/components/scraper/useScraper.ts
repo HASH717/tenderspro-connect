@@ -18,11 +18,16 @@ export const useScraper = () => {
     let retryCount = 0;
     const MAX_RETRIES = 3;
     let totalSuccessCount = 0;
+    let totalPages = 0;
 
     try {
-      while (retryCount < MAX_RETRIES) {
+      while (true) {
+        if (retryCount >= MAX_RETRIES) {
+          throw new Error(`Failed after ${MAX_RETRIES} retries`);
+        }
+
         try {
-          console.log(`Scraping page ${currentPage}`);
+          console.log(`Attempting to scrape page ${currentPage}`);
           const { data, error } = await supabase.functions.invoke('scrape-tenders', {
             body: { page: currentPage },
             headers: { 'Content-Type': 'application/json' }
@@ -32,40 +37,35 @@ export const useScraper = () => {
           if (!data?.success) throw new Error(data?.error || 'Unknown error occurred');
 
           totalSuccessCount += data.count || 0;
-          const progressPercentage = Math.min((currentPage / data.totalPages) * 100, 100);
+          totalPages = data.totalPages;
+          const progressPercentage = Math.min((currentPage / totalPages) * 100, 100);
           setProgress(progressPercentage);
           
-          if (currentPage < data.totalPages) {
-            toast({
-              title: t("scraper.batchSuccess"),
-              description: t("scraper.batchDescription", { 
-                current: currentPage,
-                total: data.totalPages,
-                count: data.count 
-              }),
-            });
-
-            // Increment page before next iteration
-            currentPage++;
-            await new Promise(resolve => setTimeout(resolve, 2000));
-          } else {
+          console.log(`Successfully processed page ${currentPage}/${totalPages}`);
+          
+          if (currentPage >= totalPages) {
             toast({
               title: t("scraper.success"),
               description: t("scraper.completedDescription", { count: totalSuccessCount }),
             });
-            setIsLoading(false);
-            setProgress(0);
             break;
           }
 
+          toast({
+            title: t("scraper.batchSuccess"),
+            description: t("scraper.batchDescription", { 
+              current: currentPage,
+              total: totalPages,
+              count: data.count 
+            }),
+          });
+
+          currentPage++;
           retryCount = 0;
+          await new Promise(resolve => setTimeout(resolve, 2000));
         } catch (error) {
           console.error('Batch error:', error);
           retryCount++;
-          
-          if (retryCount >= MAX_RETRIES) {
-            throw new Error(`Failed after ${MAX_RETRIES} retries`);
-          }
           
           toast({
             title: t("scraper.retrying"),
@@ -82,6 +82,7 @@ export const useScraper = () => {
         description: error instanceof Error ? error.message : t("scraper.errorDescription"),
         variant: "destructive",
       });
+    } finally {
       setIsLoading(false);
       setProgress(0);
     }
