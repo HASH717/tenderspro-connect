@@ -44,34 +44,38 @@ Deno.serve(async (req) => {
 
     for (const tender of tenders) {
       try {
+        // Check if tender already exists
         const { data: existingTender } = await supabase
           .from('tenders')
           .select('tender_id')
           .eq('tender_id', tender.id.toString())
-          .single();
+          .maybeSingle();
 
         if (existingTender) {
           console.log(`Tender ${tender.id} already exists, skipping`);
           continue;
         }
 
+        // Fetch detailed tender information
         const detailData = await fetchTenderDetails(tender.id, authHeader);
         const formattedTender = formatTenderData(tender as TenderData, detailData);
 
+        // Insert the new tender
         const { error: insertError } = await supabase
           .from('tenders')
           .insert(formattedTender);
 
         if (insertError) {
-          console.error(`Error inserting tender:`, insertError);
+          console.error(`Error inserting tender ${tender.id}:`, insertError);
         } else {
           successCount++;
           console.log(`Successfully processed tender ${tender.id} (${successCount}/${tenders.length})`);
         }
       } catch (error) {
-        console.error(`Error processing tender:`, error);
+        console.error(`Error processing tender ${tender.id}:`, error);
       }
 
+      // Add small delay between processing each tender
       await new Promise(resolve => setTimeout(resolve, 100));
     }
 
@@ -81,8 +85,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         message: `Successfully processed page ${page}`,
-        count: successCount,
-        currentPage: page
+        count: successCount
       }), 
       { 
         headers: { 
