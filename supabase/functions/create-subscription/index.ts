@@ -90,13 +90,21 @@ serve(async (req) => {
       )
     }
 
-    // Finally, update categories if provided
+    // Finally, update categories if provided, with plan-specific handling
     if (categories && Array.isArray(categories)) {
       try {
         console.log('Updating categories...')
+        let categoriesToUpdate = categories;
+        
+        // For Basic plan, limit to first 3 categories
+        if (plan === 'Basic' && categories.length > 3) {
+          console.log('Basic plan: limiting to first 3 categories')
+          categoriesToUpdate = categories.slice(0, 3);
+        }
+
         const { error: updateError } = await supabase
           .from('profiles')
-          .update({ preferred_categories: categories })
+          .update({ preferred_categories: categoriesToUpdate })
           .eq('id', userId)
 
         if (updateError) {
