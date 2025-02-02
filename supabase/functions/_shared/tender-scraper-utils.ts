@@ -56,10 +56,11 @@ export const formatTenderData = (tender: TenderData, detailData: any) => {
 };
 
 export const fetchTenderDetails = async (tenderId: number, authHeader: string) => {
-  const response = await fetch(`https://api.dztenders.com/tenders/${tenderId}/?format=json`, {
+  const response = await fetch(`https://api.dztenders.com/tenders/?page=1&format=json&id=${tenderId}`, {
     headers: {
       'Authorization': authHeader,
       'Accept': 'application/json',
+      'User-Agent': 'TendersPro/1.0',
     },
   });
 
@@ -67,7 +68,14 @@ export const fetchTenderDetails = async (tenderId: number, authHeader: string) =
     throw new Error(`Failed to fetch tender details: ${response.status}`);
   }
 
-  return response.json();
+  const data = await response.json();
+  // Since we're filtering by ID, we should get only one result
+  const results = data.results || [];
+  if (results.length === 0) {
+    throw new Error(`No tender found with ID ${tenderId}`);
+  }
+  
+  return results[0];
 };
 
 export const fetchTendersPage = async (page: number, authHeader: string) => {
@@ -75,6 +83,7 @@ export const fetchTendersPage = async (page: number, authHeader: string) => {
     headers: {
       'Authorization': authHeader,
       'Accept': 'application/json',
+      'User-Agent': 'TendersPro/1.0',
     },
   });
 
