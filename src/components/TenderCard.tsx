@@ -83,7 +83,7 @@ export const TenderCard = ({
           </div>
           <button
             onClick={onFavorite}
-            className="flex-shrink-0 text-gray-400 hover:text-red-500 transition-colors"
+            className="flex-shrink-0 text-gray-400 hover:text-red-500 active:text-red-600 transition-colors"
             aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
           >
             <Heart 
