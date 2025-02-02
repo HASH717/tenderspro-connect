@@ -51,9 +51,6 @@ export const AdminScraper = () => {
           setProgress(progressPercentage);
           
           if (data.nextPage) {
-            // Update page for next iteration
-            setCurrentPage(data.nextPage);
-            
             toast({
               title: t("scraper.batchSuccess"),
               description: t("scraper.batchDescription", { 
@@ -63,8 +60,11 @@ export const AdminScraper = () => {
               }),
             });
             
-            // Add delay before next batch
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // Wait for state update before continuing
+            await new Promise(resolve => {
+              setCurrentPage(data.nextPage);
+              setTimeout(resolve, 2000);
+            });
           } else {
             // No more pages to process
             toast({
