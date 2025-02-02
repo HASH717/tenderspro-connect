@@ -44,8 +44,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    const { startPage = 1, maxPages = 1 } = requestBody // Process only 1 page per execution
-    const endPage = startPage
+    const { startPage = 1 } = requestBody
     let successCount = 0
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
@@ -163,14 +162,15 @@ Deno.serve(async (req) => {
       console.error(`Error processing page ${startPage}:`, error)
     }
 
-    const isComplete = startPage >= 667
+    const isComplete = startPage >= 667 // Total number of pages
     const nextPage = startPage + 1
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Tenders fetched and stored successfully',
+        message: `Successfully processed page ${startPage}`,
         count: successCount,
+        currentPage: startPage,
         nextPage: isComplete ? null : nextPage,
         isComplete
       }), 

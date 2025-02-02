@@ -12,7 +12,6 @@ export const AdminScraper = () => {
   const [progress, setProgress] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const TOTAL_PAGES = 667;
-  const BATCH_SIZE = 10;
   const { t } = useTranslation();
 
   const handleScrape = async () => {
@@ -22,17 +21,16 @@ export const AdminScraper = () => {
     let retryCount = 0;
     const MAX_RETRIES = 3;
     let totalSuccessCount = 0;
+    let page = currentPage;
 
     try {
-      while (currentPage <= TOTAL_PAGES && retryCount < MAX_RETRIES) {
-        console.log('Starting scraping process from page:', currentPage);
+      while (page <= TOTAL_PAGES && retryCount < MAX_RETRIES) {
+        console.log('Starting scraping process from page:', page);
         
         try {
           const { data, error } = await supabase.functions.invoke('scrape-tenders', {
             body: { 
-              batchSize: BATCH_SIZE,
-              startPage: currentPage,
-              maxPages: 2 // Process 2 pages per execution
+              startPage: page
             },
             headers: {
               'Content-Type': 'application/json',
@@ -51,7 +49,7 @@ export const AdminScraper = () => {
           totalSuccessCount += data.count || 0;
           
           // Update progress
-          const progressPercentage = (currentPage / TOTAL_PAGES) * 100;
+          const progressPercentage = (page / TOTAL_PAGES) * 100;
           setProgress(progressPercentage);
           
           if (data.isComplete) {
@@ -67,14 +65,15 @@ export const AdminScraper = () => {
             toast({
               title: t("scraper.batchSuccess"),
               description: t("scraper.batchDescription", { 
-                current: currentPage,
+                current: page,
                 total: TOTAL_PAGES,
                 count: data.count 
               }),
             });
             
             // Update current page for next batch
-            setCurrentPage(prev => prev + 2); // Move 2 pages forward
+            page = data.nextPage;
+            setCurrentPage(page);
             
             // Add delay before next batch
             await new Promise(resolve => setTimeout(resolve, 2000));
