@@ -87,10 +87,9 @@ export const TenderCard = ({
             aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
           >
             <Heart 
-              className="h-5 w-5" 
+              className="h-5 w-5 group-hover:fill-red-500 transition-colors"
               fill={isFavorite ? "currentColor" : "none"}
               style={{ fill: "none" }}
-              className="group-hover:fill-red-500 transition-colors"
             />
           </button>
         </div>
