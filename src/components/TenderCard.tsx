@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -61,7 +61,7 @@ export const TenderCard = ({
     return new Date(dateString).toLocaleDateString();
   };
 
-  const isSubscribed = subscription?.status === 'active';
+  const isSubscribed = subscription?.status === 'active' || subscription?.status === 'trial';
 
   return (
     <Card className="overflow-hidden">

@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
 const TenderDetails = () => {
   const { id } = useParams();
@@ -17,13 +18,19 @@ const TenderDetails = () => {
   const { data: tender, isLoading } = useQuery({
     queryKey: ['tender', id],
     queryFn: async () => {
+      console.log('Fetching tender with ID:', id);
       const { data, error } = await supabase
         .from('tenders')
         .select('*')
         .eq('id', id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching tender:', error);
+        toast.error('Tender not found');
+        navigate('/');
+        throw error;
+      }
       return data;
     }
   });
@@ -132,35 +139,6 @@ const TenderDetails = () => {
           </div>
         </div>
       </div>
-      
-      <footer className="bg-white border-t border-border mt-auto">
-        <div className="max-w-7xl mx-auto py-8 px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">About Us</h3>
-              <p className="text-muted-foreground">
-                Your trusted platform for finding and managing tender opportunities in Algeria.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Contact</h3>
-              <p className="text-muted-foreground">Email: contact@tenders-pro.com</p>
-              <p className="text-muted-foreground">Phone: +213 555 123 456</p>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Follow Us</h3>
-              <div className="flex space-x-4">
-                <a href="#" className="text-muted-foreground hover:text-primary">LinkedIn</a>
-                <a href="#" className="text-muted-foreground hover:text-primary">Twitter</a>
-                <a href="#" className="text-muted-foreground hover:text-primary">Facebook</a>
-              </div>
-            </div>
-          </div>
-          <div className="mt-8 pt-8 border-t border-border text-center text-muted-foreground">
-            <p>&copy; {new Date().getFullYear()} TendersPro. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };
