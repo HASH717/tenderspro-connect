@@ -32,6 +32,7 @@ const Subscriptions = () => {
         .from('subscriptions')
         .select('*')
         .eq('user_id', session?.user?.id)
+        .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -72,11 +73,15 @@ const Subscriptions = () => {
       console.log('Payment successful, refreshing subscription data...');
       // Immediately refetch subscription data
       refetchSubscription().then(() => {
+        // Also invalidate the subscription query in other components
+        queryClient.invalidateQueries({ queryKey: ['subscription'] });
         toast({
           title: "Subscription successful!",
           description: `You are now subscribed to the ${plan} plan.`,
           variant: "default",
         });
+        // Clear URL parameters
+        navigate('/subscriptions', { replace: true });
       }).catch(error => {
         console.error('Error refreshing subscription:', error);
         toast({
@@ -91,8 +96,10 @@ const Subscriptions = () => {
         description: "Your subscription was not completed.",
         variant: "destructive",
       });
+      // Clear URL parameters
+      navigate('/subscriptions', { replace: true });
     }
-  }, [searchParams, toast, queryClient, refetchSubscription]);
+  }, [searchParams, toast, queryClient, refetchSubscription, navigate]);
 
   const handleSubscribe = async (plan: any) => {
     try {
