@@ -96,7 +96,6 @@ export const TenderList = ({ tenders, isLoading }: TenderListProps) => {
             deadline={tender.deadline || "Not specified"}
             publicationDate={tender.publication_date}
             isFavorite={favorites.includes(tender.id)}
-            isBlurred={tender.isBlurred}
             onFavorite={() => toggleFavorite(tender.id)}
           />
         ))}
