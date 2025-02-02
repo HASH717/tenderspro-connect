@@ -45,6 +45,7 @@ Deno.serve(async (req) => {
     }
 
     const { startPage = 1 } = requestBody
+    console.log(`Processing page ${startPage}`)
     let successCount = 0
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
@@ -60,8 +61,6 @@ Deno.serve(async (req) => {
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => reject(new Error('Function timeout')), 25000) // 25s timeout
     })
-
-    console.log(`Processing page ${startPage}`)
     
     try {
       const tendersResponse = await Promise.race([
@@ -80,7 +79,8 @@ Deno.serve(async (req) => {
 
       const tendersData = await tendersResponse.json()
       const tenders = tendersData.results || []
-      console.log(`Found ${tenders.length} tenders on page ${startPage}`)
+      const totalPages = Math.ceil(tendersData.count / tenders.length)
+      console.log(`Found ${tenders.length} tenders on page ${startPage} of ${totalPages}`)
       
       for (const tender of tenders) {
         try {
@@ -165,32 +165,34 @@ Deno.serve(async (req) => {
         // Minimal delay between tenders
         await new Promise(resolve => setTimeout(resolve, 100))
       }
+
+      const nextPage = startPage < totalPages ? startPage + 1 : null
+      console.log(`Completed page ${startPage}. Next page: ${nextPage || 'None'}`)
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: `Successfully processed page ${startPage}`,
+          count: successCount,
+          currentPage: startPage,
+          nextPage,
+          totalPages
+        }), 
+        { 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json'
+          } 
+        }
+      )
+
     } catch (error) {
       if (error.message === 'Function timeout') {
         console.log('Function timeout reached, ending execution')
       }
       console.error(`Error processing page ${startPage}:`, error)
+      throw error
     }
-
-    const isComplete = startPage >= 667 // Total number of pages
-    const nextPage = startPage + 1
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: `Successfully processed page ${startPage}`,
-        count: successCount,
-        currentPage: startPage,
-        nextPage: isComplete ? null : nextPage,
-        isComplete
-      }), 
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json'
-        } 
-      }
-    )
 
   } catch (error) {
     console.error('Error in fetch-tenders function:', error)

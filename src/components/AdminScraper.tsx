@@ -11,7 +11,6 @@ export const AdminScraper = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const TOTAL_PAGES = 667;
   const { t } = useTranslation();
 
   const handleScrape = async () => {
@@ -24,7 +23,7 @@ export const AdminScraper = () => {
     let page = currentPage;
 
     try {
-      while (page <= TOTAL_PAGES && retryCount < MAX_RETRIES) {
+      while (retryCount < MAX_RETRIES) {
         console.log('Starting scraping process from page:', page);
         
         try {
@@ -48,11 +47,10 @@ export const AdminScraper = () => {
 
           totalSuccessCount += data.count || 0;
           
-          // Update progress
-          const progressPercentage = (page / TOTAL_PAGES) * 100;
+          // Update progress based on total pages
+          const progressPercentage = (page / data.totalPages) * 100;
           setProgress(progressPercentage);
           
-          // Important: Check if we have a next page from the response
           if (data.nextPage) {
             // Update page for next iteration
             page = data.nextPage;
@@ -62,7 +60,7 @@ export const AdminScraper = () => {
               title: t("scraper.batchSuccess"),
               description: t("scraper.batchDescription", { 
                 current: data.currentPage,
-                total: TOTAL_PAGES,
+                total: data.totalPages,
                 count: data.count 
               }),
             });
