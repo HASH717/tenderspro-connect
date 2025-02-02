@@ -28,7 +28,6 @@ const Subscriptions = () => {
     queryKey: ['profile', session?.user?.id],
     enabled: !!session?.user?.id,
     queryFn: async () => {
-      console.log('Fetching profile data...');
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -39,7 +38,6 @@ const Subscriptions = () => {
         console.error('Error fetching profile:', error);
         throw error;
       }
-      console.log('Profile data:', data);
       return data;
     }
   });
@@ -49,7 +47,6 @@ const Subscriptions = () => {
     queryKey: ['subscription', session?.user?.id],
     enabled: !!session?.user?.id && !isRefreshing,
     queryFn: async () => {
-      console.log('Fetching subscription data...');
       try {
         const { data, error } = await supabase
           .from('subscriptions')
@@ -65,7 +62,6 @@ const Subscriptions = () => {
           throw error;
         }
 
-        console.log('Latest active subscription:', data);
         return data;
       } catch (error) {
         console.error('Subscription query error:', error);
@@ -81,52 +77,24 @@ const Subscriptions = () => {
   // Handle subscription status updates
   useEffect(() => {
     const success = searchParams.get('success');
+    const failed = searchParams.get('failed');
     const plan = searchParams.get('plan');
     
     if (success === 'true' && plan) {
-      console.log('Payment successful, refreshing subscription data...');
-      setIsRefreshing(true);
-      
-      const refreshData = async () => {
-        try {
-          // First, invalidate the subscription query
-          await queryClient.invalidateQueries({ queryKey: ['subscription'] });
-          
-          // Add a delay to ensure the database has been updated
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          // Refetch the subscription data
-          const result = await refetchSubscription();
-          
-          if (result.data) {
-            toast({
-              title: "Subscription successful!",
-              description: `You are now subscribed to the ${plan} plan.`,
-              variant: "default",
-            });
-          } else {
-            console.error('No subscription data found after update');
-            throw new Error('No subscription data found after update');
-          }
-        } catch (error) {
-          console.error('Error refreshing subscription:', error);
-          toast({
-            title: "Error updating subscription",
-            description: "Please refresh the page or contact support if the issue persists.",
-            variant: "destructive",
-          });
-        } finally {
-          setIsRefreshing(false);
-          // Clear URL parameters
-          navigate('/subscriptions', { replace: true });
-        }
-      };
-
-      refreshData();
-    } else if (success === 'false') {
+      // Don't show success message immediately
+      // The webhook will handle the subscription update
       toast({
-        title: "Subscription cancelled",
-        description: "Your subscription was not completed.",
+        title: "Processing payment...",
+        description: "Please wait while we confirm your payment.",
+        variant: "default",
+      });
+      
+      // Clear URL parameters
+      navigate('/subscriptions', { replace: true });
+    } else if (failed === 'true' || success === 'false') {
+      toast({
+        title: "Payment failed",
+        description: "Your subscription payment was not completed. Please try again.",
         variant: "destructive",
       });
       navigate('/subscriptions', { replace: true });
