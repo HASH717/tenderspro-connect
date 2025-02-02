@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { SubscriptionStatus } from "@/components/subscriptions/SubscriptionStatus";
 import { SubscriptionPlans } from "@/components/subscriptions/SubscriptionPlans";
@@ -21,11 +21,12 @@ const Subscriptions = () => {
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Fetch subscription data with proper caching
   const { data: subscription, refetch: refetchSubscription } = useQuery({
     queryKey: ['subscription', session?.user?.id],
-    enabled: !!session?.user?.id,
+    enabled: !!session?.user?.id && !isRefreshing,
     queryFn: async () => {
       console.log('Fetching subscription data...');
       const { data, error } = await supabase
@@ -41,10 +42,10 @@ const Subscriptions = () => {
       console.log('Subscription data:', data);
       return data;
     },
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0,  // Don't cache the data
-    retry: 3,   // Retry failed requests 3 times
-    retryDelay: 1000 // Wait 1 second between retries
+    staleTime: 0,
+    gcTime: 0,
+    retry: 3,
+    retryDelay: 1000
   });
 
   // Fetch profile data
@@ -70,19 +71,28 @@ const Subscriptions = () => {
     
     if (success === 'true' && plan) {
       console.log('Payment successful, refreshing subscription data...');
+      setIsRefreshing(true);
       
-      // Add a small delay before refetching to ensure the database has been updated
-      setTimeout(async () => {
+      const refreshData = async () => {
         try {
-          await refetchSubscription();
-          // Invalidate all subscription-related queries
+          // Invalidate all subscription-related queries first
           await queryClient.invalidateQueries({ queryKey: ['subscription'] });
           
-          toast({
-            title: "Subscription successful!",
-            description: `You are now subscribed to the ${plan} plan.`,
-            variant: "default",
-          });
+          // Add a delay to ensure the database has been updated
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Refetch the subscription data
+          const result = await refetchSubscription();
+          
+          if (result.data) {
+            toast({
+              title: "Subscription successful!",
+              description: `You are now subscribed to the ${plan} plan.`,
+              variant: "default",
+            });
+          } else {
+            throw new Error('No subscription data found after update');
+          }
         } catch (error) {
           console.error('Error refreshing subscription:', error);
           toast({
@@ -91,18 +101,19 @@ const Subscriptions = () => {
             variant: "destructive",
           });
         } finally {
+          setIsRefreshing(false);
           // Clear URL parameters
           navigate('/subscriptions', { replace: true });
         }
-      }, 2000); // Wait 2 seconds before refetching
-      
+      };
+
+      refreshData();
     } else if (success === 'false') {
       toast({
         title: "Subscription cancelled",
         description: "Your subscription was not completed.",
         variant: "destructive",
       });
-      // Clear URL parameters
       navigate('/subscriptions', { replace: true });
     }
   }, [searchParams, toast, queryClient, refetchSubscription, navigate]);
