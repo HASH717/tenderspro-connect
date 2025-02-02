@@ -77,6 +77,9 @@ Deno.serve(async (req) => {
               await new Promise(resolve => setTimeout(resolve, delay));
             }
             
+            console.log(`Making request to: https://api.dztenders.com/tenders/${tender.id}/?format=json`);
+            console.log(`Using auth header: Basic ${credentials}`);
+            
             const response = await fetch(`https://api.dztenders.com/tenders/${tender.id}/?format=json`, {
               headers: {
                 'Authorization': authHeader,
@@ -126,6 +129,7 @@ Deno.serve(async (req) => {
           successCount++;
           console.log(`Successfully processed tender ${tender.id} (${successCount}/${tenders.length})`);
         }
+
       } catch (error) {
         console.error(`Error processing tender ${tender.id}:`, error);
         errorCount++;
