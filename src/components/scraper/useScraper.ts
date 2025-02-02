@@ -54,14 +54,22 @@ export const useScraper = () => {
         
         console.log(`Successfully processed page ${currentPage}/${TOTAL_PAGES}`);
         
-        toast({
-          title: t("scraper.batchSuccess"),
-          description: t("scraper.batchDescription", { 
-            current: currentPage,
-            total: TOTAL_PAGES,
-            count: data.count 
-          }),
-        });
+        if (data.errors > 0) {
+          toast({
+            title: t("scraper.warning"),
+            description: `Page ${currentPage} completed with ${data.errors} errors. Some tenders may need to be reprocessed.`,
+            variant: "warning",
+          });
+        } else {
+          toast({
+            title: t("scraper.batchSuccess"),
+            description: t("scraper.batchDescription", { 
+              current: currentPage,
+              total: TOTAL_PAGES,
+              count: data.count 
+            }),
+          });
+        }
 
         currentPage++;
         

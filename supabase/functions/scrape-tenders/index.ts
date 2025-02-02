@@ -62,26 +62,40 @@ Deno.serve(async (req) => {
         let detailData = null;
         let retryCount = 0;
         const maxRetries = 3;
+        let lastError = null;
 
         while (retryCount < maxRetries) {
           try {
-            detailData = await fetchTenderDetails(tender.id, authHeader);
+            // Add delay between retries
+            if (retryCount > 0) {
+              await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
+            }
+            
+            const response = await fetch(`https://api.dztenders.com/tenders/${tender.id}/?format=json`, {
+              headers: {
+                'Authorization': authHeader,
+                'Accept': 'application/json',
+              },
+            });
+
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            detailData = await response.json();
             break;
           } catch (error) {
+            lastError = error;
             retryCount++;
             console.error(`Attempt ${retryCount} failed for tender ${tender.id}:`, error);
             if (retryCount === maxRetries) {
-              throw error;
+              throw new Error(`Failed to fetch tender details after ${maxRetries} attempts: ${error.message}`);
             }
-            // Wait before retrying
-            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
           }
         }
 
         if (!detailData) {
-          console.error(`Failed to fetch details for tender ${tender.id} after ${maxRetries} attempts`);
-          errorCount++;
-          continue;
+          throw new Error(`Failed to fetch details for tender ${tender.id} after ${maxRetries} attempts: ${lastError?.message}`);
         }
 
         const formattedTender = formatTenderData(tender as TenderData, detailData);
@@ -104,7 +118,7 @@ Deno.serve(async (req) => {
       }
 
       // Add small delay between processing each tender
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
     console.log(`Completed page ${page} with ${successCount} successes and ${errorCount} errors`);
@@ -114,7 +128,8 @@ Deno.serve(async (req) => {
         success: true,
         message: `Successfully processed page ${page}`,
         count: successCount,
-        errors: errorCount
+        errors: errorCount,
+        page: page
       }), 
       { 
         headers: { 
