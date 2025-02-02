@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
 interface TenderCardProps {
@@ -77,7 +76,7 @@ export const TenderCard = ({
               </h3>
             </Link>
             {category && (
-              <div className="text-emerald-600 text-sm mb-4">
+              <div className="text-emerald-700 text-sm mb-4 font-medium">
                 {category}
               </div>
             )}
