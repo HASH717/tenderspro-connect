@@ -42,7 +42,23 @@ Deno.serve(async (req) => {
     let successCount = 0;
     let errorCount = 0;
 
-    const tendersData = await fetchTendersPage(page, authHeader);
+    // Use the correct URL format for fetching tenders
+    console.log(`Making request to: https://api.dztenders.com/tenders/?page=${page}&format=json`);
+    console.log(`Using auth header: Basic ${credentials}`);
+    
+    const tendersResponse = await fetch(`https://api.dztenders.com/tenders/?page=${page}&format=json`, {
+      headers: {
+        'Authorization': authHeader,
+        'Accept': 'application/json',
+        'User-Agent': 'TendersPro/1.0',
+      },
+    });
+
+    if (!tendersResponse.ok) {
+      throw new Error(`Failed to fetch tenders page: ${tendersResponse.status}`);
+    }
+
+    const tendersData = await tendersResponse.json();
     const tenders = tendersData.results || [];
     
     console.log(`Found ${tenders.length} tenders on page ${page}`);
@@ -77,10 +93,10 @@ Deno.serve(async (req) => {
               await new Promise(resolve => setTimeout(resolve, delay));
             }
             
-            console.log(`Making request to: https://api.dztenders.com/tenders/${tender.id}/?format=json`);
-            console.log(`Using auth header: Basic ${credentials}`);
+            const detailUrl = `https://api.dztenders.com/tenders/${tender.id}/?format=json`;
+            console.log(`Making request to: ${detailUrl}`);
             
-            const response = await fetch(`https://api.dztenders.com/tenders/${tender.id}/?format=json`, {
+            const response = await fetch(detailUrl, {
               headers: {
                 'Authorization': authHeader,
                 'Accept': 'application/json',
