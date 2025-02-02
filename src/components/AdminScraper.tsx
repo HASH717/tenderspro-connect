@@ -52,7 +52,25 @@ export const AdminScraper = () => {
           const progressPercentage = (page / TOTAL_PAGES) * 100;
           setProgress(progressPercentage);
           
-          if (data.isComplete) {
+          // Important: Check if we have a next page from the response
+          if (data.nextPage) {
+            // Update page for next iteration
+            page = data.nextPage;
+            setCurrentPage(data.nextPage);
+            
+            toast({
+              title: t("scraper.batchSuccess"),
+              description: t("scraper.batchDescription", { 
+                current: data.currentPage,
+                total: TOTAL_PAGES,
+                count: data.count 
+              }),
+            });
+            
+            // Add delay before next batch
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          } else {
+            // No more pages to process
             toast({
               title: t("scraper.success"),
               description: t("scraper.completedDescription", { count: totalSuccessCount }),
@@ -61,22 +79,6 @@ export const AdminScraper = () => {
             setIsLoading(false);
             setProgress(0);
             break;
-          } else {
-            toast({
-              title: t("scraper.batchSuccess"),
-              description: t("scraper.batchDescription", { 
-                current: page,
-                total: TOTAL_PAGES,
-                count: data.count 
-              }),
-            });
-            
-            // Update current page for next batch
-            page = data.nextPage;
-            setCurrentPage(page);
-            
-            // Add delay before next batch
-            await new Promise(resolve => setTimeout(resolve, 2000));
           }
 
           // Reset retry count on successful batch
