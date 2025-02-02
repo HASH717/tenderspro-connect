@@ -20,12 +20,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const username = Deno.env.get('DZTENDERS_USERNAME');
-    const password = Deno.env.get('DZTENDERS_PASSWORD');
-    if (!username || !password) {
-      throw new Error('Missing credentials in environment variables');
-    }
-
+    // Use the provided credentials
+    const username = 'motraxa@gmail.com';
+    const password = 'Dahdouhhash@717';
+    
     const credentials = btoa(`${username}:${password}`);
     const authHeader = `Basic ${credentials}`;
 
