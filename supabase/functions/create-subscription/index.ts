@@ -32,31 +32,7 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    // First, deactivate old subscriptions
-    try {
-      console.log('Deactivating old subscriptions...')
-      const { error: deactivateError } = await supabase
-        .from('subscriptions')
-        .update({ status: 'inactive' })
-        .eq('user_id', userId)
-        .neq('status', 'inactive')
-
-      if (deactivateError) {
-        console.error('Error deactivating subscriptions:', deactivateError)
-        throw new Error(`Failed to deactivate subscriptions: ${deactivateError.message}`)
-      }
-    } catch (error) {
-      console.error('Subscription deactivation error:', error)
-      return new Response(
-        JSON.stringify({ error: `Failed to deactivate subscriptions: ${error.message}` }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400 
-        }
-      )
-    }
-
-    // Then, create the new subscription
+    // First, create the new subscription
     try {
       console.log('Creating new subscription...')
       const { error: subscriptionError } = await supabase
@@ -80,6 +56,31 @@ serve(async (req) => {
       console.error('Subscription creation error:', error)
       return new Response(
         JSON.stringify({ error: `Failed to create subscription: ${error.message}` }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400 
+        }
+      )
+    }
+
+    // Then, deactivate old subscriptions
+    try {
+      console.log('Deactivating old subscriptions...')
+      const { error: deactivateError } = await supabase
+        .from('subscriptions')
+        .update({ status: 'inactive' })
+        .eq('user_id', userId)
+        .neq('status', 'inactive')
+        .lt('created_at', new Date().toISOString())
+
+      if (deactivateError) {
+        console.error('Error deactivating subscriptions:', deactivateError)
+        throw new Error(`Failed to deactivate subscriptions: ${deactivateError.message}`)
+      }
+    } catch (error) {
+      console.error('Subscription deactivation error:', error)
+      return new Response(
+        JSON.stringify({ error: `Failed to deactivate subscriptions: ${error.message}` }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400 
@@ -119,9 +120,8 @@ serve(async (req) => {
       'Enterprise': 10000 // 100 DZD
     }
 
-    // Construct a proper webhook URL using the project ID
-    const projectId = 'achevndenwxikpbabzop'
-    const webhookUrl = `https://${projectId}.functions.supabase.co/payment-webhook`
+    // Construct webhook URL
+    const webhookUrl = `https://achevndenwxikpbabzop.functions.supabase.co/payment-webhook`
     console.log('Webhook URL:', webhookUrl)
 
     // Create checkout data according to Chargily Pay API specs
