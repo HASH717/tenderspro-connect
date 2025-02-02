@@ -58,7 +58,7 @@ export const useScraper = () => {
           toast({
             title: t("scraper.warning"),
             description: `Page ${currentPage} completed with ${data.errors} errors. Some tenders may need to be reprocessed.`,
-            variant: "warning",
+            variant: "destructive", // Changed from "warning" to "destructive"
           });
         } else {
           toast({
