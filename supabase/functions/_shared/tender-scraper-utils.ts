@@ -56,26 +56,45 @@ export const formatTenderData = (tender: TenderData, detailData: any) => {
 };
 
 export const fetchTenderDetails = async (tenderId: number, authHeader: string) => {
-  const response = await fetch(`https://api.dztenders.com/tenders/?page=1&format=json&id=${tenderId}`, {
-    headers: {
-      'Authorization': authHeader,
-      'Accept': 'application/json',
-      'User-Agent': 'TendersPro/1.0',
-    },
-  });
+  // First try page 1
+  let currentPage = 1;
+  const maxPages = 10; // Limit search to first 10 pages to avoid too many requests
+  
+  while (currentPage <= maxPages) {
+    console.log(`Searching for tender ${tenderId} on page ${currentPage}`);
+    
+    const response = await fetch(`https://api.dztenders.com/tenders/?page=${currentPage}&format=json`, {
+      headers: {
+        'Authorization': authHeader,
+        'Accept': 'application/json',
+        'User-Agent': 'TendersPro/1.0',
+      },
+    });
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch tender details: ${response.status}`);
-  }
+    if (!response.ok) {
+      throw new Error(`Failed to fetch tender details: ${response.status}`);
+    }
 
-  const data = await response.json();
-  // Since we're filtering by ID, we should get only one result
-  const results = data.results || [];
-  if (results.length === 0) {
-    throw new Error(`No tender found with ID ${tenderId}`);
+    const data = await response.json();
+    const results = data.results || [];
+    
+    // Find the specific tender in the results
+    const tender = results.find(t => t.id === tenderId);
+    
+    if (tender) {
+      console.log(`Found tender ${tenderId} on page ${currentPage}`);
+      return tender;
+    }
+    
+    // If we've reached the last page, stop searching
+    if (!data.next) {
+      break;
+    }
+    
+    currentPage++;
   }
   
-  return results[0];
+  throw new Error(`No tender found with ID ${tenderId} in the first ${maxPages} pages`);
 };
 
 export const fetchTendersPage = async (page: number, authHeader: string) => {
