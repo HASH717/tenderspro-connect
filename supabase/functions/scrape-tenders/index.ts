@@ -66,15 +66,18 @@ Deno.serve(async (req) => {
 
         while (retryCount < maxRetries) {
           try {
-            // Add delay between retries
+            // Add exponential backoff delay between retries
             if (retryCount > 0) {
-              await new Promise(resolve => setTimeout(resolve, 2000 * retryCount));
+              const delay = Math.pow(2, retryCount) * 1000; // 2s, 4s, 8s
+              console.log(`Retry ${retryCount + 1} for tender ${tender.id}, waiting ${delay}ms`);
+              await new Promise(resolve => setTimeout(resolve, delay));
             }
             
             const response = await fetch(`https://api.dztenders.com/tenders/${tender.id}/?format=json`, {
               headers: {
                 'Authorization': authHeader,
                 'Accept': 'application/json',
+                'User-Agent': 'TendersPro/1.0',
               },
             });
 
@@ -83,11 +86,18 @@ Deno.serve(async (req) => {
             }
 
             detailData = await response.json();
+            console.log(`Successfully fetched details for tender ${tender.id}`);
             break;
           } catch (error) {
             lastError = error;
             retryCount++;
             console.error(`Attempt ${retryCount} failed for tender ${tender.id}:`, error);
+            
+            // If we get a 403, we should break immediately as retrying won't help
+            if (error.message.includes('403')) {
+              throw new Error(`Authentication failed for tender ${tender.id}: ${error.message}`);
+            }
+            
             if (retryCount === maxRetries) {
               throw new Error(`Failed to fetch tender details after ${maxRetries} attempts: ${error.message}`);
             }
