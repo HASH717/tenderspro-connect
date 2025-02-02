@@ -12,113 +12,98 @@ export const AdminScraper = () => {
   const [progress, setProgress] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const TOTAL_PAGES = 667;
-  const BATCH_SIZE = 20;
-  const PAGES_PER_BATCH = 5;
+  const BATCH_SIZE = 10;
   const { t } = useTranslation();
 
   const handleScrape = async () => {
-    if (!isLoading) {
-      setIsLoading(true);
-    }
+    if (isLoading) return;
     
-    let successCount = 0;
-    let failedAttempts = 0;
+    setIsLoading(true);
+    let retryCount = 0;
     const MAX_RETRIES = 3;
+    let totalSuccessCount = 0;
 
     try {
-      console.log('Starting scraping process from page:', currentPage);
-      
-      // Calculate end page for this batch
-      const endPage = Math.min(currentPage + PAGES_PER_BATCH - 1, TOTAL_PAGES);
-      
-      const { data, error } = await supabase.functions.invoke('scrape-tenders', {
-        body: { 
-          batchSize: BATCH_SIZE,
-          startPage: currentPage,
-          maxPages: PAGES_PER_BATCH
-        },
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (error) {
-        console.error('Detailed error:', error);
-        let errorMessage = t("scraper.errorDescription");
+      while (currentPage <= TOTAL_PAGES && retryCount < MAX_RETRIES) {
+        console.log('Starting scraping process from page:', currentPage);
         
         try {
-          if (error.message && typeof error.message === 'string') {
-            if (error.message.includes('{') && error.message.includes('}')) {
-              const errorBody = JSON.parse(error.message);
-              if (errorBody.error) {
-                errorMessage = errorBody.error;
-              }
-            } else {
-              errorMessage = error.message;
+          const { data, error } = await supabase.functions.invoke('scrape-tenders', {
+            body: { 
+              batchSize: BATCH_SIZE,
+              startPage: currentPage,
+              maxPages: 2 // Process 2 pages per execution
+            },
+            headers: {
+              'Content-Type': 'application/json',
             }
+          });
+
+          if (error) {
+            console.error('Scraping error:', error);
+            throw error;
           }
-        } catch (parseError) {
-          console.error('Error parsing error message:', parseError);
-          errorMessage = error.message || t("scraper.errorDescription");
+
+          if (!data?.success) {
+            throw new Error(data?.error || 'Unknown error occurred');
+          }
+
+          totalSuccessCount += data.count || 0;
+          
+          // Update progress
+          const progressPercentage = (currentPage / TOTAL_PAGES) * 100;
+          setProgress(progressPercentage);
+          
+          if (data.isComplete) {
+            toast({
+              title: t("scraper.success"),
+              description: t("scraper.completedDescription", { count: totalSuccessCount }),
+            });
+            setCurrentPage(1);
+            setIsLoading(false);
+            setProgress(0);
+            break;
+          } else {
+            toast({
+              title: t("scraper.batchSuccess"),
+              description: t("scraper.batchDescription", { 
+                current: currentPage,
+                total: TOTAL_PAGES,
+                count: data.count 
+              }),
+            });
+            
+            // Update current page for next batch
+            setCurrentPage(prev => prev + 2); // Move 2 pages forward
+            
+            // Add delay before next batch
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+
+          // Reset retry count on successful batch
+          retryCount = 0;
+        } catch (error) {
+          console.error('Batch error:', error);
+          retryCount++;
+          
+          if (retryCount >= MAX_RETRIES) {
+            throw new Error(`Failed after ${MAX_RETRIES} retries`);
+          }
+          
+          toast({
+            title: t("scraper.retrying"),
+            description: t("scraper.retryDescription", { attempt: retryCount }),
+          });
+          
+          // Wait longer between retries
+          await new Promise(resolve => setTimeout(resolve, 5000));
         }
-        
-        throw new Error(errorMessage);
       }
-      
-      // Update progress
-      const progressPercentage = (endPage / TOTAL_PAGES) * 100;
-      setProgress(progressPercentage);
-      
-      // Update current page for next batch
-      setCurrentPage(endPage + 1);
-      
-      successCount = data?.count || 0;
-      
-      const isComplete = endPage >= TOTAL_PAGES;
-      
-      if (isComplete) {
-        toast({
-          title: t("scraper.success"),
-          description: t("scraper.completedDescription", { count: successCount }),
-        });
-        setCurrentPage(1); // Reset for next full run
-        setIsLoading(false);
-        setProgress(0);
-      } else {
-        toast({
-          title: t("scraper.batchSuccess"),
-          description: t("scraper.batchDescription", { 
-            current: endPage,
-            total: TOTAL_PAGES,
-            count: successCount 
-          }),
-        });
-        // Add delay before starting next batch
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        // Continue with next batch automatically
-        handleScrape();
-      }
-      
-      console.log('Batch completed successfully:', data);
     } catch (error) {
-      console.error('Error in scraping process:', error);
-      failedAttempts++;
-      
-      let errorMessage = error instanceof Error ? error.message : t("scraper.errorDescription");
-      
-      if (failedAttempts < MAX_RETRIES) {
-        toast({
-          title: t("scraper.retrying"),
-          description: t("scraper.retryDescription", { attempt: failedAttempts }),
-        });
-        // Wait before retrying
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        return handleScrape();
-      }
-      
+      console.error('Scraping process failed:', error);
       toast({
         title: t("scraper.error"),
-        description: errorMessage,
+        description: error instanceof Error ? error.message : t("scraper.errorDescription"),
         variant: "destructive",
       });
       setIsLoading(false);

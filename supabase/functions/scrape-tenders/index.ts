@@ -29,9 +29,9 @@ Deno.serve(async (req) => {
     // Parse request body with better error handling
     let requestBody
     try {
-      const text = await req.text() // First get the raw text
-      console.log('Raw request body:', text) // Log the raw text for debugging
-      requestBody = text ? JSON.parse(text) : {} // Only parse if there's content
+      const text = await req.text()
+      console.log('Raw request body:', text)
+      requestBody = text ? JSON.parse(text) : {}
     } catch (error) {
       console.error('Error parsing request body:', error)
       return new Response(
@@ -46,11 +46,11 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Get request parameters with defaults
-    const { batchSize = 5, startPage = 1, maxPages = 5 } = requestBody
+    // Get request parameters with defaults - reduced maxPages to prevent timeouts
+    const { batchSize = 5, startPage = 1, maxPages = 2 } = requestBody
     
     let successCount = 0
-    const endPage = Math.min(startPage + maxPages - 1, 10) // Limiting to 10 pages for initial testing
+    const endPage = Math.min(startPage + maxPages - 1, startPage + 1) // Process max 2 pages per execution
     
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
@@ -62,17 +62,25 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Process pages sequentially
+    // Add timeout handling
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Function timeout')), 50000) // 50s timeout
+    })
+
+    // Process pages sequentially with timeout
     for (let page = startPage; page <= endPage; page++) {
       console.log(`Fetching page ${page} of ${endPage}`)
       
       try {
-        const tendersResponse = await fetch(`https://api.dztenders.com/tenders/?format=json&page=${page}`, {
-          headers: {
-            'Authorization': authHeader,
-            'Accept': 'application/json',
-          },
-        })
+        const tendersResponse = await Promise.race([
+          fetch(`https://api.dztenders.com/tenders/?format=json&page=${page}`, {
+            headers: {
+              'Authorization': authHeader,
+              'Accept': 'application/json',
+            },
+          }),
+          timeoutPromise
+        ])
 
         if (!tendersResponse.ok) {
           console.error(`Failed to fetch page ${page}:`, tendersResponse.status)
@@ -82,15 +90,18 @@ Deno.serve(async (req) => {
         const tendersData = await tendersResponse.json()
         const tenders = tendersData.results || []
         
-        for (const tender of tenders) {
+        for (const tender of tenders.slice(0, batchSize)) {
           try {
-            // Get detailed tender information
-            const detailResponse = await fetch(`https://api.dztenders.com/tenders/${tender.id}/?format=json`, {
-              headers: {
-                'Authorization': authHeader,
-                'Accept': 'application/json',
-              },
-            })
+            // Get detailed tender information with timeout
+            const detailResponse = await Promise.race([
+              fetch(`https://api.dztenders.com/tenders/${tender.id}/?format=json`, {
+                headers: {
+                  'Authorization': authHeader,
+                  'Accept': 'application/json',
+                },
+              }),
+              timeoutPromise
+            ])
 
             if (!detailResponse.ok) {
               console.error(`Failed to fetch tender details for ID ${tender.id}:`, detailResponse.status)
@@ -140,27 +151,41 @@ Deno.serve(async (req) => {
               console.error(`Error inserting tender on page ${page}:`, upsertError)
             } else {
               successCount++
+              console.log(`Successfully processed tender ${tender.id} on page ${page}`)
             }
           } catch (error) {
+            if (error.message === 'Function timeout') {
+              console.log('Function approaching timeout, ending batch early')
+              throw error // Re-throw to exit the loop
+            }
             console.error(`Error processing tender on page ${page}:`, error)
           }
 
-          // Small delay between tender processing
-          await new Promise(resolve => setTimeout(resolve, 500))
+          // Reduced delay between tender processing
+          await new Promise(resolve => setTimeout(resolve, 200))
         }
       } catch (error) {
+        if (error.message === 'Function timeout') {
+          console.log('Function timeout reached, ending current batch')
+          break
+        }
         console.error(`Error processing page ${page}:`, error)
       }
       
-      // Add delay between pages
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Reduced delay between pages
+      await new Promise(resolve => setTimeout(resolve, 500))
     }
+
+    const isComplete = endPage >= 667 // Total number of pages
+    const nextPage = endPage + 1
 
     return new Response(
       JSON.stringify({
         success: true,
         message: 'Tenders fetched and stored successfully',
-        count: successCount
+        count: successCount,
+        nextPage: isComplete ? null : nextPage,
+        isComplete
       }), 
       { 
         headers: { 
