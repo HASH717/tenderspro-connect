@@ -16,118 +16,19 @@ serve(async (req) => {
     
     const CHARGILY_PAY_SECRET_KEY = Deno.env.get('CHARGILY_PAY_SECRET_KEY')
     const CHARGILY_PAY_PUBLIC_KEY = Deno.env.get('CHARGILY_PAY_PUBLIC_KEY')
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
     if (!CHARGILY_PAY_SECRET_KEY || !CHARGILY_PAY_PUBLIC_KEY) {
       throw new Error('Chargily Pay credentials not configured')
     }
 
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      throw new Error('Supabase credentials not configured')
-    }
-
     console.log(`Creating checkout for plan: ${plan} with priceId: ${priceId} for user: ${userId}`)
     console.log('Selected categories:', categories)
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-
-    // First, deactivate old subscriptions
-    try {
-      console.log('Deactivating old subscriptions...')
-      const { error: deactivateError } = await supabase
-        .from('subscriptions')
-        .update({ status: 'inactive' })
-        .eq('user_id', userId)
-        .neq('status', 'inactive')
-
-      if (deactivateError) {
-        console.error('Error deactivating subscriptions:', deactivateError)
-        throw new Error(`Failed to deactivate subscriptions: ${deactivateError.message}`)
-      }
-
-      // Add a small delay to ensure the deactivation is processed
-      await new Promise(resolve => setTimeout(resolve, 1000))
-    } catch (error) {
-      console.error('Subscription deactivation error:', error)
-      return new Response(
-        JSON.stringify({ error: `Failed to deactivate subscriptions: ${error.message}` }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400 
-        }
-      )
-    }
-
-    // Then, create the new subscription
-    try {
-      console.log('Creating new subscription...')
-      const { error: subscriptionError } = await supabase
-        .from('subscriptions')
-        .insert({ 
-          user_id: userId,
-          plan: plan,
-          status: 'active',
-          current_period_start: new Date().toISOString(),
-          current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
-        })
-
-      if (subscriptionError) {
-        console.error('Error creating subscription:', subscriptionError)
-        throw new Error(`Failed to create subscription: ${subscriptionError.message}`)
-      }
-
-      // Add a delay to ensure the subscription is processed
-      await new Promise(resolve => setTimeout(resolve, 2000))
-    } catch (error) {
-      console.error('Subscription creation error:', error)
-      return new Response(
-        JSON.stringify({ error: `Failed to create subscription: ${error.message}` }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400 
-        }
-      )
-    }
-
-    // Finally, update categories if provided, with plan-specific handling
-    if (categories && Array.isArray(categories)) {
-      try {
-        console.log('Updating categories...')
-        let categoriesToUpdate = categories;
-        
-        // For Basic plan, limit to first 3 categories
-        if (plan === 'Basic' && categories.length > 3) {
-          console.log('Basic plan: limiting to first 3 categories')
-          categoriesToUpdate = categories.slice(0, 3);
-        }
-
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ preferred_categories: categoriesToUpdate })
-          .eq('id', userId)
-
-        if (updateError) {
-          console.error('Error updating categories:', updateError)
-          throw new Error(`Failed to update categories: ${updateError.message}`)
-        }
-      } catch (error) {
-        console.error('Categories update error:', error)
-        return new Response(
-          JSON.stringify({ error: `Failed to update categories: ${error.message}` }),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400 
-          }
-        )
-      }
-    }
-
     // Using test amounts for development
     const planPrices = {
-      'Basic': 1000, // 10 DZD
-      'Professional': 2000, // 20 DZD
-      'Enterprise': 10000 // 100 DZD
+      'Basic': 1000,
+      'Professional': 2000,
+      'Enterprise': 10000
     }
 
     // Construct webhook URL
