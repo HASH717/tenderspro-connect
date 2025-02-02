@@ -1,10 +1,9 @@
+import { useEffect, useState } from "react";
 import { TenderCard } from "@/components/TenderCard";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { useState } from "react";
-import { Button } from "./ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface TenderListProps {
   tenders: any[];
@@ -13,87 +12,112 @@ interface TenderListProps {
 
 export const TenderList = ({ tenders, isLoading }: TenderListProps) => {
   const { session } = useAuth();
-  const queryClient = useQueryClient();
-  const [displayCount, setDisplayCount] = useState(10);
+  const { toast } = useToast();
+  const [favorites, setFavorites] = useState<string[]>([]);
 
-  const { data: favorites = [], isLoading: isLoadingFavorites } = useQuery({
-    queryKey: ['favorites', session?.user?.id],
-    enabled: !!session?.user?.id,
-    queryFn: async () => {
+  // Fetch user's favorites
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      if (!session?.user?.id) return;
+
       const { data, error } = await supabase
         .from('favorites')
         .select('tender_id')
-        .eq('user_id', session?.user?.id);
+        .eq('user_id', session.user.id);
 
       if (error) {
         console.error('Error fetching favorites:', error);
-        toast.error('Failed to load favorites');
-        return [];
+        return;
       }
 
-      return data.map(fav => fav.tender_id);
-    }
-  });
+      setFavorites(data.map(fav => fav.tender_id));
+    };
+
+    fetchFavorites();
+  }, [session?.user?.id]);
 
   const toggleFavorite = async (tenderId: string) => {
     if (!session?.user?.id) {
-      toast.error('Please login to save favorites');
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to save favorites",
+        variant: "destructive",
+      });
       return;
     }
 
-    try {
-      const isFavorite = favorites.includes(tenderId);
+    const isFavorite = favorites.includes(tenderId);
 
-      if (isFavorite) {
-        const { error } = await supabase
-          .from('favorites')
-          .delete()
-          .eq('user_id', session.user.id)
-          .eq('tender_id', tenderId);
+    if (isFavorite) {
+      const { error } = await supabase
+        .from('favorites')
+        .delete()
+        .eq('user_id', session.user.id)
+        .eq('tender_id', tenderId);
 
-        if (error) throw error;
-        toast.success('Removed from favorites');
-      } else {
-        const { error } = await supabase
-          .from('favorites')
-          .insert({
-            user_id: session.user.id,
-            tender_id: tenderId
-          });
-
-        if (error) throw error;
-        toast.success('Added to favorites');
+      if (error) {
+        console.error('Error removing favorite:', error);
+        toast({
+          title: "Error",
+          description: "Failed to remove from favorites",
+          variant: "destructive",
+        });
+        return;
       }
 
-      await queryClient.invalidateQueries({ queryKey: ['favorites'] });
-    } catch (error: any) {
-      console.error('Error toggling favorite:', error);
-      toast.error(error.message || 'Failed to update favorites');
+      setFavorites(favorites.filter(id => id !== tenderId));
+    } else {
+      const { error } = await supabase
+        .from('favorites')
+        .insert({
+          user_id: session.user.id,
+          tender_id: tenderId,
+        });
+
+      if (error) {
+        console.error('Error adding favorite:', error);
+        toast({
+          title: "Error",
+          description: "Failed to add to favorites",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setFavorites([...favorites, tenderId]);
     }
   };
 
-  if (isLoading || isLoadingFavorites) {
-    return <div className="text-center py-8">Loading tenders...</div>;
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <Skeleton key={i} className="h-[200px] w-full" />
+        ))}
+      </div>
+    );
   }
 
-  if (tenders.length === 0) {
-    return <div className="text-center py-8">No tenders found</div>;
+  if (!tenders.length) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        No tenders found matching your criteria
+      </div>
+    );
   }
-
-  const displayedTenders = tenders.slice(0, displayCount);
-  const hasMore = displayCount < tenders.length;
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-4">
-        {displayedTenders.map((tender) => (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {tenders.map((tender) => (
           <TenderCard
             key={tender.id}
             id={tender.id}
             title={tender.title}
-            organization={tender.organization_name || tender.category || "Unknown"}
-            location={tender.region || tender.wilaya || "Unknown"}
-            deadline={tender.deadline || "Not specified"}
+            organization={tender.organization_name || 'Unknown Organization'}
+            location={tender.wilaya}
+            deadline={tender.deadline}
+            category={tender.category}
             publicationDate={tender.publication_date}
             isFavorite={favorites.includes(tender.id)}
             onFavorite={() => toggleFavorite(tender.id)}
@@ -101,17 +125,6 @@ export const TenderList = ({ tenders, isLoading }: TenderListProps) => {
           />
         ))}
       </div>
-      
-      {hasMore && (
-        <div className="flex justify-center pt-4 pb-8">
-          <Button 
-            onClick={() => setDisplayCount(prev => prev + 10)}
-            variant="outline"
-          >
-            Show More
-          </Button>
-        </div>
-      )}
     </div>
   );
 };
