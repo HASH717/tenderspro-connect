@@ -42,22 +42,32 @@ export const useTenders = (filters: TenderFilters) => {
 
       // If user is logged in and has selected a category, filter by their subscription status
       if (session?.user?.id && filters.category) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('preferred_categories')
-          .eq('id', session.user.id)
+        const { data: subscription } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1)
           .single();
 
-        if (profile?.preferred_categories?.includes(filters.category)) {
-          return tenders;
-        } else {
-          toast.error("Please upgrade your subscription to view more categories", {
-            action: {
-              label: "Upgrade",
-              onClick: () => window.location.href = '/subscriptions'
-            }
-          });
-          return [];
+        const { data: trialSub } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .eq('status', 'trial')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        const isTrialValid = trialSub && new Date(trialSub.current_period_end) > new Date();
+        const hasActiveSubscription = subscription?.status === 'active';
+
+        if (!hasActiveSubscription && !isTrialValid) {
+          return tenders.map(tender => ({
+            ...tender,
+            isBlurred: true
+          }));
         }
       }
 

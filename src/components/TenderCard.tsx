@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
+import { cn } from "@/lib/utils";
 
 interface TenderCardProps {
   id: string;
@@ -16,6 +17,7 @@ interface TenderCardProps {
   isFavorite?: boolean;
   publicationDate?: string;
   onFavorite: () => void;
+  isBlurred?: boolean;
 }
 
 export const TenderCard = ({ 
@@ -27,7 +29,8 @@ export const TenderCard = ({
   category,
   isFavorite = false,
   publicationDate,
-  onFavorite
+  onFavorite,
+  isBlurred = false
 }: TenderCardProps) => {
   const { session } = useAuth();
   const { t } = useTranslation();
@@ -63,8 +66,14 @@ export const TenderCard = ({
   const isSubscribed = subscription?.status === 'active' || subscription?.status === 'trial';
 
   return (
-    <Card className="hover:shadow-md transition-shadow duration-200 bg-white">
-      <div className="p-4">
+    <Card className={cn(
+      "hover:shadow-md transition-shadow duration-200 bg-white relative",
+      isBlurred && "pointer-events-none"
+    )}>
+      <div className={cn(
+        "p-4",
+        isBlurred && "blur-sm"
+      )}>
         <div className="flex justify-between items-start gap-4">
           <div className="flex-1">
             <Link
@@ -113,6 +122,16 @@ export const TenderCard = ({
           </div>
         </div>
       </div>
+      {isBlurred && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/5 backdrop-blur-[2px]">
+          <Link
+            to="/subscriptions"
+            className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90 transition-colors"
+          >
+            Upgrade to View
+          </Link>
+        </div>
+      )}
     </Card>
   );
 };
