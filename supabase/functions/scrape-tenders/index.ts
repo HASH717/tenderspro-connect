@@ -36,6 +36,7 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
     let successCount = 0;
+    let errorCount = 0;
 
     const tendersData = await fetchTendersPage(page, authHeader);
     const tenders = tendersData.results || [];
@@ -53,11 +54,36 @@ Deno.serve(async (req) => {
 
         if (existingTender) {
           console.log(`Tender ${tender.id} already exists, skipping`);
+          successCount++;
           continue;
         }
 
-        // Fetch detailed tender information
-        const detailData = await fetchTenderDetails(tender.id, authHeader);
+        // Fetch detailed tender information with retries
+        let detailData = null;
+        let retryCount = 0;
+        const maxRetries = 3;
+
+        while (retryCount < maxRetries) {
+          try {
+            detailData = await fetchTenderDetails(tender.id, authHeader);
+            break;
+          } catch (error) {
+            retryCount++;
+            console.error(`Attempt ${retryCount} failed for tender ${tender.id}:`, error);
+            if (retryCount === maxRetries) {
+              throw error;
+            }
+            // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+          }
+        }
+
+        if (!detailData) {
+          console.error(`Failed to fetch details for tender ${tender.id} after ${maxRetries} attempts`);
+          errorCount++;
+          continue;
+        }
+
         const formattedTender = formatTenderData(tender as TenderData, detailData);
 
         // Insert the new tender
@@ -67,25 +93,28 @@ Deno.serve(async (req) => {
 
         if (insertError) {
           console.error(`Error inserting tender ${tender.id}:`, insertError);
+          errorCount++;
         } else {
           successCount++;
           console.log(`Successfully processed tender ${tender.id} (${successCount}/${tenders.length})`);
         }
       } catch (error) {
         console.error(`Error processing tender ${tender.id}:`, error);
+        errorCount++;
       }
 
       // Add small delay between processing each tender
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
 
-    console.log(`Completed page ${page} with ${successCount} new tenders`);
+    console.log(`Completed page ${page} with ${successCount} successes and ${errorCount} errors`);
 
     return new Response(
       JSON.stringify({
         success: true,
         message: `Successfully processed page ${page}`,
-        count: successCount
+        count: successCount,
+        errors: errorCount
       }), 
       { 
         headers: { 

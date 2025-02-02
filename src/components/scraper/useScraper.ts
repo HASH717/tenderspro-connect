@@ -8,13 +8,14 @@ export const useScraper = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const { t } = useTranslation();
+  const [lastProcessedPage, setLastProcessedPage] = useState(0);
 
-  const handleScrape = async () => {
+  const handleScrape = async (startPage?: number) => {
     if (isLoading) return;
     
     setIsLoading(true);
     setProgress(0);
-    let currentPage = 1;
+    let currentPage = startPage || 1;
     const TOTAL_PAGES = 667;
 
     try {
@@ -32,6 +33,7 @@ export const useScraper = () => {
             description: error.message,
             variant: "destructive",
           });
+          setLastProcessedPage(currentPage);
           break;
         }
 
@@ -42,11 +44,13 @@ export const useScraper = () => {
             description: data?.error || t("scraper.errorDescription"),
             variant: "destructive",
           });
+          setLastProcessedPage(currentPage);
           break;
         }
 
         const progressPercentage = Math.min((currentPage / TOTAL_PAGES) * 100, 100);
         setProgress(progressPercentage);
+        setLastProcessedPage(currentPage);
         
         console.log(`Successfully processed page ${currentPage}/${TOTAL_PAGES}`);
         
@@ -71,6 +75,7 @@ export const useScraper = () => {
       });
     } catch (error) {
       console.error('Scraping process failed:', error);
+      setLastProcessedPage(currentPage);
       toast({
         title: t("scraper.error"),
         description: error instanceof Error ? error.message : t("scraper.errorDescription"),
@@ -78,13 +83,13 @@ export const useScraper = () => {
       });
     } finally {
       setIsLoading(false);
-      setProgress(0);
     }
   };
 
   return {
     isLoading,
     progress,
-    handleScrape
+    handleScrape,
+    lastProcessedPage
   };
 };
