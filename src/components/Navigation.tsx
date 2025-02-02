@@ -30,13 +30,16 @@ const Navigation = () => {
           .from('subscriptions')
           .select('*')
           .eq('user_id', session?.user?.id)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1)
           .maybeSingle();
 
         if (error) throw error;
         return data;
       } catch (error: any) {
         console.error('Error fetching subscription:', error);
-        toast('Failed to load subscription data');
+        toast.error('Failed to load subscription data');
         return null;
       }
     },
@@ -52,7 +55,6 @@ const Navigation = () => {
     { icon: User, path: "/profile", label: t("navigation.profile") },
   ];
 
-  // Show upgrade button for non-subscribed and trial users
   const shouldShowUpgrade = !isMobile && (!subscription?.status || subscription?.status === 'trial');
   if (shouldShowUpgrade) {
     navItems.push({ 

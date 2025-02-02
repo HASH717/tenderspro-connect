@@ -1,38 +1,32 @@
-import { Calendar, MapPin, Building, Heart } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Heart } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 interface TenderCardProps {
-  id: string;
-  title: string;
-  organization: string;
-  location: string;
-  deadline: string;
-  publicationDate?: string;
-  onFavorite?: () => void;
-  isFavorite?: boolean;
+  tender: {
+    id: string;
+    title: string;
+    deadline?: string;
+    wilaya?: string;
+    category?: string;
+    organization_name?: string;
+  };
+  isFavorited?: boolean;
 }
 
-export const TenderCard = ({
-  id,
-  title,
-  organization,
-  location,
-  deadline,
-  publicationDate,
-  onFavorite,
-  isFavorite = false,
-}: TenderCardProps) => {
-  const navigate = useNavigate();
-  const { t } = useTranslation();
+const TenderCard = ({ tender, isFavorited = false }: TenderCardProps) => {
   const { session } = useAuth();
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
 
-  const { data: subscription, error: subscriptionError } = useQuery({
+  const { data: subscription } = useQuery({
     queryKey: ['subscription', session?.user?.id],
     enabled: !!session?.user?.id,
     queryFn: async () => {
@@ -41,112 +35,116 @@ export const TenderCard = ({
           .from('subscriptions')
           .select('*')
           .eq('user_id', session?.user?.id)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1)
           .maybeSingle();
 
         if (error) throw error;
         return data;
       } catch (error: any) {
         console.error('Error fetching subscription:', error);
-        toast('Failed to load subscription data');
         return null;
       }
-    },
-    retry: 1
+    }
   });
 
-  const shouldShowUpgradeButton = session?.user && (!subscription?.status || subscription?.status === 'trial');
+  const toggleFavorite = useMutation({
+    mutationFn: async () => {
+      if (!session?.user?.id) throw new Error("User not authenticated");
 
-  const getCategoryTranslation = (org: string) => {
-    const categoryMap: { [key: string]: string } = {
-      "Construction": "construction",
-      "Transport": "transport",
-      "Education": "education",
-      "Chemical Supply": "chemical"
-    };
-    const category = categoryMap[org];
-    return category ? t(`tender.categories.${category}`) : org;
+      if (isFavorited) {
+        const { error } = await supabase
+          .from('favorites')
+          .delete()
+          .eq('user_id', session.user.id)
+          .eq('tender_id', tender.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('favorites')
+          .insert({
+            user_id: session.user.id,
+            tender_id: tender.id
+          });
+
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['favorites'] });
+      toast.success(
+        isFavorited
+          ? t('tender.removedFromFavorites', 'Removed from favorites')
+          : t('tender.addedToFavorites', 'Added to favorites')
+      );
+    },
+    onError: (error) => {
+      console.error('Error toggling favorite:', error);
+      toast.error(t('tender.favoriteError', 'Error updating favorites'));
+    }
+  });
+
+  const handleFavoriteClick = () => {
+    if (!session) {
+      toast.error(t('tender.loginRequired', 'Please login to add favorites'));
+      return;
+    }
+    toggleFavorite.mutate();
   };
 
-  const getTitleTranslation = (title: string) => {
-    const titleMap: { [key: string]: string } = {
-      "Travaux de réalisation en tce 300 lpa et 48 lpl": "tender1",
-      "Réalisation des 08 logements promotionnels tce + vrd": "tender2",
-      "Micro-entreprises Travaux de réalisation d'un lycée type 1000 en 04 lots": "tender3",
-      "Transport de matériaux": "tender4",
-      "Fourniture et transport d'une quantité minimale de 1300 tonnes et quantité de 2500 tonnes de sulfate d'alumine granulé": "tender5"
-    };
-    const titleKey = titleMap[title];
-    return titleKey ? t(`tender.titles.${titleKey}`) : title;
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleDateString();
   };
 
-  const getLocationTranslation = (loc: string) => {
-    const locationMap: { [key: string]: string } = {
-      "Mascara": "mascara",
-      "Sidi-Bel-Abbès": "sidi_bel_abbes",
-      "Tizi-Ouzou": "tizi_ouzou",
-      "Algiers": "algiers",
-      "Annaba": "annaba"
-    };
-    const locationKey = locationMap[loc];
-    return locationKey ? t(`tender.locations.${locationKey}`) : loc;
-  };
-
-  const getUpgradeButtonText = () => {
-    if (!subscription?.status) return "Upgrade to View";
-    if (subscription.status === 'trial') return "Upgrade to Premium";
-    return "Upgrade to View";
-  };
+  const isSubscribed = subscription?.status === 'active';
 
   return (
-    <Card 
-      className="p-4 mb-4 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 bg-gradient-to-br from-white via-white to-muted/30 backdrop-blur-sm border border-muted/50 cursor-pointer"
-      onClick={() => navigate(`/tender/${id}`)}
-    >
-      <div className="flex justify-between items-start">
-        <div className="flex-1">
-          <h3 className="font-semibold text-lg text-foreground mb-2 line-clamp-2">
-            {getTitleTranslation(title)}
-          </h3>
-          <div className="space-y-2">
-            <div className="flex items-center text-[#166534]">
-              <Building className="w-4 h-4 mr-2" />
-              <span className="text-sm">{getCategoryTranslation(organization)}</span>
-            </div>
-            <div className="flex items-center text-accent">
-              <MapPin className="w-4 h-4 mr-2" />
-              <span className="text-sm">{getLocationTranslation(location)}</span>
-            </div>
-            <div className="flex items-center text-[#F97316]">
-              <Calendar className="w-4 h-4 mr-2" />
-              <span className="text-sm">{t('tender.deadline')}: {deadline}</span>
-            </div>
+    <Card className="overflow-hidden">
+      <div className="p-4">
+        <div className="flex justify-between items-start mb-2">
+          <Link
+            to={isSubscribed ? `/tenders/${tender.id}` : '/subscriptions'}
+            className="text-lg font-semibold hover:text-primary transition-colors line-clamp-2 flex-1"
+          >
+            {tender.title}
+          </Link>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`ml-2 ${isFavorited ? 'text-red-500' : 'text-gray-400'}`}
+            onClick={handleFavoriteClick}
+          >
+            <Heart className="h-5 w-5" fill={isFavorited ? "currentColor" : "none"} />
+          </Button>
+        </div>
+
+        <div className="space-y-2">
+          {tender.organization_name && (
+            <p className="text-sm text-muted-foreground line-clamp-1">
+              {tender.organization_name}
+            </p>
+          )}
+          
+          <div className="flex flex-wrap gap-2">
+            {tender.deadline && (
+              <Badge variant="secondary">
+                {t('tender.deadline', 'Deadline')}: {formatDate(tender.deadline)}
+              </Badge>
+            )}
+            {tender.wilaya && (
+              <Badge variant="outline">{tender.wilaya}</Badge>
+            )}
+            {tender.category && (
+              <Badge variant="outline">{tender.category}</Badge>
+            )}
           </div>
         </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onFavorite?.();
-          }}
-          className={`p-2 rounded-full transition-colors ${
-            isFavorite ? "text-secondary hover:text-secondary/80" : "text-gray-400 hover:text-gray-500"
-          }`}
-        >
-          <Heart className={`w-6 h-6 ${isFavorite ? "fill-current" : ""}`} />
-        </button>
       </div>
-      {shouldShowUpgradeButton && (
-        <div className="mt-4 flex justify-end">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate('/subscriptions');
-            }}
-            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg pointer-events-auto"
-          >
-            {getUpgradeButtonText()}
-          </button>
-        </div>
-      )}
     </Card>
   );
 };
+
+export default TenderCard;
