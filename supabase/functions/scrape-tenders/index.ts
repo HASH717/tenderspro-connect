@@ -21,14 +21,18 @@ Deno.serve(async (req) => {
 
   try {
     // Use the provided credentials
-    const username = 'motraxa@gmail.com';
-    const password = 'Dahdouhhash@717';
+    const username = Deno.env.get('DZTENDERS_USERNAME');
+    const password = Deno.env.get('DZTENDERS_PASSWORD');
+    
+    if (!username || !password) {
+      throw new Error('Missing credentials in environment variables');
+    }
     
     const credentials = btoa(`${username}:${password}`);
     const authHeader = `Basic ${credentials}`;
 
     const requestBody = await req.text().then(text => text ? JSON.parse(text) : {});
-    const { page = 28 } = requestBody;
+    const { page = 213 } = requestBody;
     console.log(`Processing page ${page}`);
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -107,6 +111,16 @@ Deno.serve(async (req) => {
     );
 
   } catch (error) {
-    return handleError(error);
+    console.error('Scraper error:', error);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
   }
 });
