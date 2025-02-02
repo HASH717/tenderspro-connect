@@ -45,23 +45,9 @@ const Subscriptions = () => {
       return data;
     },
     staleTime: 0, // Always fetch fresh data
-    gcTime: 0  // Don't cache the data
-  });
-
-  // Fetch profile data
-  const { data: profile } = useQuery({
-    queryKey: ['profile', session?.user?.id],
-    enabled: !!session?.user?.id,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session?.user?.id)
-        .single();
-
-      if (error) throw error;
-      return data;
-    }
+    gcTime: 0,  // Don't cache the data
+    retry: 3,   // Retry failed requests 3 times
+    retryDelay: 1000 // Wait 1 second between retries
   });
 
   // Check URL parameters and handle subscription status
@@ -71,25 +57,32 @@ const Subscriptions = () => {
     
     if (success === 'true' && plan) {
       console.log('Payment successful, refreshing subscription data...');
-      // Immediately refetch subscription data
-      refetchSubscription().then(() => {
-        // Also invalidate the subscription query in other components
-        queryClient.invalidateQueries({ queryKey: ['subscription'] });
-        toast({
-          title: "Subscription successful!",
-          description: `You are now subscribed to the ${plan} plan.`,
-          variant: "default",
-        });
-        // Clear URL parameters
-        navigate('/subscriptions', { replace: true });
-      }).catch(error => {
-        console.error('Error refreshing subscription:', error);
-        toast({
-          title: "Error updating subscription",
-          description: "Please refresh the page or contact support if the issue persists.",
-          variant: "destructive",
-        });
-      });
+      
+      // Add a small delay before refetching to ensure the database has been updated
+      setTimeout(async () => {
+        try {
+          await refetchSubscription();
+          // Invalidate all subscription-related queries
+          await queryClient.invalidateQueries({ queryKey: ['subscription'] });
+          
+          toast({
+            title: "Subscription successful!",
+            description: `You are now subscribed to the ${plan} plan.`,
+            variant: "default",
+          });
+        } catch (error) {
+          console.error('Error refreshing subscription:', error);
+          toast({
+            title: "Error updating subscription",
+            description: "Please refresh the page or contact support if the issue persists.",
+            variant: "destructive",
+          });
+        } finally {
+          // Clear URL parameters
+          navigate('/subscriptions', { replace: true });
+        }
+      }, 2000); // Wait 2 seconds before refetching
+      
     } else if (success === 'false') {
       toast({
         title: "Subscription cancelled",
