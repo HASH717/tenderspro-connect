@@ -94,17 +94,17 @@ export const TenderCard = ({
         </div>
 
         <div className="space-y-3 text-sm">
-          <div className="flex items-center gap-2 text-emerald-700">
+          <div className="flex items-center gap-2 text-blue-600">
             <Building className="h-4 w-4 flex-shrink-0" />
             <span className="line-clamp-1">{organization}</span>
           </div>
           
-          <div className="flex items-center gap-2 text-emerald-700">
+          <div className="flex items-center gap-2 text-blue-600">
             <MapPin className="h-4 w-4 flex-shrink-0" />
             <span className="line-clamp-1">{location}</span>
           </div>
 
-          <div className="flex items-center gap-2 text-emerald-700">
+          <div className="flex items-center gap-2 text-orange-600">
             <Calendar className="h-4 w-4 flex-shrink-0" />
             <span className="whitespace-nowrap">
               {t('tender.deadline', 'Deadline')}: {formatDate(deadline)}
