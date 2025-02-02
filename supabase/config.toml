@@ -26,5 +26,5 @@ enabled = true
 enabled = true
 
 [[functions]]
-name = "scrape-tenders"
+[functions.scrape-tenders]
 verify_jwt = false
