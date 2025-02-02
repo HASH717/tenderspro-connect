@@ -39,9 +39,8 @@ Deno.serve(async (req) => {
 
     const tendersData = await fetchTendersPage(page, authHeader);
     const tenders = tendersData.results || [];
-    const totalPages = Math.ceil(tendersData.count / tenders.length);
     
-    console.log(`Found ${tenders.length} tenders on page ${page} of ${totalPages}`);
+    console.log(`Found ${tenders.length} tenders on page ${page}`);
 
     for (const tender of tenders) {
       try {
@@ -76,16 +75,14 @@ Deno.serve(async (req) => {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
 
-    console.log(`Completed page ${page}. Total pages: ${totalPages}`);
+    console.log(`Completed page ${page} with ${successCount} new tenders`);
 
     return new Response(
       JSON.stringify({
         success: true,
         message: `Successfully processed page ${page}`,
         count: successCount,
-        currentPage: page,
-        totalPages,
-        hasMore: page < totalPages
+        currentPage: page
       }), 
       { 
         headers: { 

@@ -15,15 +15,14 @@ export const useScraper = () => {
     setIsLoading(true);
     setProgress(0);
     let currentPage = 1;
+    const TOTAL_PAGES = 667;
     let retryCount = 0;
     const MAX_RETRIES = 3;
-    let totalSuccessCount = 0;
-    let totalPages = 0;
 
     try {
-      while (true) {
+      while (currentPage <= TOTAL_PAGES) {
         if (retryCount >= MAX_RETRIES) {
-          throw new Error(`Failed after ${MAX_RETRIES} retries`);
+          throw new Error(`Failed after ${MAX_RETRIES} retries on page ${currentPage}`);
         }
 
         try {
@@ -36,26 +35,16 @@ export const useScraper = () => {
           if (error) throw error;
           if (!data?.success) throw new Error(data?.error || 'Unknown error occurred');
 
-          totalSuccessCount += data.count || 0;
-          totalPages = data.totalPages;
-          const progressPercentage = Math.min((currentPage / totalPages) * 100, 100);
+          const progressPercentage = Math.min((currentPage / TOTAL_PAGES) * 100, 100);
           setProgress(progressPercentage);
           
-          console.log(`Successfully processed page ${currentPage}/${totalPages}`);
+          console.log(`Successfully processed page ${currentPage}/${TOTAL_PAGES}`);
           
-          if (currentPage >= totalPages) {
-            toast({
-              title: t("scraper.success"),
-              description: t("scraper.completedDescription", { count: totalSuccessCount }),
-            });
-            break;
-          }
-
           toast({
             title: t("scraper.batchSuccess"),
             description: t("scraper.batchDescription", { 
               current: currentPage,
-              total: totalPages,
+              total: TOTAL_PAGES,
               count: data.count 
             }),
           });
@@ -64,7 +53,7 @@ export const useScraper = () => {
           retryCount = 0;
           await new Promise(resolve => setTimeout(resolve, 2000));
         } catch (error) {
-          console.error('Batch error:', error);
+          console.error(`Error on page ${currentPage}:`, error);
           retryCount++;
           
           toast({
@@ -75,6 +64,11 @@ export const useScraper = () => {
           await new Promise(resolve => setTimeout(resolve, 5000));
         }
       }
+
+      toast({
+        title: t("scraper.success"),
+        description: t("scraper.completedDescription", { count: currentPage - 1 }),
+      });
     } catch (error) {
       console.error('Scraping process failed:', error);
       toast({
