@@ -1,22 +1,11 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.0'
 import { corsHeaders } from '../_shared/cors.ts'
-import { 
-  fetchTendersPage, 
-  fetchTenderDetails, 
-  formatTenderData, 
-  handleError,
-  TenderData 
-} from '../_shared/tender-scraper-utils.ts'
+import { handleError } from '../_shared/tender-scraper-utils.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
 
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { 
-      headers: {
-        ...corsHeaders,
-        'Access-Control-Allow-Methods': 'POST',
-      }
-    });
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
@@ -39,74 +28,79 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
     if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Missing Supabase environment variables');
+      throw new Error('Missing Supabase configuration');
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
-    let successCount = 0;
-    let errorCount = 0;
-
-    console.log(`Making request to: https://api.dztenders.com/tenders/?page=${page}&format=json`);
     
-    const tendersData = await fetchTendersPage(page, authHeader);
-    const tenders = tendersData.results || [];
-    
-    console.log(`Found ${tenders.length} tenders on page ${page}`);
+    // Fetch tenders from the API
+    const response = await fetch(`https://api.dztenders.com/tenders/?format=json&page=${page}`, {
+      headers: {
+        'Authorization': authHeader,
+        'Accept': 'application/json',
+        'User-Agent': 'TendersPro/1.0',
+      },
+    });
 
-    for (const tender of tenders) {
-      try {
-        // Check if tender already exists
-        const { data: existingTender } = await supabase
-          .from('tenders')
-          .select('tender_id')
-          .eq('tender_id', tender.id.toString())
-          .maybeSingle();
-
-        if (existingTender) {
-          console.log(`Tender ${tender.id} already exists, skipping`);
-          successCount++;
-          continue;
-        }
-
-        const formattedTender = formatTenderData(tender as TenderData, tender);
-
-        // Insert the new tender
-        const { error: insertError } = await supabase
-          .from('tenders')
-          .insert(formattedTender);
-
-        if (insertError) {
-          console.error(`Error inserting tender ${tender.id}:`, insertError);
-          errorCount++;
-        } else {
-          successCount++;
-          console.log(`Successfully processed tender ${tender.id} (${successCount}/${tenders.length})`);
-        }
-
-      } catch (error) {
-        console.error(`Error processing tender ${tender.id}:`, error);
-        errorCount++;
-      }
-
-      // Add small delay between processing each tender
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
     }
 
-    console.log(`Completed page ${page} with ${successCount} successes and ${errorCount} errors`);
+    const data = await response.json();
+    console.log(`Found ${data.results?.length || 0} tenders on page ${page}`);
+
+    if (!data.results?.length) {
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'No tenders found on this page',
+          lastProcessedPage: page 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Process each tender
+    for (const tender of data.results) {
+      const { error } = await supabase
+        .from('tenders')
+        .upsert({
+          title: tender.title,
+          wilaya: tender.region_verbose?.name || 'Unknown',
+          category: tender.categories_verbose?.[0]?.name,
+          publication_date: tender.publishing_date,
+          deadline: tender.expiration_date,
+          link: tender.files_verbose?.[0],
+          tender_id: tender.id?.toString(),
+          type: tender.type,
+          region: tender.region_verbose?.name,
+          specifications_price: tender.cc_price?.toString(),
+          withdrawal_address: tender.cc_address,
+          image_url: tender.files_verbose?.[0] ? `https://old.dztenders.com/${tender.files_verbose[0]}` : null,
+          organization_name: tender.organization?.name,
+          organization_address: tender.organization?.address,
+          tender_status: tender.status
+        }, {
+          onConflict: 'tender_id'
+        });
+
+      if (error) {
+        console.error('Error upserting tender:', error);
+        throw error;
+      }
+    }
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        message: `Successfully processed page ${page}`,
-        count: successCount,
-        errors: errorCount,
-        page: page
-      }), 
+      JSON.stringify({ 
+        success: true, 
+        message: `Processed ${data.results.length} tenders`,
+        lastProcessedPage: page,
+        hasMore: !!data.next
+      }),
       { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json'
-        } 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
 

@@ -12,15 +12,19 @@ port = 54322
 enabled = true
 port = 54323
 
-[functions]
-[functions.scrape-tenders]
-verify_jwt = false
+[inbucket]
+enabled = true
+port = 54324
 
-[functions.payment-links]
-verify_jwt = true
+[storage]
+enabled = true
 
-[functions.create-subscription]
-verify_jwt = true
+[auth]
+enabled = true
 
-[functions.payment-webhook]
+[realtime]
+enabled = true
+
+[[functions]]
+name = "scrape-tenders"
 verify_jwt = false
