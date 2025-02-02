@@ -7,6 +7,28 @@ import { useAuth } from "@/contexts/AuthContext";
 export const useTenders = (filters: TenderFilters) => {
   const { session } = useAuth();
 
+  // Add a query to fetch subscription status
+  const { data: subscription } = useQuery({
+    queryKey: ['subscription', session?.user?.id],
+    enabled: !!session?.user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', session?.user?.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error) {
+        console.error('Error fetching subscription:', error);
+        return null;
+      }
+
+      return data;
+    }
+  });
+
   return useQuery({
     queryKey: ['tenders', filters, session?.user?.id],
     queryFn: async () => {
@@ -40,24 +62,51 @@ export const useTenders = (filters: TenderFilters) => {
         return [];
       }
 
-      // If user is logged in and has selected a category, filter by their subscription status
-      if (session?.user?.id && filters.category) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('preferred_categories')
-          .eq('id', session.user.id)
-          .single();
+      // Check subscription status
+      if (session?.user?.id) {
+        // If subscription exists and is trial
+        if (subscription?.status === 'trial') {
+          const trialEndDate = new Date(subscription.current_period_end);
+          const now = new Date();
 
-        if (profile?.preferred_categories?.includes(filters.category)) {
-          return tenders;
-        } else {
-          toast.error("Please upgrade your subscription to view more categories", {
-            action: {
-              label: "Upgrade",
-              onClick: () => window.location.href = '/subscriptions'
-            }
-          });
-          return [];
+          // If trial has expired
+          if (now > trialEndDate) {
+            toast.error("Your trial period has expired. Please upgrade to continue viewing tenders.", {
+              action: {
+                label: "Upgrade",
+                onClick: () => window.location.href = '/subscriptions'
+              }
+            });
+            // Return tenders with a flag indicating they should be blurred
+            return tenders?.map(tender => ({
+              ...tender,
+              isBlurred: true
+            })) || [];
+          }
+        }
+
+        // If user has selected a category, check their subscription status
+        if (filters.category) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('preferred_categories')
+            .eq('id', session.user.id)
+            .single();
+
+          if (profile?.preferred_categories?.includes(filters.category)) {
+            return tenders || [];
+          } else {
+            toast.error("Please upgrade your subscription to view more categories", {
+              action: {
+                label: "Upgrade",
+                onClick: () => window.location.href = '/subscriptions'
+              }
+            });
+            return tenders?.map(tender => ({
+              ...tender,
+              isBlurred: true
+            })) || [];
+          }
         }
       }
 

@@ -1,10 +1,7 @@
-import { Card } from "@/components/ui/card";
-import { Building, Calendar, MapPin, Heart } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Heart } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 
 interface TenderCardProps {
   id: string;
@@ -12,78 +9,39 @@ interface TenderCardProps {
   organization: string;
   location: string;
   deadline: string;
-  category?: string;
-  isFavorite?: boolean;
   publicationDate?: string;
+  isFavorite: boolean;
+  isBlurred?: boolean;
   onFavorite: () => void;
 }
 
-export const TenderCard = ({ 
+export const TenderCard = ({
   id,
   title,
   organization,
   location,
   deadline,
-  category,
-  isFavorite = false,
   publicationDate,
-  onFavorite
+  isFavorite,
+  isBlurred = false,
+  onFavorite,
 }: TenderCardProps) => {
-  const { session } = useAuth();
-  const { t } = useTranslation();
-
-  const { data: subscription } = useQuery({
-    queryKey: ['subscription', session?.user?.id],
-    enabled: !!session?.user?.id,
-    queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('user_id', session?.user?.id)
-          .eq('status', 'active')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (error) throw error;
-        return data;
-      } catch (error: any) {
-        console.error('Error fetching subscription:', error);
-        return null;
-      }
-    }
-  });
-
-  const formatDate = (dateString: string) => {
-    if (!dateString) return '';
-    return new Date(dateString).toLocaleDateString();
-  };
-
-  const isSubscribed = subscription?.status === 'active' || subscription?.status === 'trial';
-
   return (
-    <Card className="hover:shadow-md transition-shadow duration-200 bg-white">
-      <div className="p-4">
+    <Card className="relative">
+      <CardContent className={`p-6 ${isBlurred ? 'blur-sm pointer-events-none' : ''}`}>
         <div className="flex justify-between items-start gap-4">
-          <div className="flex-1">
-            <Link
-              to={isSubscribed ? `/tenders/${id}` : '/subscriptions'}
-              className="block"
-            >
-              <h3 className="text-lg font-medium text-gray-900 hover:text-primary transition-colors line-clamp-2 mb-2">
-                {title}
-              </h3>
-            </Link>
-            {category && (
-              <div className="text-emerald-700 text-sm mb-4 font-medium">
-                {category}
-              </div>
-            )}
+          <div className="space-y-1 flex-grow">
+            <h3 className="font-semibold text-lg leading-tight line-clamp-2">
+              {title}
+            </h3>
+            <p className="text-muted-foreground line-clamp-1">{organization}</p>
           </div>
           <button
-            onClick={onFavorite}
-            className="flex-shrink-0 text-gray-400 group transition-colors"
+            onClick={(e) => {
+              e.preventDefault();
+              onFavorite();
+            }}
+            className="group flex items-center justify-center h-8 w-8 rounded-full hover:bg-gray-100"
             aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
           >
             <Heart 
@@ -94,25 +52,47 @@ export const TenderCard = ({
           </button>
         </div>
 
-        <div className="space-y-3 text-sm">
-          <div className="flex items-center gap-2 text-emerald-700">
-            <Building className="h-4 w-4 flex-shrink-0" />
-            <span className="line-clamp-1">{organization}</span>
-          </div>
-          
-          <div className="flex items-center gap-2 text-blue-600">
-            <MapPin className="h-4 w-4 flex-shrink-0" />
-            <span className="line-clamp-1">{location}</span>
+        <div className="mt-4 space-y-2">
+          <div className="flex items-center text-sm text-muted-foreground">
+            <span className="flex-1">Location: {location}</span>
           </div>
 
-          <div className="flex items-center gap-2 text-orange-600">
-            <Calendar className="h-4 w-4 flex-shrink-0" />
-            <span className="whitespace-nowrap">
-              {t('tender.deadline', 'Deadline')}: {formatDate(deadline)}
+          <div className="flex items-center text-sm text-muted-foreground">
+            <span className="flex-1">
+              Deadline: {deadline}
             </span>
           </div>
+
+          {publicationDate && (
+            <div className="flex items-center text-sm text-muted-foreground">
+              <span className="flex-1">
+                Published: {formatDistanceToNow(new Date(publicationDate), { addSuffix: true })}
+              </span>
+            </div>
+          )}
         </div>
-      </div>
+
+        <div className="mt-4">
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => window.location.href = `/tenders/${id}`}
+          >
+            View Details
+          </Button>
+        </div>
+      </CardContent>
+      {isBlurred && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/5 rounded-lg">
+          <Button
+            variant="default"
+            onClick={() => window.location.href = '/subscriptions'}
+            className="bg-primary hover:bg-primary/90"
+          >
+            Upgrade to View
+          </Button>
+        </div>
+      )}
     </Card>
   );
 };
