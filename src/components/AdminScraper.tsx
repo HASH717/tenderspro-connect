@@ -12,7 +12,7 @@ export const AdminScraper = () => {
     <Card className="p-4">
       <div className="space-y-4">
         <Button 
-          onClick={() => handleScrape()} 
+          onClick={() => handleScrape(28)} 
           disabled={isLoading}
           className="w-full"
         >

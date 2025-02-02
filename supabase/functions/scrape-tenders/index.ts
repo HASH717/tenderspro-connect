@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
     const authHeader = `Basic ${credentials}`;
 
     const requestBody = await req.text().then(text => text ? JSON.parse(text) : {});
-    const { page = 1 } = requestBody;
+    const { page = 28 } = requestBody;
     console.log(`Processing page ${page}`);
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -42,23 +42,9 @@ Deno.serve(async (req) => {
     let successCount = 0;
     let errorCount = 0;
 
-    // Use the correct URL format for fetching tenders
     console.log(`Making request to: https://api.dztenders.com/tenders/?page=${page}&format=json`);
-    console.log(`Using auth header: Basic ${credentials}`);
     
-    const tendersResponse = await fetch(`https://api.dztenders.com/tenders/?page=${page}&format=json`, {
-      headers: {
-        'Authorization': authHeader,
-        'Accept': 'application/json',
-        'User-Agent': 'TendersPro/1.0',
-      },
-    });
-
-    if (!tendersResponse.ok) {
-      throw new Error(`Failed to fetch tenders page: ${tendersResponse.status}`);
-    }
-
-    const tendersData = await tendersResponse.json();
+    const tendersData = await fetchTendersPage(page, authHeader);
     const tenders = tendersData.results || [];
     
     console.log(`Found ${tenders.length} tenders on page ${page}`);
@@ -78,60 +64,7 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Fetch detailed tender information with retries
-        let detailData = null;
-        let retryCount = 0;
-        const maxRetries = 3;
-        let lastError = null;
-
-        while (retryCount < maxRetries) {
-          try {
-            // Add exponential backoff delay between retries
-            if (retryCount > 0) {
-              const delay = Math.pow(2, retryCount) * 1000; // 2s, 4s, 8s
-              console.log(`Retry ${retryCount + 1} for tender ${tender.id}, waiting ${delay}ms`);
-              await new Promise(resolve => setTimeout(resolve, delay));
-            }
-            
-            const detailUrl = `https://api.dztenders.com/tenders/${tender.id}/?format=json`;
-            console.log(`Making request to: ${detailUrl}`);
-            
-            const response = await fetch(detailUrl, {
-              headers: {
-                'Authorization': authHeader,
-                'Accept': 'application/json',
-                'User-Agent': 'TendersPro/1.0',
-              },
-            });
-
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            detailData = await response.json();
-            console.log(`Successfully fetched details for tender ${tender.id}`);
-            break;
-          } catch (error) {
-            lastError = error;
-            retryCount++;
-            console.error(`Attempt ${retryCount} failed for tender ${tender.id}:`, error);
-            
-            // If we get a 403, we should break immediately as retrying won't help
-            if (error.message.includes('403')) {
-              throw new Error(`Authentication failed for tender ${tender.id}: ${error.message}`);
-            }
-            
-            if (retryCount === maxRetries) {
-              throw new Error(`Failed to fetch tender details after ${maxRetries} attempts: ${error.message}`);
-            }
-          }
-        }
-
-        if (!detailData) {
-          throw new Error(`Failed to fetch details for tender ${tender.id} after ${maxRetries} attempts: ${lastError?.message}`);
-        }
-
-        const formattedTender = formatTenderData(tender as TenderData, detailData);
+        const formattedTender = formatTenderData(tender as TenderData, tender);
 
         // Insert the new tender
         const { error: insertError } = await supabase
