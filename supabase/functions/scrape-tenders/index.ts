@@ -84,6 +84,18 @@ Deno.serve(async (req) => {
       
       for (const tender of tenders) {
         try {
+          // First check if tender already exists
+          const { data: existingTender } = await supabase
+            .from('tenders')
+            .select('tender_id')
+            .eq('tender_id', tender.id.toString())
+            .single()
+
+          if (existingTender) {
+            console.log(`Tender ${tender.id} already exists, skipping`)
+            continue
+          }
+
           const detailResponse = await Promise.race([
             fetch(`https://api.dztenders.com/tenders/${tender.id}/?format=json`, {
               headers: {
@@ -134,9 +146,7 @@ Deno.serve(async (req) => {
 
           const { error: upsertError } = await supabase
             .from('tenders')
-            .upsert(formattedTender, {
-              onConflict: 'tender_id'
-            })
+            .insert(formattedTender)
 
           if (upsertError) {
             console.error(`Error inserting tender:`, upsertError)
