@@ -22,9 +22,9 @@ serve(async (req) => {
       throw new Error('No data in webhook payload')
     }
 
-    // Check if this is a successful payment
-    if (data.status === 'paid') {
-      console.log('Processing paid checkout:', data)
+    // Verify payment status - only proceed if payment is successful
+    if (data.status === 'paid' && data.payment_status === 'completed') {
+      console.log('Processing successful payment:', data)
       
       // Extract metadata
       const metadata = data.metadata
@@ -90,16 +90,19 @@ serve(async (req) => {
           status: 200 
         }
       )
+    } else {
+      console.log('Payment not successful or incomplete:', data)
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          message: 'Payment not successful or incomplete'
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200 
+        }
+      )
     }
-
-    // Return success for other events
-    return new Response(
-      JSON.stringify({ success: true, message: 'Event processed' }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
-      }
-    )
 
   } catch (error) {
     console.error('Error processing webhook:', error)
