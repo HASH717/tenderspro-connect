@@ -10,20 +10,27 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
 interface TenderCardProps {
-  tender: {
-    id: string;
-    title: string;
-    deadline?: string;
-    wilaya?: string;
-    category?: string;
-    organization_name?: string;
-  };
-  isFavorited?: boolean;
+  id: string;
+  title: string;
+  organization: string;
+  location: string;
+  deadline: string;
+  publicationDate?: string;
+  isFavorite?: boolean;
+  onFavorite: () => void;
 }
 
-const TenderCard = ({ tender, isFavorited = false }: TenderCardProps) => {
+export const TenderCard = ({ 
+  id,
+  title,
+  organization,
+  location,
+  deadline,
+  publicationDate,
+  isFavorite = false,
+  onFavorite
+}: TenderCardProps) => {
   const { session } = useAuth();
-  const queryClient = useQueryClient();
   const { t } = useTranslation();
 
   const { data: subscription } = useQuery({
@@ -49,51 +56,6 @@ const TenderCard = ({ tender, isFavorited = false }: TenderCardProps) => {
     }
   });
 
-  const toggleFavorite = useMutation({
-    mutationFn: async () => {
-      if (!session?.user?.id) throw new Error("User not authenticated");
-
-      if (isFavorited) {
-        const { error } = await supabase
-          .from('favorites')
-          .delete()
-          .eq('user_id', session.user.id)
-          .eq('tender_id', tender.id);
-
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('favorites')
-          .insert({
-            user_id: session.user.id,
-            tender_id: tender.id
-          });
-
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['favorites'] });
-      toast.success(
-        isFavorited
-          ? t('tender.removedFromFavorites', 'Removed from favorites')
-          : t('tender.addedToFavorites', 'Added to favorites')
-      );
-    },
-    onError: (error) => {
-      console.error('Error toggling favorite:', error);
-      toast.error(t('tender.favoriteError', 'Error updating favorites'));
-    }
-  });
-
-  const handleFavoriteClick = () => {
-    if (!session) {
-      toast.error(t('tender.loginRequired', 'Please login to add favorites'));
-      return;
-    }
-    toggleFavorite.mutate();
-  };
-
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
     return new Date(dateString).toLocaleDateString();
@@ -106,39 +68,35 @@ const TenderCard = ({ tender, isFavorited = false }: TenderCardProps) => {
       <div className="p-4">
         <div className="flex justify-between items-start mb-2">
           <Link
-            to={isSubscribed ? `/tenders/${tender.id}` : '/subscriptions'}
+            to={isSubscribed ? `/tenders/${id}` : '/subscriptions'}
             className="text-lg font-semibold hover:text-primary transition-colors line-clamp-2 flex-1"
           >
-            {tender.title}
+            {title}
           </Link>
           <Button
             variant="ghost"
             size="icon"
-            className={`ml-2 ${isFavorited ? 'text-red-500' : 'text-gray-400'}`}
-            onClick={handleFavoriteClick}
+            className={`ml-2 ${isFavorite ? 'text-red-500' : 'text-gray-400'}`}
+            onClick={onFavorite}
           >
-            <Heart className="h-5 w-5" fill={isFavorited ? "currentColor" : "none"} />
+            <Heart className="h-5 w-5" fill={isFavorite ? "currentColor" : "none"} />
           </Button>
         </div>
 
         <div className="space-y-2">
-          {tender.organization_name && (
-            <p className="text-sm text-muted-foreground line-clamp-1">
-              {tender.organization_name}
-            </p>
-          )}
+          <p className="text-sm text-muted-foreground line-clamp-1">
+            {organization}
+          </p>
           
           <div className="flex flex-wrap gap-2">
-            {tender.deadline && (
-              <Badge variant="secondary">
-                {t('tender.deadline', 'Deadline')}: {formatDate(tender.deadline)}
+            <Badge variant="secondary">
+              {t('tender.deadline', 'Deadline')}: {formatDate(deadline)}
+            </Badge>
+            <Badge variant="outline">{location}</Badge>
+            {publicationDate && (
+              <Badge variant="outline">
+                {t('tender.published', 'Published')}: {formatDate(publicationDate)}
               </Badge>
-            )}
-            {tender.wilaya && (
-              <Badge variant="outline">{tender.wilaya}</Badge>
-            )}
-            {tender.category && (
-              <Badge variant="outline">{tender.category}</Badge>
             )}
           </div>
         </div>
@@ -146,5 +104,3 @@ const TenderCard = ({ tender, isFavorited = false }: TenderCardProps) => {
     </Card>
   );
 };
-
-export default TenderCard;
