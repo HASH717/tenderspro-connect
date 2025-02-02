@@ -16,6 +16,8 @@ interface SubscriptionInfoProps {
 export const SubscriptionInfo = ({ subscription, isMobile }: SubscriptionInfoProps) => {
   const navigate = useNavigate();
 
+  console.log('SubscriptionInfo - Current subscription:', subscription);
+
   return (
     <div className="p-6">
       {subscription ? (

@@ -23,23 +23,28 @@ const Subscriptions = () => {
   const navigate = useNavigate();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Fetch profile data with proper error handling
+  // Fetch profile data
   const { data: profile } = useQuery({
     queryKey: ['profile', session?.user?.id],
     enabled: !!session?.user?.id,
     queryFn: async () => {
+      console.log('Fetching profile data...');
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', session?.user?.id)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching profile:', error);
+        throw error;
+      }
+      console.log('Profile data:', data);
       return data;
     }
   });
 
-  // Fetch subscription data with proper caching disabled
+  // Fetch subscription data with proper filtering
   const { data: subscription, refetch: refetchSubscription } = useQuery({
     queryKey: ['subscription', session?.user?.id],
     enabled: !!session?.user?.id && !isRefreshing,
@@ -67,7 +72,7 @@ const Subscriptions = () => {
     retryDelay: 1000
   });
 
-  // Check URL parameters and handle subscription status
+  // Handle subscription status updates
   useEffect(() => {
     const success = searchParams.get('success');
     const plan = searchParams.get('plan');
@@ -78,7 +83,7 @@ const Subscriptions = () => {
       
       const refreshData = async () => {
         try {
-          // Invalidate all subscription-related queries first
+          // First, invalidate the subscription query
           await queryClient.invalidateQueries({ queryKey: ['subscription'] });
           
           // Add a delay to ensure the database has been updated
