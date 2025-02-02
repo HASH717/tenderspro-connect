@@ -50,21 +50,27 @@ const Subscriptions = () => {
     enabled: !!session?.user?.id && !isRefreshing,
     queryFn: async () => {
       console.log('Fetching subscription data...');
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', session?.user?.id)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      try {
+        const { data, error } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', session?.user?.id)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-      if (error) {
-        console.error('Error fetching subscription:', error);
-        throw error;
+        if (error) {
+          console.error('Error fetching subscription:', error);
+          throw error;
+        }
+
+        console.log('Latest active subscription:', data);
+        return data;
+      } catch (error) {
+        console.error('Subscription query error:', error);
+        return null;
       }
-      console.log('Subscription data:', data);
-      return data;
     },
     staleTime: 0,
     gcTime: 0,
