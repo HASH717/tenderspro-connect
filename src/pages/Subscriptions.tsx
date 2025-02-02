@@ -37,10 +37,7 @@ const Subscriptions = () => {
         .limit(1)
         .maybeSingle();
 
-      if (error) {
-        console.error('Error fetching subscription:', error);
-        throw error;
-      }
+      if (error) throw error;
       console.log('Subscription data:', data);
       return data;
     },
@@ -48,6 +45,22 @@ const Subscriptions = () => {
     gcTime: 0,  // Don't cache the data
     retry: 3,   // Retry failed requests 3 times
     retryDelay: 1000 // Wait 1 second between retries
+  });
+
+  // Fetch profile data
+  const { data: profile } = useQuery({
+    queryKey: ['profile', session?.user?.id],
+    enabled: !!session?.user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session?.user?.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    }
   });
 
   // Check URL parameters and handle subscription status
