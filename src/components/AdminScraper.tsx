@@ -59,12 +59,11 @@ export const AdminScraper = () => {
                 count: data.count 
               }),
             });
-            
-            // Wait for state update before continuing
-            await new Promise(resolve => {
-              setCurrentPage(data.nextPage);
-              setTimeout(resolve, 2000);
-            });
+
+            // Update page state and wait before next iteration
+            const nextPage = data.nextPage;
+            setCurrentPage(nextPage);
+            await new Promise(resolve => setTimeout(resolve, 2000));
           } else {
             // No more pages to process
             toast({
