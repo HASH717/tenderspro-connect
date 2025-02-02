@@ -19,7 +19,6 @@ const TenderDetails = () => {
   const { data: tender, isLoading } = useQuery({
     queryKey: ['tender', id],
     queryFn: async () => {
-      console.log('Fetching tender with ID:', id);
       if (!id) {
         toast.error('Invalid tender ID');
         navigate('/');
@@ -50,7 +49,15 @@ const TenderDetails = () => {
   });
 
   if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navigation />
+        <div className="flex-grow flex items-center justify-center">
+          <div className="text-lg text-gray-600">Loading tender details...</div>
+        </div>
+        <Footer />
+      </div>
+    );
   }
 
   if (!tender) {
@@ -66,7 +73,7 @@ const TenderDetails = () => {
     <div className="min-h-screen flex flex-col">
       <Navigation />
       
-      <div className={`${isMobile ? 'pb-20' : 'pt-24'} flex-grow`}>
+      <div className={`flex-grow ${isMobile ? 'pb-20' : 'pt-24'}`}>
         <div className="max-w-4xl mx-auto px-4 py-8">
           <Button
             variant="ghost"

@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { Heart, Calendar, MapPin, Building } from "lucide-react";
+import { Building, Calendar, MapPin, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
@@ -64,20 +64,21 @@ export const TenderCard = ({
   const isSubscribed = subscription?.status === 'active' || subscription?.status === 'trial';
 
   return (
-    <Card className="hover:shadow-md transition-shadow duration-200">
-      <div className="p-4 space-y-4">
-        <div className="flex justify-between items-start gap-4">
+    <Card className="hover:shadow-md transition-shadow duration-200 bg-white">
+      <div className="p-4">
+        <div className="flex justify-between items-start gap-4 mb-4">
           <Link
             to={isSubscribed ? `/tenders/${id}` : '/subscriptions'}
             className="flex-1"
           >
-            <h3 className="text-lg font-medium text-gray-900 hover:text-primary transition-colors">
+            <h3 className="text-lg font-medium text-gray-900 hover:text-primary transition-colors line-clamp-2">
               {title}
             </h3>
           </Link>
           <button
             onClick={onFavorite}
             className="flex-shrink-0 text-gray-400 hover:text-red-500 transition-colors"
+            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
           >
             <Heart 
               className="h-5 w-5" 
@@ -86,22 +87,22 @@ export const TenderCard = ({
           </button>
         </div>
 
-        <div className="space-y-2 text-sm text-gray-600">
+        <div className="space-y-3 text-sm">
           {category && (
-            <div className="flex items-center gap-2">
-              <Building className="h-4 w-4 text-primary" />
-              <span>{category}</span>
+            <div className="flex items-center gap-2 text-emerald-700">
+              <Building className="h-4 w-4 flex-shrink-0" />
+              <span className="line-clamp-1">{category}</span>
             </div>
           )}
           
-          <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-primary" />
-            <span>{location}</span>
+          <div className="flex items-center gap-2 text-blue-600">
+            <MapPin className="h-4 w-4 flex-shrink-0" />
+            <span className="line-clamp-1">{location}</span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-primary" />
-            <span>
+          <div className="flex items-center gap-2 text-orange-600">
+            <Calendar className="h-4 w-4 flex-shrink-0" />
+            <span className="whitespace-nowrap">
               {t('tender.deadline', 'Deadline')}: {formatDate(deadline)}
             </span>
           </div>
