@@ -1,14 +1,20 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Auth = () => {
   const navigate = useNavigate();
   const { session } = useAuth();
   const location = useLocation();
   const returnTo = location.state?.returnTo || '/';
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (session) {
@@ -18,6 +24,7 @@ const Auth = () => {
 
   const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true);
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
@@ -31,11 +38,14 @@ const Auth = () => {
       if (error) throw error;
     } catch (error: any) {
       toast.error(error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleEmailSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true);
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
@@ -61,25 +71,115 @@ const Auth = () => {
       toast.success('Check your email to confirm your account');
     } catch (error: any) {
       toast.error(error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div>
-      <h1>Authentication</h1>
-      <form onSubmit={handleEmailLogin}>
-        <input type="email" name="email" placeholder="Email" required />
-        <input type="password" name="password" placeholder="Password" required />
-        <button type="submit">Login</button>
-      </form>
-      <form onSubmit={handleEmailSignUp}>
-        <input type="email" name="email" placeholder="Email" required />
-        <input type="password" name="password" placeholder="Password" required />
-        <input type="text" name="firstName" placeholder="First Name" required />
-        <input type="text" name="lastName" placeholder="Last Name" required />
-        <input type="text" name="phoneNumber" placeholder="Phone Number" required />
-        <button type="submit">Sign Up</button>
-      </form>
+    <div className="min-h-screen flex items-center justify-center bg-muted p-4">
+      <Card className="w-full max-w-md p-6">
+        <Tabs defaultValue="login" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="login">Login</TabsTrigger>
+            <TabsTrigger value="signup">Sign Up</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="login">
+            <form onSubmit={handleEmailLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="login-email">Email</Label>
+                <Input 
+                  id="login-email"
+                  type="email" 
+                  name="email" 
+                  placeholder="Enter your email" 
+                  required 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="login-password">Password</Label>
+                <Input 
+                  id="login-password"
+                  type="password" 
+                  name="password" 
+                  placeholder="Enter your password" 
+                  required 
+                />
+              </div>
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={isLoading}
+              >
+                {isLoading ? "Loading..." : "Login"}
+              </Button>
+            </form>
+          </TabsContent>
+
+          <TabsContent value="signup">
+            <form onSubmit={handleEmailSignUp} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="signup-email">Email</Label>
+                <Input 
+                  id="signup-email"
+                  type="email" 
+                  name="email" 
+                  placeholder="Enter your email" 
+                  required 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="signup-password">Password</Label>
+                <Input 
+                  id="signup-password"
+                  type="password" 
+                  name="password" 
+                  placeholder="Enter your password" 
+                  required 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First Name</Label>
+                <Input 
+                  id="firstName"
+                  type="text" 
+                  name="firstName" 
+                  placeholder="Enter your first name" 
+                  required 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input 
+                  id="lastName"
+                  type="text" 
+                  name="lastName" 
+                  placeholder="Enter your last name" 
+                  required 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phoneNumber">Phone Number</Label>
+                <Input 
+                  id="phoneNumber"
+                  type="text" 
+                  name="phoneNumber" 
+                  placeholder="Enter your phone number" 
+                  required 
+                />
+              </div>
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={isLoading}
+              >
+                {isLoading ? "Loading..." : "Sign Up"}
+              </Button>
+            </form>
+          </TabsContent>
+        </Tabs>
+      </Card>
     </div>
   );
 };
