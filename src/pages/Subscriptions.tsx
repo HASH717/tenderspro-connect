@@ -10,6 +10,8 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { SubscriptionStatus } from "@/components/subscriptions/SubscriptionStatus";
 import { SubscriptionPlans } from "@/components/subscriptions/SubscriptionPlans";
+import Navigation from "@/components/Navigation";
+import Footer from "@/components/Footer";
 
 const Subscriptions = () => {
   const { t } = useTranslation();
