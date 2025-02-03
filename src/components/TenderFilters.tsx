@@ -53,47 +53,9 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
   const { session } = useAuth();
   const navigate = useNavigate();
 
-  // Fetch user's subscription and profile
-  const { data: subscription } = useQuery({
-    queryKey: ['subscription', session?.user?.id],
-    enabled: !!session?.user?.id,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', session?.user?.id)
-        .eq('status', 'active')
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching subscription:', error);
-        return null;
-      }
-      return data;
-    }
-  });
-
-  const { data: profile } = useQuery({
-    queryKey: ['profile', session?.user?.id],
-    enabled: !!session?.user?.id,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session?.user?.id)
-        .single();
-
-      if (error) {
-        console.error('Error fetching profile:', error);
-        return null;
-      }
-      return data;
-    }
-  });
-
-  // Fetch all available categories
-  const { data: categories = [] } = useQuery({
-    queryKey: ['tender-categories'],
+  // Fetch all available categories from tenders
+  const { data: allCategories = [] } = useQuery({
+    queryKey: ['all-tender-categories'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('tenders')
@@ -111,6 +73,40 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
         .sort();
 
       return uniqueCategories;
+    }
+  });
+
+  // Fetch user's subscription and allowed categories
+  const { data: subscriptionData } = useQuery({
+    queryKey: ['subscription-categories', session?.user?.id],
+    enabled: !!session?.user?.id,
+    queryFn: async () => {
+      // Get active subscription
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('status', 'active')
+        .single();
+
+      if (!subscription) return null;
+
+      // If Enterprise plan, return all categories
+      if (subscription.plan === 'Enterprise') {
+        return { subscription, categories: allCategories };
+      }
+
+      // Get subscription categories
+      const { data: subCategories } = await supabase
+        .from('subscription_categories')
+        .select('categories')
+        .eq('subscription_id', subscription.id)
+        .single();
+
+      return {
+        subscription,
+        categories: subCategories?.categories || []
+      };
     }
   });
 
@@ -143,28 +139,13 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
     onSearch(clearedFilters);
   };
 
-  const getCategoryLimit = () => {
-    if (!subscription) return 3; // Basic plan limit
-    switch (subscription.plan) {
-      case 'Basic':
-        return 3;
-      case 'Professional':
-        return 10;
-      case 'Enterprise':
-        return Infinity;
-      default:
-        return 3;
-    }
-  };
-
   const isCategoryAccessible = (category: string) => {
-    if (!session?.user?.id) return true; // Show all categories for non-logged-in users
-    if (!profile?.preferred_categories) return false;
+    if (!session?.user?.id) return true;
+    if (!subscriptionData?.subscription) return false;
     
-    const categoryLimit = getCategoryLimit();
-    const preferredCategories = profile.preferred_categories;
+    if (subscriptionData.subscription.plan === 'Enterprise') return true;
     
-    return preferredCategories.includes(category) || preferredCategories.length < categoryLimit;
+    return subscriptionData.categories.includes(category);
   };
 
   const handleCategorySelect = (category: string) => {
@@ -174,7 +155,7 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
     }
 
     if (!isCategoryAccessible(category)) {
-      toast.error("Please upgrade your subscription to access more categories", {
+      toast.error("This category is not included in your current plan", {
         action: {
           label: "Upgrade",
           onClick: () => navigate('/subscriptions')
@@ -225,14 +206,14 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
             <SelectValue placeholder={t("filters.category")} />
           </SelectTrigger>
           <SelectContent>
-            {categories.map((category) => (
+            {allCategories.map((category) => (
               <SelectItem 
                 key={category} 
                 value={category}
                 className="flex items-center justify-between"
                 disabled={!isCategoryAccessible(category)}
               >
-                <span>{t(`tender.categories.${category.toLowerCase()}`, category)}</span>
+                <span>{category}</span>
                 {!isCategoryAccessible(category) && (
                   <Lock className="h-4 w-4 ml-2 inline-block text-muted-foreground" />
                 )}

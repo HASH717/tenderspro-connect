@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { SubscriptionStatus } from "@/components/subscriptions/SubscriptionStatus";
 import { SubscriptionPlans } from "@/components/subscriptions/SubscriptionPlans";
+import { CategorySelection } from "@/components/subscriptions/CategorySelection";
 
 const Subscriptions = () => {
   const { t } = useTranslation();
@@ -22,6 +23,8 @@ const Subscriptions = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [subscriptionId, setSubscriptionId] = useState<string | null>(null);
+  const [plan, setPlan] = useState<string | null>(null);
 
   // Fetch profile data
   const { data: profile } = useQuery({
@@ -81,16 +84,9 @@ const Subscriptions = () => {
     const plan = searchParams.get('plan');
     
     if (success === 'true' && plan) {
-      // Don't show success message immediately
-      // The webhook will handle the subscription update
-      toast({
-        title: "Processing payment...",
-        description: "Please wait while we confirm your payment.",
-        variant: "default",
-      });
-      
-      // Clear URL parameters
-      navigate('/subscriptions', { replace: true });
+      setPlan(plan);
+      setSubscriptionId(subscription?.id || null);
+      navigate('/subscriptions/categories');
     } else if (failed === 'true' || success === 'false') {
       toast({
         title: "Payment failed",
@@ -99,7 +95,7 @@ const Subscriptions = () => {
       });
       navigate('/subscriptions', { replace: true });
     }
-  }, [searchParams, toast, queryClient, refetchSubscription, navigate]);
+  }, [searchParams, toast, queryClient, refetchSubscription, navigate, subscription]);
 
   const handleSubscribe = async (plan: any) => {
     try {
@@ -127,7 +123,7 @@ const Subscriptions = () => {
           plan: plan.name,
           priceId: plan.priceId,
           userId: session.user.id,
-          backUrl: window.location.href,
+          backUrl: `${window.location.origin}/subscriptions`,
           categories: profile.preferred_categories
         }
       });
@@ -148,6 +144,10 @@ const Subscriptions = () => {
       });
     }
   };
+
+  if (subscriptionId && plan) {
+    return <CategorySelection subscriptionId={subscriptionId} plan={plan} />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col">

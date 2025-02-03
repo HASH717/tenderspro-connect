@@ -7,8 +7,38 @@ import { useAuth } from "@/contexts/AuthContext";
 export const useTenders = (filters: TenderFilters) => {
   const { session } = useAuth();
 
+  const { data: subscriptionData } = useQuery({
+    queryKey: ['subscription-categories', session?.user?.id],
+    enabled: !!session?.user?.id,
+    queryFn: async () => {
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('status', 'active')
+        .single();
+
+      if (!subscription) return null;
+
+      if (subscription.plan === 'Enterprise') {
+        return { subscription, categories: null }; // null means no restrictions
+      }
+
+      const { data: subCategories } = await supabase
+        .from('subscription_categories')
+        .select('categories')
+        .eq('subscription_id', subscription.id)
+        .single();
+
+      return {
+        subscription,
+        categories: subCategories?.categories || []
+      };
+    }
+  });
+
   return useQuery({
-    queryKey: ['tenders', filters, session?.user?.id],
+    queryKey: ['tenders', filters, session?.user?.id, subscriptionData],
     queryFn: async () => {
       console.log('Fetching tenders with filters:', filters);
       let query = supabase
@@ -40,33 +70,12 @@ export const useTenders = (filters: TenderFilters) => {
         return [];
       }
 
-      // If user is logged in and has selected a category, filter by their subscription status
-      if (session?.user?.id && filters.category) {
-        const { data: subscription } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .eq('status', 'active')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        const { data: trialSub } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .eq('status', 'trial')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        const isTrialValid = trialSub && new Date(trialSub.current_period_end) > new Date();
-        const hasActiveSubscription = subscription?.status === 'active';
-
-        if (!hasActiveSubscription && !isTrialValid) {
+      // If user is logged in and has a subscription, filter by allowed categories
+      if (session?.user?.id && subscriptionData?.subscription) {
+        if (subscriptionData.subscription.plan !== 'Enterprise' && subscriptionData.categories) {
           return tenders.map(tender => ({
             ...tender,
-            isBlurred: true
+            isBlurred: !subscriptionData.categories.includes(tender.category)
           }));
         }
       }

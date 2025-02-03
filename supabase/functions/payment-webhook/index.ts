@@ -16,20 +16,17 @@ serve(async (req) => {
     const payload = await req.json()
     console.log('Received webhook payload:', JSON.stringify(payload, null, 2))
 
-    // Extract the event data
     const data = payload.data
     if (!data) {
       throw new Error('No data in webhook payload')
     }
 
-    // Log the payment status details for debugging
     console.log('Payment status details:', {
       status: data.status,
       payment_status: data.payment_status,
       metadata: data.metadata
     })
 
-    // Verify payment status - Chargily Pay considers a payment successful when status is 'paid'
     if (data.status !== 'paid') {
       console.log('Payment not successful:', {
         id: data.id,
@@ -53,7 +50,6 @@ serve(async (req) => {
 
     console.log('Processing successful payment:', data)
     
-    // Extract metadata
     const metadata = data.metadata
     if (!metadata) {
       throw new Error('No metadata in checkout data')
@@ -86,16 +82,7 @@ serve(async (req) => {
     const now = new Date()
     const currentPeriodStart = now
     const currentPeriodEnd = new Date(now)
-    currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1) // 1 month subscription
-
-    console.log('Creating new subscription:', {
-      user_id: userId,
-      plan: planName,
-      period: {
-        start: currentPeriodStart.toISOString(),
-        end: currentPeriodEnd.toISOString()
-      }
-    })
+    currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1)
 
     // Create new subscription
     const { data: subscription, error: subscriptionError } = await supabase
@@ -115,16 +102,19 @@ serve(async (req) => {
       throw subscriptionError
     }
 
-    // Update user categories if provided
-    if (categories && Array.isArray(categories)) {
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ preferred_categories: categories })
-        .eq('id', userId)
+    // Only update categories if it's not an Enterprise plan
+    if (planName !== 'Enterprise' && categories && Array.isArray(categories)) {
+      const { error: categoriesError } = await supabase
+        .from('subscription_categories')
+        .insert({
+          user_id: userId,
+          subscription_id: subscription.id,
+          categories: categories
+        })
 
-      if (updateError) {
-        console.error('Error updating categories:', updateError)
-        throw new Error(`Failed to update categories: ${updateError.message}`)
+      if (categoriesError) {
+        console.error('Error updating subscription categories:', categoriesError)
+        throw new Error(`Failed to update subscription categories: ${categoriesError.message}`)
       }
     }
 
