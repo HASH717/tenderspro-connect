@@ -16,45 +16,21 @@ export const PreferencesTab = ({ currentLanguage, onLanguageChange, preferredCat
   const { t } = useTranslation();
   const { session } = useAuth();
 
-  const { data: subscriptionData } = useQuery({
-    queryKey: ['subscription-categories', session?.user?.id],
+  const { data: subscription } = useQuery({
+    queryKey: ['subscription', session?.user?.id],
     enabled: !!session?.user?.id,
     queryFn: async () => {
-      try {
-        const { data: subscription, error: subscriptionError } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .eq('status', 'active')
-          .maybeSingle();
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', session?.user?.id)
+        .eq('status', 'active')
+        .maybeSingle();
 
-        if (subscriptionError) {
-          console.error('Error fetching subscription:', subscriptionError);
-          return null;
-        }
-
-        if (!subscription) return null;
-
-        const { data: subCategories, error: categoriesError } = await supabase
-          .from('subscription_categories')
-          .select('categories')
-          .eq('subscription_id', subscription.id)
-          .maybeSingle();
-
-        if (categoriesError) {
-          console.error('Error fetching categories:', categoriesError);
-          return [];
-        }
-
-        return subCategories?.categories || [];
-      } catch (error) {
-        console.error('Error in subscription data fetch:', error);
-        return [];
-      }
+      if (error) throw error;
+      return data;
     }
   });
-
-  const displayCategories = subscriptionData || preferredCategories || [];
 
   return (
     <div className="bg-white p-6 rounded-lg border space-y-6">
@@ -87,12 +63,12 @@ export const PreferencesTab = ({ currentLanguage, onLanguageChange, preferredCat
           Categories
         </h3>
         <div className="flex flex-wrap gap-2">
-          {displayCategories.map((category) => (
+          {preferredCategories?.map((category) => (
             <Badge key={category} variant="secondary">
               {category}
             </Badge>
           ))}
-          {(!displayCategories || displayCategories.length === 0) && (
+          {(!preferredCategories || preferredCategories.length === 0) && (
             <p className="text-sm text-muted-foreground">
               No categories selected
             </p>
