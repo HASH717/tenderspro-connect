@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
-import Onboarding from "@/pages/Onboarding";
 import Profile from "@/pages/Profile";
 import Favorites from "@/pages/Favorites";
 import Alerts from "@/pages/Alerts";
@@ -26,7 +25,6 @@ function App() {
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
-              <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/favorites" element={<Favorites />} />
               <Route path="/alerts" element={<Alerts />} />

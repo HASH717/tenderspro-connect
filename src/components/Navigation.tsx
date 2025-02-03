@@ -54,12 +54,17 @@ const Navigation = () => {
     { icon: User, path: "/profile", label: t("navigation.profile") },
   ];
 
-  const shouldShowUpgrade = !isMobile && (!subscription?.status || subscription?.status === 'trial');
+  const shouldShowUpgrade = !isMobile && (
+    subscription?.plan === 'Basic' || 
+    subscription?.plan === 'Professional' || 
+    subscription?.status === 'trial'
+  );
+
   if (shouldShowUpgrade) {
     navItems.push({ 
       icon: CreditCard, 
       path: "/subscriptions", 
-      label: "Upgrade"
+      label: subscription?.status === 'trial' ? "Upgrade (Trial)" : "Upgrade"
     });
   }
 

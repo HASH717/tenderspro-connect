@@ -37,11 +37,17 @@ export const PreferencesTab = ({ currentLanguage, onLanguageChange, preferredCat
   });
 
   const handleCategoryUpdate = () => {
-    if (subscription?.status === 'active' && subscription?.plan !== 'Enterprise') {
-      toast.error("Categories cannot be changed after subscription. Please contact support if you need to modify your categories.");
+    if (subscription?.status === 'trial') {
+      toast.error("Categories cannot be changed during trial period");
       return;
     }
-    navigate('/onboarding');
+    
+    if (subscription?.status === 'active' && subscription?.plan !== 'Enterprise') {
+      navigate('/subscriptions');
+      return;
+    }
+
+    toast.error("Categories cannot be changed after subscription. Please contact support if you need to modify your categories.");
   };
 
   return (
@@ -86,14 +92,15 @@ export const PreferencesTab = ({ currentLanguage, onLanguageChange, preferredCat
             </p>
           )}
         </div>
-        <Button
-          variant="outline"
-          onClick={handleCategoryUpdate}
-          className="mt-2"
-          disabled={subscription?.status === 'active' && subscription?.plan !== 'Enterprise'}
-        >
-          Update Categories
-        </Button>
+        {subscription?.plan !== 'Enterprise' && (
+          <Button
+            variant="outline"
+            onClick={handleCategoryUpdate}
+            className="mt-2"
+          >
+            Upgrade to Change Categories
+          </Button>
+        )}
       </div>
     </div>
   );
