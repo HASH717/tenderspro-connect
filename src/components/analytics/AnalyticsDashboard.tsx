@@ -4,18 +4,10 @@ import { MetricCard } from "./MetricCard";
 import { AlgeriaMap } from "./AlgeriaMap";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { Database } from "@/integrations/supabase/types";
 
-interface AnalyticsMetrics {
-  total_users: number;
-  active_users: number;
-  total_revenue: number;
-  churn_rate: number;
-}
-
-interface WilayaDistribution {
-  wilaya: string;
-  user_count: number;
-}
+type AnalyticsMetrics = Database['public']['Views']['analytics_metrics']['Row'];
+type WilayaDistribution = Database['public']['Views']['wilaya_distribution']['Row'];
 
 export const AnalyticsDashboard = () => {
   const [metrics, setMetrics] = useState<AnalyticsMetrics>({
@@ -47,8 +39,8 @@ export const AnalyticsDashboard = () => {
         return;
       }
 
-      setMetrics(metricsData as AnalyticsMetrics);
-      setWilayaData(wilayaData as WilayaDistribution[]);
+      if (metricsData) setMetrics(metricsData);
+      if (wilayaData) setWilayaData(wilayaData);
     };
 
     fetchAnalytics();

@@ -40,7 +40,7 @@ export const AlgeriaMap = ({ data }: AlgeriaMapProps) => {
 
     // Create projection
     const projection = d3.geoMercator()
-      .fitSize([width, height], algeriaGeoJson as FeatureCollection);
+      .fitSize([width, height], algeriaGeoJson as unknown as FeatureCollection<Geometry>);
 
     // Create path generator
     const path = d3.geoPath().projection(projection);
@@ -56,7 +56,7 @@ export const AlgeriaMap = ({ data }: AlgeriaMapProps) => {
       .data((algeriaGeoJson as FeatureCollection).features)
       .enter()
       .append('path')
-      .attr('d', feature => path(feature as Feature))
+      .attr('d', (feature) => path(feature as Feature<Geometry>))
       .attr('fill', (d: any) => {
         const wilayaData = data.find(item => 
           item.wilaya.toLowerCase() === d.properties.name.toLowerCase()
@@ -72,7 +72,7 @@ export const AlgeriaMap = ({ data }: AlgeriaMapProps) => {
 
     // Add hover effects
     svg.selectAll('path')
-      .on('mouseover', function(event, d: any) {
+      .on('mouseover', function(event: MouseEvent, d: any) {
         const wilayaData = data.find(item => 
           item.wilaya.toLowerCase() === d.properties.name.toLowerCase()
         );
