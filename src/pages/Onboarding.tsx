@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const Onboarding = () => {
   const { t } = useTranslation();
@@ -54,7 +55,8 @@ const Onboarding = () => {
       const { data, error } = await supabase
         .from('tenders')
         .select('category')
-        .not('category', 'is', null);
+        .not('category', 'is', null)
+        .not('category', 'eq', '');
 
       if (error) {
         console.error('Error fetching categories:', error);
@@ -176,18 +178,20 @@ const Onboarding = () => {
                 </span>
               )}
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {categories.map((category) => (
-                <Button
-                  key={category}
-                  variant={selectedCategories.includes(category) ? "default" : "outline"}
-                  onClick={() => handleCategorySelect(category)}
-                  className="h-auto py-4 px-3 text-sm text-center whitespace-normal"
-                >
-                  {category}
-                </Button>
-              ))}
-            </div>
+            <ScrollArea className="h-[400px] rounded-md border p-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {categories.map((category) => (
+                  <Button
+                    key={category}
+                    variant={selectedCategories.includes(category) ? "default" : "outline"}
+                    onClick={() => handleCategorySelect(category)}
+                    className="h-auto py-4 px-3 text-sm text-center whitespace-normal"
+                  >
+                    {category}
+                  </Button>
+                ))}
+              </div>
+            </ScrollArea>
           </div>
 
           <Button onClick={handleSubmit} className="w-full">
