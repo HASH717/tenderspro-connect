@@ -16,21 +16,47 @@ export const PreferencesTab = ({ currentLanguage, onLanguageChange, preferredCat
   const { t } = useTranslation();
   const { session } = useAuth();
 
-  const { data: subscription } = useQuery({
-    queryKey: ['subscription', session?.user?.id],
+  const { data: subscriptionData } = useQuery({
+    queryKey: ['subscription-categories', session?.user?.id],
     enabled: !!session?.user?.id,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', session?.user?.id)
-        .eq('status', 'active')
-        .maybeSingle();
+      try {
+        const { data: subscription, error: subscriptionError } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .eq('status', 'active')
+          .maybeSingle();
 
-      if (error) throw error;
-      return data;
+        if (subscriptionError) {
+          console.error('Error fetching subscription:', subscriptionError);
+          return [];
+        }
+
+        if (!subscription) return [];
+
+        const { data: subCategories, error: categoriesError } = await supabase
+          .from('subscription_categories')
+          .select('categories')
+          .eq('subscription_id', subscription.id)
+          .maybeSingle();
+
+        if (categoriesError) {
+          console.error('Error fetching categories:', categoriesError);
+          return [];
+        }
+
+        return Array.isArray(subCategories?.categories) ? subCategories.categories : [];
+      } catch (error) {
+        console.error('Error in subscription data fetch:', error);
+        return [];
+      }
     }
   });
+
+  // Ensure we always have an array to work with
+  const displayCategories = Array.isArray(subscriptionData) ? subscriptionData : 
+                          Array.isArray(preferredCategories) ? preferredCategories : [];
 
   return (
     <div className="bg-white p-6 rounded-lg border space-y-6">
@@ -63,12 +89,12 @@ export const PreferencesTab = ({ currentLanguage, onLanguageChange, preferredCat
           Categories
         </h3>
         <div className="flex flex-wrap gap-2">
-          {preferredCategories?.map((category) => (
+          {displayCategories.map((category) => (
             <Badge key={category} variant="secondary">
               {category}
             </Badge>
           ))}
-          {(!preferredCategories || preferredCategories.length === 0) && (
+          {displayCategories.length === 0 && (
             <p className="text-sm text-muted-foreground">
               No categories selected
             </p>

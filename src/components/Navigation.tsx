@@ -54,17 +54,14 @@ const Navigation = () => {
     { icon: User, path: "/profile", label: t("navigation.profile") },
   ];
 
-  const shouldShowUpgrade = !isMobile && (
-    subscription?.plan === 'Basic' || 
-    subscription?.plan === 'Professional' || 
-    subscription?.status === 'trial'
-  );
+  // Show upgrade button only for no subscription or trial users, and only on desktop
+  const shouldShowUpgrade = !isMobile && (!subscription || subscription?.status === 'trial');
 
   if (shouldShowUpgrade) {
     navItems.push({ 
       icon: CreditCard, 
       path: "/subscriptions", 
-      label: subscription?.status === 'trial' ? "Upgrade (Trial)" : "Upgrade"
+      label: subscription?.status === 'trial' ? "Upgrade (Trial)" : "Get Started"
     });
   }
 
