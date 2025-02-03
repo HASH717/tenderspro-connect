@@ -20,7 +20,6 @@ export const CategorySelection = ({ subscriptionId, plan }: CategorySelectionPro
 
   const maxCategories = plan === 'Basic' ? 3 : plan === 'Professional' ? 10 : null;
 
-  // Fetch all available categories
   const { data: categories = [] } = useQuery({
     queryKey: ['all-tender-categories'],
     queryFn: async () => {
@@ -89,7 +88,7 @@ export const CategorySelection = ({ subscriptionId, plan }: CategorySelectionPro
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4 pt-24">
       <Card className="w-full max-w-2xl">
         <CardHeader>
           <CardTitle>Select Your Categories</CardTitle>
