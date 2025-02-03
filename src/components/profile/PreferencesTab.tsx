@@ -33,7 +33,10 @@ export const PreferencesTab = ({ currentLanguage, onLanguageChange, preferredCat
           return [];
         }
 
-        if (!subscription) return [];
+        // If no active subscription or it's Enterprise plan, return preferred categories
+        if (!subscription || subscription.plan === 'Enterprise') {
+          return preferredCategories || [];
+        }
 
         const { data: subCategories, error: categoriesError } = await supabase
           .from('subscription_categories')
@@ -43,13 +46,13 @@ export const PreferencesTab = ({ currentLanguage, onLanguageChange, preferredCat
 
         if (categoriesError) {
           console.error('Error fetching categories:', categoriesError);
-          return [];
+          return preferredCategories || [];
         }
 
-        return Array.isArray(subCategories?.categories) ? subCategories.categories : [];
+        return Array.isArray(subCategories?.categories) ? subCategories.categories : preferredCategories || [];
       } catch (error) {
         console.error('Error in subscription data fetch:', error);
-        return [];
+        return preferredCategories || [];
       }
     }
   });
