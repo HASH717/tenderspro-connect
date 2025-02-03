@@ -18,7 +18,7 @@ const CategorySelection = () => {
   const plan = searchParams.get('plan');
   const checkoutId = searchParams.get('checkout_id');
 
-  const { data: subscription } = useQuery({
+  const { data: subscription, isLoading } = useQuery({
     queryKey: ['latest-subscription', session?.user?.id],
     enabled: !!session?.user?.id,
     queryFn: async () => {
@@ -33,7 +33,10 @@ const CategorySelection = () => {
 
       if (error) throw error;
       return data;
-    }
+    },
+    staleTime: 0,
+    retry: 3,
+    retryDelay: 1000
   });
 
   useEffect(() => {
@@ -42,20 +45,25 @@ const CategorySelection = () => {
       return;
     }
 
-    // If we have success=true in URL and a valid subscription, redirect to home
-    if (success === 'true' && checkoutId && subscription) {
-      navigate('/');
+    // Wait for subscription data to load
+    if (isLoading) {
       return;
     }
 
-    // If no subscription or plan, redirect to subscriptions page
+    // If no subscription, redirect to subscriptions page
     if (!subscription) {
       navigate('/subscriptions');
       return;
     }
-  }, [session, success, checkoutId, subscription, navigate]);
 
-  if (!subscription) {
+    // If Enterprise plan, redirect to home
+    if (subscription.plan === 'Enterprise') {
+      navigate('/');
+      return;
+    }
+  }, [session, success, checkoutId, subscription, navigate, isLoading]);
+
+  if (!subscription || isLoading) {
     return null;
   }
 

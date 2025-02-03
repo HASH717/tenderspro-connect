@@ -45,9 +45,9 @@ const Auth = () => {
         
         if (signUpError) throw signUpError;
         
-        // If signup was successful and we have a session, navigate to onboarding
+        // If signup was successful and we have a session, navigate to home
         if (signUpData.session) {
-          navigate("/onboarding");
+          navigate("/");
           toast({
             title: "Welcome!",
             description: "Your account has been created successfully.",
