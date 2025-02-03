@@ -26,8 +26,10 @@ serve(async (req) => {
       throw new Error('Missing required fields')
     }
 
+    console.log('Creating payment request with:', { plan, priceId, userId, backUrl })
+
     // Create payment request
-    const response = await fetch('https://pay.chargily.net/test/api/v2/payments', {
+    const response = await fetch('https://pay.chargily.net/api/v2/payments', {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -36,7 +38,8 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         client: userId,
-        amount: priceId === 'basic' ? 2000 : priceId === 'professional' ? 5000 : 10000,
+        amount: priceId === '01jjynsfaqmh26p7738may84eq' ? 1000 : 
+                priceId === '01jjyntr26nrbx34t2s9kq6mn4' ? 2000 : 10000,
         invoice_number: `SUB-${Date.now()}`,
         back_url: backUrl,
         webhook_url: `${backUrl}/api/payment-webhook`,
@@ -57,13 +60,15 @@ serve(async (req) => {
     })
 
     const data = await response.json()
+    console.log('Chargily response:', data)
 
     if (!response.ok) {
+      console.error('Chargily error:', data)
       throw new Error(data.message || 'Failed to create payment')
     }
 
     // Customize the failure page URL to include a return button
-    const failureUrl = `${data.checkout_url}&custom_failure_page=true&return_url=${encodeURIComponent(backUrl.split('/subscriptions')[0])}`
+    const failureUrl = `${data.checkout_url}&custom_failure_page=true&return_url=${encodeURIComponent(backUrl)}`
 
     return new Response(
       JSON.stringify({
@@ -77,6 +82,7 @@ serve(async (req) => {
       }
     )
   } catch (error) {
+    console.error('Payment creation error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       {
