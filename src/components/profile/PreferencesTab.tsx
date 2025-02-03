@@ -18,7 +18,9 @@ export const PreferencesTab = ({ currentLanguage, onLanguageChange, preferredCat
   return (
     <div className="bg-white p-6 rounded-lg border space-y-6">
       <div className="space-y-4">
-        <h3 className="text-lg font-medium">{t("profile.preferences.language")}</h3>
+        <h3 className="text-xl font-semibold tracking-tight text-card-foreground">
+          {t("profile.preferences.language")}
+        </h3>
         <RadioGroup
           value={currentLanguage}
           onValueChange={(value: 'en' | 'fr' | 'ar') => onLanguageChange(value)}
@@ -40,7 +42,9 @@ export const PreferencesTab = ({ currentLanguage, onLanguageChange, preferredCat
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-lg font-medium">{t("profile.preferences.categories")}</h3>
+        <h3 className="text-xl font-semibold tracking-tight text-card-foreground">
+          {t("profile.preferences.categories")}
+        </h3>
         <div className="flex flex-wrap gap-2">
           {preferredCategories?.map((category) => (
             <Badge key={category} variant="secondary">
