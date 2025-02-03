@@ -24,21 +24,19 @@ serve(async (req) => {
     console.log(`Creating checkout for plan: ${plan} with priceId: ${priceId} for user: ${userId}`)
     console.log('Selected categories:', categories)
 
-    // Using test amounts for development
     const planPrices = {
       'Basic': 1000,
       'Professional': 2000,
       'Enterprise': 10000
     }
 
-    // Construct webhook URL
     const webhookUrl = `https://achevndenwxikpbabzop.functions.supabase.co/payment-webhook`
     console.log('Webhook URL:', webhookUrl)
 
-    // Format success URL correctly
-    const successUrl = `${backUrl}?success=true&plan=${plan}`
+    // Format success URL correctly by removing the plan parameter from backUrl
+    const baseUrl = backUrl.split('?')[0]
+    const successUrl = `${baseUrl}?success=true&plan=${plan}`
 
-    // Create checkout data according to Chargily Pay API specs
     const checkoutData = {
       amount: planPrices[plan],
       currency: "dzd",

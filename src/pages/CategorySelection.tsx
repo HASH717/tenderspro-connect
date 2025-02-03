@@ -13,7 +13,6 @@ const CategorySelection = () => {
   const { session } = useAuth();
   const location = useLocation();
   
-  // Parse URL parameters correctly
   const searchParams = new URLSearchParams(location.search);
   const success = searchParams.get('success');
   const plan = searchParams.get('plan');
@@ -46,7 +45,11 @@ const CategorySelection = () => {
   useEffect(() => {
     if (!session) {
       console.log('No session, redirecting to auth');
-      navigate('/auth');
+      navigate('/auth', { 
+        state: { 
+          returnTo: location.pathname + location.search
+        }
+      });
       return;
     }
 
@@ -79,7 +82,7 @@ const CategorySelection = () => {
     }
 
     console.log('Current subscription:', subscription);
-  }, [session, success, subscription, navigate, isLoading, error]);
+  }, [session, success, subscription, navigate, isLoading, error, location]);
 
   if (!session || isLoading || !subscription) {
     return null;
