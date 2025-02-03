@@ -22,61 +22,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     // Get initial session
-    const initializeAuth = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error("Error getting session:", error);
-          toast({
-            variant: "destructive",
-            title: "Authentication Error",
-            description: "Please sign in again",
-          });
-          navigate("/auth");
-          return;
-        }
-
-        setSession(session);
-      } catch (error) {
-        console.error("Error in auth initialization:", error);
-      } finally {
-        setIsLoading(false);
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error("Error getting session:", error);
+        toast({
+          variant: "destructive",
+          title: "Authentication Error",
+          description: "Please sign in again",
+        });
+        navigate("/auth");
+        return;
       }
-    };
-
-    initializeAuth();
+      setSession(session);
+      setIsLoading(false);
+    });
 
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth event:', event);
-      
-      if (event === 'TOKEN_REFRESHED') {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (_event === 'TOKEN_REFRESHED') {
         console.log('Token refreshed successfully');
-        setSession(session);
-      } else if (event === 'SIGNED_OUT') {
-        setSession(null);
+      }
+      
+      if (_event === 'SIGNED_OUT') {
         navigate("/auth");
         toast({
           title: "Signed out",
           description: "You have been signed out successfully",
         });
-      } else if (event === 'SIGNED_IN') {
-        setSession(session);
-        // Redirect to the intended page or home
-        const returnTo = sessionStorage.getItem('returnTo') || '/';
-        sessionStorage.removeItem('returnTo');
-        navigate(returnTo);
       }
 
+      setSession(session);
       setIsLoading(false);
     });
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, [navigate, toast]);
 
   return (

@@ -18,11 +18,7 @@ export const SubscriptionInfo = ({ subscription, isMobile }: SubscriptionInfoPro
 
   console.log('SubscriptionInfo - Current subscription:', subscription);
 
-  const shouldShowUpgradeButton = !subscription || 
-    subscription.status === 'trial' || 
-    subscription.plan === 'Basic' || 
-    subscription.plan === 'Professional';
-
+  const isTrialOrNoSubscription = !subscription || subscription.status === 'trial';
   const subscriptionEndDate = subscription?.current_period_end 
     ? new Date(subscription.current_period_end).toLocaleDateString()
     : null;
@@ -58,18 +54,12 @@ export const SubscriptionInfo = ({ subscription, isMobile }: SubscriptionInfoPro
               </p>
             )}
           </div>
-          {shouldShowUpgradeButton && (
+          {isTrialOrNoSubscription && (
             <Button 
               className="mt-6 w-full bg-green-500 hover:bg-green-600 text-white"
               onClick={() => navigate('/subscriptions')}
             >
-              {subscription.status === 'trial' 
-                ? 'Upgrade to Full Plan'
-                : subscription.plan === 'Basic'
-                ? 'Upgrade to Professional'
-                : subscription.plan === 'Professional'
-                ? 'Upgrade to Enterprise'
-                : 'Upgrade Plan'}
+              Upgrade to Full Plan
             </Button>
           )}
         </>

@@ -30,10 +30,10 @@ export const PreferencesTab = ({ currentLanguage, onLanguageChange, preferredCat
 
         if (subscriptionError) {
           console.error('Error fetching subscription:', subscriptionError);
-          return [];
+          return null;
         }
 
-        if (!subscription) return [];
+        if (!subscription) return null;
 
         const { data: subCategories, error: categoriesError } = await supabase
           .from('subscription_categories')
@@ -46,7 +46,7 @@ export const PreferencesTab = ({ currentLanguage, onLanguageChange, preferredCat
           return [];
         }
 
-        return Array.isArray(subCategories?.categories) ? subCategories.categories : [];
+        return subCategories?.categories || [];
       } catch (error) {
         console.error('Error in subscription data fetch:', error);
         return [];
@@ -54,9 +54,7 @@ export const PreferencesTab = ({ currentLanguage, onLanguageChange, preferredCat
     }
   });
 
-  // Ensure we always have an array to work with
-  const displayCategories = Array.isArray(subscriptionData) ? subscriptionData : 
-                          Array.isArray(preferredCategories) ? preferredCategories : [];
+  const displayCategories = subscriptionData || preferredCategories || [];
 
   return (
     <div className="bg-white p-6 rounded-lg border space-y-6">
@@ -94,7 +92,7 @@ export const PreferencesTab = ({ currentLanguage, onLanguageChange, preferredCat
               {category}
             </Badge>
           ))}
-          {displayCategories.length === 0 && (
+          {(!displayCategories || displayCategories.length === 0) && (
             <p className="text-sm text-muted-foreground">
               No categories selected
             </p>

@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { SubscriptionStatus } from "@/components/subscriptions/SubscriptionStatus";
 import { SubscriptionPlans } from "@/components/subscriptions/SubscriptionPlans";
+import { CategorySelection } from "@/components/subscriptions/CategorySelection";
 
 const Subscriptions = () => {
   const { t } = useTranslation();
@@ -22,6 +23,8 @@ const Subscriptions = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [subscriptionId, setSubscriptionId] = useState<string | null>(null);
+  const [plan, setPlan] = useState<string | null>(null);
 
   // Fetch profile data
   const { data: profile } = useQuery({
@@ -81,29 +84,23 @@ const Subscriptions = () => {
     const plan = searchParams.get('plan');
     
     if (success === 'true' && plan) {
-      // Refresh subscription data
-      setIsRefreshing(true);
-      refetchSubscription().then((result) => {
-        setIsRefreshing(false);
-        if (result.data) {
-          // Navigate to category selection with the subscription ID and plan
-          navigate(`/subscriptions/categories?plan=${plan}`, {
-            state: {
-              subscriptionId: result.data.id,
-              plan: result.data.plan
-            }
-          });
+      setPlan(plan);
+      setSubscriptionId(subscription?.id || null);
+      navigate('/subscriptions/categories', { 
+        state: { 
+          plan,
+          subscriptionId: subscription?.id 
         }
       });
     } else if (failed === 'true' || success === 'false') {
       toast({
-        variant: "destructive",
         title: "Payment failed",
         description: "Your subscription payment was not completed. Please try again.",
+        variant: "destructive",
       });
       navigate('/subscriptions', { replace: true });
     }
-  }, [searchParams, toast, queryClient, refetchSubscription, navigate]);
+  }, [searchParams, toast, queryClient, refetchSubscription, navigate, subscription]);
 
   const handleSubscribe = async (plan: any) => {
     try {
@@ -152,6 +149,10 @@ const Subscriptions = () => {
       });
     }
   };
+
+  if (subscriptionId && plan) {
+    return <CategorySelection subscriptionId={subscriptionId} plan={plan} />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
