@@ -81,11 +81,11 @@ const Index = () => {
   }
 
   return (
-    <div className={`min-h-screen flex flex-col ${isMobile ? 'pb-16' : 'pb-12'}`}>
+    <div className="min-h-screen flex flex-col">
       <Navigation />
       <div className="flex-grow">
         <div className={`bg-background z-10 ${isMobile ? 'pt-6' : 'pt-24'}`}>
-          <div className="max-w-5xl mx-auto px-6">
+          <div className="max-w-5xl mx-auto px-6 pb-24">
             <h2 className="text-2xl font-bold tracking-tight mb-8">Dashboard</h2>
             
             <div className="mb-8">
