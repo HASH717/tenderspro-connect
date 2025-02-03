@@ -12,7 +12,6 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { SubscriptionStatus } from "@/components/subscriptions/SubscriptionStatus";
 import { SubscriptionPlans } from "@/components/subscriptions/SubscriptionPlans";
-import { CategorySelection } from "@/components/subscriptions/CategorySelection";
 
 const Subscriptions = () => {
   const { t } = useTranslation();
@@ -23,8 +22,6 @@ const Subscriptions = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [subscriptionId, setSubscriptionId] = useState<string | null>(null);
-  const [plan, setPlan] = useState<string | null>(null);
 
   // Fetch profile data
   const { data: profile } = useQuery({
@@ -80,27 +77,63 @@ const Subscriptions = () => {
   // Handle subscription status updates
   useEffect(() => {
     const success = searchParams.get('success');
-    const failed = searchParams.get('failed');
     const plan = searchParams.get('plan');
+    const checkoutId = searchParams.get('checkout_id');
     
-    if (success === 'true' && plan) {
-      setPlan(plan);
-      setSubscriptionId(subscription?.id || null);
-      navigate('/subscriptions/categories', { 
-        state: { 
-          plan,
-          subscriptionId: subscription?.id 
+    const handleSuccessfulPayment = async () => {
+      if (success === 'true' && plan && checkoutId) {
+        setIsRefreshing(true);
+        console.log('Payment successful, refreshing subscription data...');
+        
+        try {
+          await refetchSubscription();
+          const { data: latestSubscription } = await supabase
+            .from('subscriptions')
+            .select('*')
+            .eq('user_id', session?.user?.id)
+            .eq('status', 'active')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (latestSubscription) {
+            console.log('Redirecting to category selection with:', {
+              subscriptionId: latestSubscription.id,
+              plan: latestSubscription.plan
+            });
+            
+            navigate(`/subscriptions/categories?plan=${latestSubscription.plan}`, {
+              replace: true,
+              state: {
+                subscriptionId: latestSubscription.id,
+                plan: latestSubscription.plan
+              }
+            });
+          } else {
+            console.error('No active subscription found after payment');
+            toast({
+              variant: "destructive",
+              title: "Error",
+              description: "Subscription not found. Please contact support."
+            });
+          }
+        } catch (error) {
+          console.error('Error handling successful payment:', error);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to process subscription. Please contact support."
+          });
+        } finally {
+          setIsRefreshing(false);
         }
-      });
-    } else if (failed === 'true' || success === 'false') {
-      toast({
-        title: "Payment failed",
-        description: "Your subscription payment was not completed. Please try again.",
-        variant: "destructive",
-      });
-      navigate('/subscriptions', { replace: true });
+      }
+    };
+
+    if (session?.user?.id) {
+      handleSuccessfulPayment();
     }
-  }, [searchParams, toast, queryClient, refetchSubscription, navigate, subscription]);
+  }, [searchParams, session?.user?.id, navigate, refetchSubscription, toast]);
 
   const handleSubscribe = async (plan: any) => {
     try {
@@ -149,10 +182,6 @@ const Subscriptions = () => {
       });
     }
   };
-
-  if (subscriptionId && plan) {
-    return <CategorySelection subscriptionId={subscriptionId} plan={plan} />;
-  }
 
   return (
     <div className="min-h-screen flex flex-col">
