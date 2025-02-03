@@ -30,7 +30,7 @@ export const PreferencesTab = ({ currentLanguage, onLanguageChange, preferredCat
 
         if (subscriptionError) {
           console.error('Error fetching subscription:', subscriptionError);
-          return [];
+          return preferredCategories || [];
         }
 
         // If no active subscription or it's Enterprise plan, return preferred categories
@@ -57,9 +57,10 @@ export const PreferencesTab = ({ currentLanguage, onLanguageChange, preferredCat
     }
   });
 
-  // Ensure we always have an array to work with
-  const displayCategories = Array.isArray(subscriptionData) ? subscriptionData : 
-                          Array.isArray(preferredCategories) ? preferredCategories : [];
+  // Ensure we always have an array to work with, prioritizing subscription data if available
+  const displayCategories = Array.isArray(subscriptionData) && subscriptionData.length > 0 
+    ? subscriptionData 
+    : Array.isArray(preferredCategories) ? preferredCategories : [];
 
   return (
     <div className="bg-white p-6 rounded-lg border space-y-6">
@@ -92,12 +93,13 @@ export const PreferencesTab = ({ currentLanguage, onLanguageChange, preferredCat
           Categories
         </h3>
         <div className="flex flex-wrap gap-2">
-          {displayCategories.map((category) => (
-            <Badge key={category} variant="secondary">
-              {category}
-            </Badge>
-          ))}
-          {displayCategories.length === 0 && (
+          {displayCategories.length > 0 ? (
+            displayCategories.map((category) => (
+              <Badge key={category} variant="secondary">
+                {category}
+              </Badge>
+            ))
+          ) : (
             <p className="text-sm text-muted-foreground">
               No categories selected
             </p>
