@@ -79,6 +79,13 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted p-4">
       <Card className="w-full max-w-md p-6">
+        <div className="flex justify-center mb-6">
+          <img 
+            src="https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d" 
+            alt="Logo" 
+            className="h-16 w-auto object-contain"
+          />
+        </div>
         <Tabs defaultValue="login" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="login">Login</TabsTrigger>
