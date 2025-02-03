@@ -291,22 +291,7 @@ export type Database = {
       }
     }
     Views: {
-      analytics_metrics: {
-        Row: {
-          active_users: number | null
-          churn_rate: number | null
-          total_revenue: number | null
-          total_users: number | null
-        }
-        Relationships: []
-      }
-      wilaya_distribution: {
-        Row: {
-          user_count: number | null
-          wilaya: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       check_tender_matches_alert: {

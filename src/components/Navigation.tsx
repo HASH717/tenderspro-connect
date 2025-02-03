@@ -1,4 +1,4 @@
-import { Home, Heart, Bell, User, Globe, CreditCard, FileText } from "lucide-react";
+import { Home, Heart, Bell, User, Globe, CreditCard } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -47,11 +47,8 @@ const Navigation = () => {
 
   const isActive = (path: string) => location.pathname === path;
 
-  const isAdmin = session?.user?.email === "motraxagency@gmail.com";
-
   const navItems = [
     { icon: Home, path: "/", label: t("navigation.home") },
-    ...(isAdmin ? [{ icon: FileText, path: "/tenders", label: "Tenders" }] : []),
     { icon: Heart, path: "/favorites", label: t("navigation.favorites") },
     { icon: Bell, path: "/alerts", label: t("navigation.alerts") },
     { icon: User, path: "/profile", label: t("navigation.profile") },
