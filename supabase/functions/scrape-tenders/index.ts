@@ -1,5 +1,5 @@
 import { corsHeaders } from '../_shared/cors.ts'
-import { handleError } from '../_shared/tender-scraper-utils.ts'
+import { handleError, fetchTendersPage, formatTenderData } from '../_shared/tender-scraper-utils.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
 
 Deno.serve(async (req) => {
@@ -34,19 +34,7 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
     
     // Fetch tenders from the API
-    const response = await fetch(`https://api.dztenders.com/tenders/?format=json&page=${page}`, {
-      headers: {
-        'Authorization': authHeader,
-        'Accept': 'application/json',
-        'User-Agent': 'TendersPro/1.0',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
-    }
-
-    const data = await response.json();
+    const data = await fetchTendersPage(page, authHeader);
     console.log(`Found ${data.results?.length || 0} tenders on page ${page}`);
 
     if (!data.results?.length) {
@@ -54,6 +42,8 @@ Deno.serve(async (req) => {
         JSON.stringify({ 
           success: true, 
           message: 'No tenders found on this page',
+          count: 0,
+          errors: 0,
           lastProcessedPage: page 
         }),
         { 
@@ -62,40 +52,56 @@ Deno.serve(async (req) => {
       );
     }
 
+    let processedCount = 0;
+    let errorCount = 0;
+
     // Process each tender
     for (const tender of data.results) {
-      const { error } = await supabase
-        .from('tenders')
-        .upsert({
-          title: tender.title,
-          wilaya: tender.region_verbose?.name || 'Unknown',
-          category: tender.categories_verbose?.[0]?.name,
-          publication_date: tender.publishing_date,
-          deadline: tender.expiration_date,
-          link: tender.files_verbose?.[0],
-          tender_id: tender.id?.toString(),
-          type: tender.type,
-          region: tender.region_verbose?.name,
-          specifications_price: tender.cc_price?.toString(),
-          withdrawal_address: tender.cc_address,
-          image_url: tender.files_verbose?.[0] ? `https://old.dztenders.com/${tender.files_verbose[0]}` : null,
-          organization_name: tender.organization?.name,
-          organization_address: tender.organization?.address,
-          tender_status: tender.status
-        }, {
-          onConflict: 'tender_id'
-        });
+      try {
+        const formattedTender = formatTenderData(tender, tender);
+        
+        const { error } = await supabase
+          .from('tenders')
+          .upsert({
+            title: formattedTender.title,
+            wilaya: formattedTender.wilaya,
+            category: formattedTender.category,
+            publication_date: formattedTender.publication_date,
+            deadline: formattedTender.deadline,
+            link: formattedTender.link,
+            tender_id: formattedTender.tender_id,
+            type: formattedTender.type,
+            region: formattedTender.region,
+            specifications_price: formattedTender.specifications_price,
+            withdrawal_address: formattedTender.withdrawal_address,
+            image_url: formattedTender.image_url,
+            organization_name: formattedTender.organization_name,
+            organization_address: formattedTender.organization_address,
+            tender_status: formattedTender.tender_status,
+            original_image_url: formattedTender.original_image_url
+          }, {
+            onConflict: 'tender_id'
+          });
 
-      if (error) {
-        console.error('Error upserting tender:', error);
-        throw error;
+        if (error) {
+          console.error('Error upserting tender:', error);
+          errorCount++;
+        } else {
+          processedCount++;
+          console.log(`Successfully processed tender ${tender.id}`);
+        }
+      } catch (error) {
+        console.error(`Error processing tender ${tender.id}:`, error);
+        errorCount++;
       }
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Processed ${data.results.length} tenders`,
+        message: `Processed ${processedCount} tenders with ${errorCount} errors`,
+        count: processedCount,
+        errors: errorCount,
         lastProcessedPage: page,
         hasMore: !!data.next
       }),
