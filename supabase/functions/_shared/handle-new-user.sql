@@ -5,7 +5,7 @@ language plpgsql
 security definer set search_path = public
 as $$
 begin
-  -- Insert into profiles as before
+  -- Insert into profiles
   insert into public.profiles (id, first_name, last_name, phone_number)
   values (
     new.id,
@@ -14,7 +14,7 @@ begin
     new.raw_user_meta_data->>'phone_number'
   );
   
-  -- Create trial subscription
+  -- Create trial subscription with proper dates
   insert into public.subscriptions (
     user_id,
     plan,
@@ -25,8 +25,8 @@ begin
     new.id,
     'Professional',
     'trial',
-    now(),
-    now() + interval '7 days'
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP + INTERVAL '7 days'
   );
   
   return new;

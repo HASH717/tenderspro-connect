@@ -38,7 +38,7 @@ serve(async (req) => {
       .from('subscriptions')
       .insert({
         user_id: user.id,
-        plan: 'Professional', // Trial users get Professional features
+        plan: 'Professional',
         status: 'trial',
         current_period_start: now.toISOString(),
         current_period_end: trialEnd.toISOString()
