@@ -8,6 +8,7 @@ import TenderDetails from "@/pages/TenderDetails";
 import Subscriptions from "@/pages/Subscriptions";
 import CategorySelection from "@/pages/CategorySelection";
 import NotFound from "@/pages/NotFound";
+import Tenders from "@/pages/Tenders";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "sonner";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -24,6 +25,7 @@ function App() {
           <LanguageProvider>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/tenders" element={<Tenders />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/favorites" element={<Favorites />} />
