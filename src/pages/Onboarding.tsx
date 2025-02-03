@@ -47,6 +47,33 @@ const Onboarding = () => {
     }
   });
 
+  // Fetch all available categories
+  const { data: categories = [] } = useQuery({
+    queryKey: ['all-tender-categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('tenders')
+        .select('category')
+        .not('category', 'is', null);
+
+      if (error) {
+        console.error('Error fetching categories:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load categories",
+        });
+        return [];
+      }
+
+      const uniqueCategories = Array.from(new Set(data.map(tender => tender.category)))
+        .filter(category => category)
+        .sort();
+
+      return uniqueCategories;
+    }
+  });
+
   // Set category limit based on subscription plan
   useEffect(() => {
     if (subscription) {
@@ -118,16 +145,6 @@ const Onboarding = () => {
     }
   };
 
-  const categories = [
-    { id: 'hydraulics', label: t('tender.categories.hydraulics') },
-    { id: 'plastic', label: t('tender.categories.plastic') },
-    { id: 'steel', label: t('tender.categories.steel') },
-    { id: 'renewable', label: t('tender.categories.renewable') },
-    { id: 'paper', label: t('tender.categories.paper') },
-    { id: 'construction', label: t('tender.categories.construction') },
-    { id: 'others', label: t('tender.categories.others') },
-  ];
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-2xl">
@@ -162,12 +179,12 @@ const Onboarding = () => {
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {categories.map((category) => (
                 <Button
-                  key={category.id}
-                  variant={selectedCategories.includes(category.id) ? "default" : "outline"}
-                  onClick={() => handleCategorySelect(category.id)}
+                  key={category}
+                  variant={selectedCategories.includes(category) ? "default" : "outline"}
+                  onClick={() => handleCategorySelect(category)}
                   className="h-auto py-4 px-3 text-sm text-center whitespace-normal"
                 >
-                  {category.label}
+                  {category}
                 </Button>
               ))}
             </div>
