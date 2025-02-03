@@ -123,7 +123,7 @@ const Subscriptions = () => {
           plan: plan.name,
           priceId: plan.priceId,
           userId: session.user.id,
-          backUrl: `${window.location.origin}/subscriptions`,
+          backUrl: `${window.location.origin}/subscriptions/categories?plan=${plan.name}`,
           categories: profile.preferred_categories
         }
       });
