@@ -97,12 +97,7 @@ const Subscriptions = () => {
             .maybeSingle();
 
           if (latestSubscription) {
-            console.log('Redirecting to category selection with:', {
-              subscriptionId: latestSubscription.id,
-              plan: latestSubscription.plan
-            });
-            
-            // Update the navigation to use the correct path and state
+            console.log('Latest subscription found:', latestSubscription);
             navigate('/subscriptions/categories', {
               replace: true,
               state: {
@@ -162,7 +157,7 @@ const Subscriptions = () => {
           plan: plan.name,
           priceId: plan.priceId,
           userId: session.user.id,
-          backUrl: `${window.location.origin}/subscriptions/categories?plan=${plan.name}`,
+          backUrl: `${window.location.origin}/subscriptions?success=true&plan=${plan.name}`,
           categories: profile.preferred_categories
         }
       });
