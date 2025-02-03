@@ -1,111 +1,93 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { corsHeaders } from "../_shared/cors.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const chargilyPayPublicKey = Deno.env.get('CHARGILY_PAY_PUBLIC_KEY')
-const chargilyPaySecretKey = Deno.env.get('CHARGILY_PAY_SECRET_KEY')
-
-interface RequestBody {
-  plan: string
-  priceId: string
-  userId: string
-  backUrl: string
-  categories: string[]
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    const { plan, priceId, userId, backUrl, categories } = await req.json() as RequestBody
+    const { plan, priceId, userId, backUrl, categories } = await req.json()
+    
+    const CHARGILY_PAY_SECRET_KEY = Deno.env.get('CHARGILY_PAY_SECRET_KEY')
+    const CHARGILY_PAY_PUBLIC_KEY = Deno.env.get('CHARGILY_PAY_PUBLIC_KEY')
 
-    // Validate required fields and API keys
-    if (!plan || !priceId || !userId || !backUrl) {
-      console.error('Missing required fields:', { plan, priceId, userId, backUrl })
-      throw new Error('Missing required fields')
+    if (!CHARGILY_PAY_SECRET_KEY || !CHARGILY_PAY_PUBLIC_KEY) {
+      throw new Error('Chargily Pay credentials not configured')
     }
 
-    if (!chargilyPaySecretKey) {
-      console.error('Missing Chargily API key')
-      throw new Error('Configuration error: Missing API key')
+    console.log(`Creating checkout for plan: ${plan} with priceId: ${priceId} for user: ${userId}`)
+    console.log('Selected categories:', categories)
+
+    const planPrices = {
+      'Basic': 1000,
+      'Professional': 2000,
+      'Enterprise': 10000
     }
 
-    console.log('Creating payment request with:', { plan, priceId, userId, backUrl })
-
-    // Format webhook URL correctly
-    const webhookUrl = new URL('/api/payment-webhook', backUrl).toString()
+    const webhookUrl = `https://achevndenwxikpbabzop.functions.supabase.co/payment-webhook`
     console.log('Webhook URL:', webhookUrl)
 
-    // Create payment request
-    try {
-      const response = await fetch('https://pay.chargily.net/api/v2/payments', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'X-Authorization': chargilyPaySecretKey,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          client: userId,
-          amount: priceId === '01jjynsfaqmh26p7738may84eq' ? 1000 : 
-                  priceId === '01jjyntr26nrbx34t2s9kq6mn4' ? 2000 : 10000,
-          invoice_number: `SUB-${Date.now()}`,
-          back_url: backUrl,
-          webhook_url: webhookUrl,
-          mode: 'CIB',
-          payment_method: ["CIB"],
-          currency: "DZD",
-          customer: {
-            name: "Customer Name",
-            email: "customer@email.com",
-            phone: "213555555555"
-          },
-          metadata: {
-            userId,
-            plan,
-            categories
-          }
-        })
-      })
+    // Format success URL correctly by removing the plan parameter from backUrl
+    const baseUrl = backUrl.split('?')[0]
+    const successUrl = `${baseUrl}?success=true&plan=${plan}`
 
-      const data = await response.json()
-      console.log('Chargily response:', data)
-
-      if (!response.ok) {
-        console.error('Chargily error:', data)
-        throw new Error(data.message || 'Failed to create payment')
+    const checkoutData = {
+      amount: planPrices[plan],
+      currency: "dzd",
+      payment_method: "edahabia",
+      success_url: successUrl,
+      webhook_endpoint: webhookUrl,
+      metadata: {
+        plan,
+        user_id: userId,
+        categories: categories || []
       }
-
-      // Customize the failure page URL to include a return button
-      const failureUrl = `${data.checkout_url}&custom_failure_page=true&return_url=${encodeURIComponent(backUrl)}`
-
-      return new Response(
-        JSON.stringify({
-          checkoutUrl: failureUrl
-        }),
-        {
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json'
-          }
-        }
-      )
-    } catch (fetchError) {
-      console.error('Fetch error:', fetchError)
-      throw new Error(`Payment request failed: ${fetchError.message}`)
     }
+
+    console.log('Creating checkout with data:', checkoutData)
+
+    const response = await fetch('https://pay.chargily.net/test/api/v2/checkouts', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${CHARGILY_PAY_SECRET_KEY}`,
+      },
+      body: JSON.stringify(checkoutData)
+    })
+
+    console.log('Chargily API response status:', response.status)
+    const responseData = await response.json()
+    console.log('Chargily API response:', responseData)
+
+    if (!response.ok) {
+      throw new Error(`Chargily Pay API error: ${JSON.stringify(responseData)}`)
+    }
+
+    return new Response(
+      JSON.stringify({ 
+        checkoutUrl: responseData.checkout_url,
+        message: 'Checkout created successfully'
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      },
+    )
   } catch (error) {
-    console.error('Payment creation error:', error)
+    console.error('Error creating checkout:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        }
-      }
+      },
     )
   }
 })

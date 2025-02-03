@@ -26,6 +26,7 @@ const Subscriptions = () => {
   const [subscriptionId, setSubscriptionId] = useState<string | null>(null);
   const [plan, setPlan] = useState<string | null>(null);
 
+  // Fetch profile data
   const { data: profile } = useQuery({
     queryKey: ['profile', session?.user?.id],
     enabled: !!session?.user?.id,
@@ -44,6 +45,7 @@ const Subscriptions = () => {
     }
   });
 
+  // Fetch subscription data with proper filtering
   const { data: subscription, refetch: refetchSubscription } = useQuery({
     queryKey: ['subscription', session?.user?.id],
     enabled: !!session?.user?.id && !isRefreshing,
@@ -75,6 +77,7 @@ const Subscriptions = () => {
     retryDelay: 1000
   });
 
+  // Handle subscription status updates
   useEffect(() => {
     const success = searchParams.get('success');
     const failed = searchParams.get('failed');
@@ -125,8 +128,8 @@ const Subscriptions = () => {
           plan: plan.name,
           priceId: plan.priceId,
           userId: session.user.id,
-          backUrl: window.location.origin,
-          categories: profile.preferred_categories || []
+          backUrl: `${window.location.origin}/subscriptions/categories?plan=${plan.name}`,
+          categories: profile.preferred_categories
         }
       });
 
