@@ -1,13 +1,10 @@
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
 
 interface PreferencesTabProps {
   currentLanguage: string;
@@ -17,7 +14,6 @@ interface PreferencesTabProps {
 
 export const PreferencesTab = ({ currentLanguage, onLanguageChange, preferredCategories }: PreferencesTabProps) => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const { session } = useAuth();
 
   const { data: subscription } = useQuery({
@@ -35,20 +31,6 @@ export const PreferencesTab = ({ currentLanguage, onLanguageChange, preferredCat
       return data;
     }
   });
-
-  const handleCategoryUpdate = () => {
-    if (subscription?.status === 'trial') {
-      toast.error("Categories cannot be changed during trial period");
-      return;
-    }
-    
-    if (subscription?.status === 'active' && subscription?.plan !== 'Enterprise') {
-      navigate('/subscriptions');
-      return;
-    }
-
-    toast.error("Categories cannot be changed after subscription. Please contact support if you need to modify your categories.");
-  };
 
   return (
     <div className="bg-white p-6 rounded-lg border space-y-6">
@@ -92,15 +74,6 @@ export const PreferencesTab = ({ currentLanguage, onLanguageChange, preferredCat
             </p>
           )}
         </div>
-        {subscription?.plan !== 'Enterprise' && (
-          <Button
-            variant="outline"
-            onClick={handleCategoryUpdate}
-            className="mt-2"
-          >
-            Upgrade to Change Categories
-          </Button>
-        )}
       </div>
     </div>
   );
