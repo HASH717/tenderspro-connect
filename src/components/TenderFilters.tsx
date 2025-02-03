@@ -16,6 +16,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface TenderFiltersProps {
   onSearch: (filters: TenderFilters) => void;
@@ -60,7 +61,8 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
       const { data, error } = await supabase
         .from('tenders')
         .select('category')
-        .not('category', 'is', null);
+        .not('category', 'is', null)
+        .not('category', 'eq', '');
 
       if (error) {
         console.error('Error fetching categories:', error);
@@ -219,19 +221,21 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
             <SelectValue placeholder={t("filters.category")} />
           </SelectTrigger>
           <SelectContent>
-            {allCategories.map((category) => (
-              <SelectItem 
-                key={category} 
-                value={category}
-                className="flex items-center justify-between"
-                disabled={!isCategoryAccessible(category)}
-              >
-                <span>{category}</span>
-                {!isCategoryAccessible(category) && (
-                  <Lock className="h-4 w-4 ml-2 inline-block text-muted-foreground" />
-                )}
-              </SelectItem>
-            ))}
+            <ScrollArea className="h-[300px]">
+              {allCategories.map((category) => (
+                <SelectItem 
+                  key={category} 
+                  value={category}
+                  className="flex items-center justify-between"
+                  disabled={!isCategoryAccessible(category)}
+                >
+                  <span>{category}</span>
+                  {!isCategoryAccessible(category) && (
+                    <Lock className="h-4 w-4 ml-2 inline-block text-muted-foreground" />
+                  )}
+                </SelectItem>
+              ))}
+            </ScrollArea>
           </SelectContent>
         </Select>
 
