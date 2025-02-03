@@ -11,7 +11,12 @@ const CategorySelection = () => {
   const navigate = useNavigate();
   const { session } = useAuth();
   const location = useLocation();
-  const { plan, subscriptionId } = location.state || {};
+  
+  // Parse URL parameters correctly
+  const searchParams = new URLSearchParams(location.search);
+  const success = searchParams.get('success');
+  const plan = searchParams.get('plan');
+  const checkoutId = searchParams.get('checkout_id');
 
   const { data: subscription } = useQuery({
     queryKey: ['latest-subscription', session?.user?.id],
@@ -37,11 +42,18 @@ const CategorySelection = () => {
       return;
     }
 
-    if (!plan || !subscription) {
+    // If we have success=true in URL and a valid subscription, redirect to home
+    if (success === 'true' && checkoutId && subscription) {
+      navigate('/');
+      return;
+    }
+
+    // If no subscription or plan, redirect to subscriptions page
+    if (!subscription) {
       navigate('/subscriptions');
       return;
     }
-  }, [session, plan, subscription, navigate]);
+  }, [session, success, checkoutId, subscription, navigate]);
 
   if (!subscription) {
     return null;

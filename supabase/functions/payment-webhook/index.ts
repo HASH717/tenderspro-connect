@@ -102,33 +102,8 @@ serve(async (req) => {
       throw subscriptionError
     }
 
-    // Only update categories if it's not an Enterprise plan
-    if (planName !== 'Enterprise' && categories && Array.isArray(categories)) {
-      // First, clear any existing subscription categories
-      const { error: clearError } = await supabase
-        .from('subscription_categories')
-        .delete()
-        .eq('user_id', userId)
-
-      if (clearError) {
-        console.error('Error clearing subscription categories:', clearError)
-        throw new Error(`Failed to clear subscription categories: ${clearError.message}`)
-      }
-
-      // Then insert new categories
-      const { error: categoriesError } = await supabase
-        .from('subscription_categories')
-        .insert({
-          user_id: userId,
-          subscription_id: subscription.id,
-          categories: categories
-        })
-
-      if (categoriesError) {
-        console.error('Error updating subscription categories:', categoriesError)
-        throw new Error(`Failed to update subscription categories: ${categoriesError.message}`)
-      }
-    }
+    // Keep existing categories from trial period for now
+    // They will be updated when user makes their selection
 
     console.log('Successfully created subscription:', subscription)
 
