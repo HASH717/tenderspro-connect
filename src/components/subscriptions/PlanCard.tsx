@@ -25,6 +25,7 @@ export const PlanCard = ({
   priceInDZD,
   description,
   features,
+  priceId,
   subscription,
   onSubscribe,
 }: PlanProps) => {
@@ -53,7 +54,7 @@ export const PlanCard = ({
       <CardFooter>
         <Button
           className="w-full"
-          onClick={() => onSubscribe({ name, priceInDZD })}
+          onClick={() => onSubscribe({ name, priceInDZD, priceId })}
           disabled={subscription?.status === 'active' && subscription?.plan === name}
         >
           {subscription?.status === 'active' && subscription?.plan === name
