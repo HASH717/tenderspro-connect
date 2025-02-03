@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const Onboarding = () => {
   const { t } = useTranslation();
@@ -30,7 +31,7 @@ const Onboarding = () => {
   const { session } = useAuth();
   const { changeLanguage } = useLanguage();
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [maxCategories, setMaxCategories] = useState<number | null>(10); // Default to Professional plan limit
+  const [maxCategories, setMaxCategories] = useState<number | null>(10);
 
   // Fetch user's subscription
   const { data: subscription } = useQuery({
@@ -80,7 +81,7 @@ const Onboarding = () => {
   useEffect(() => {
     if (subscription) {
       if (subscription.status === 'trial') {
-        setMaxCategories(10); // Trial users get Professional plan limit
+        setMaxCategories(10);
       } else {
         switch (subscription.plan) {
           case 'Basic':
@@ -104,19 +105,24 @@ const Onboarding = () => {
   };
 
   const handleCategorySelect = (category: string) => {
-    if (selectedCategories.includes(category)) {
-      setSelectedCategories(selectedCategories.filter((c) => c !== category));
-    } else {
-      if (maxCategories && selectedCategories.length >= maxCategories) {
+    setSelectedCategories(current => {
+      const isSelected = current.includes(category);
+      
+      if (isSelected) {
+        return current.filter(c => c !== category);
+      }
+      
+      if (maxCategories && current.length >= maxCategories) {
         toast({
           variant: "destructive",
           title: "Category limit reached",
           description: `Your current plan allows up to ${maxCategories} categories`,
         });
-        return;
+        return current;
       }
-      setSelectedCategories([...selectedCategories, category]);
-    }
+      
+      return [...current, category];
+    });
   };
 
   const handleSubmit = async () => {
@@ -149,7 +155,7 @@ const Onboarding = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <Card className="w-full max-w-2xl">
+      <Card className="w-full max-w-4xl">
         <CardHeader>
           <CardTitle>Welcome to TendersPro</CardTitle>
           <CardDescription>Let's set up your preferences</CardDescription>
@@ -179,16 +185,24 @@ const Onboarding = () => {
               )}
             </h3>
             <ScrollArea className="h-[400px] rounded-md border p-4">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {categories.map((category) => (
-                  <Button
+                  <div
                     key={category}
-                    variant={selectedCategories.includes(category) ? "default" : "outline"}
-                    onClick={() => handleCategorySelect(category)}
-                    className="h-auto py-4 px-3 text-sm text-center whitespace-normal"
+                    className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted/50"
                   >
-                    {category}
-                  </Button>
+                    <Checkbox
+                      id={category}
+                      checked={selectedCategories.includes(category)}
+                      onCheckedChange={() => handleCategorySelect(category)}
+                    />
+                    <label
+                      htmlFor={category}
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      {category}
+                    </label>
+                  </div>
                 ))}
               </div>
             </ScrollArea>
