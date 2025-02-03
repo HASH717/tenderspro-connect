@@ -61,7 +61,8 @@ export const useTenders = (filters: TenderFilters) => {
       console.log('Fetching tenders with filters:', filters);
       let query = supabase
         .from('tenders')
-        .select('*');
+        .select('*')
+        .order('publication_date', { ascending: false }); // Add ordering here
 
       // Apply basic filters
       if (filters.search) {
