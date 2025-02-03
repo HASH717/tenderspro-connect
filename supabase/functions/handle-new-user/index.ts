@@ -13,7 +13,7 @@ serve(async (req) => {
 
     console.log('Processing new user:', user.id)
 
-    // Create profile
+    // Create profile only
     const { error: profileError } = await supabase
       .from('profiles')
       .insert({
@@ -28,28 +28,7 @@ serve(async (req) => {
       throw profileError
     }
 
-    // Calculate trial period dates
-    const now = new Date()
-    const trialEnd = new Date(now)
-    trialEnd.setDate(trialEnd.getDate() + 7) // 7 days trial
-
-    // Create trial subscription
-    const { error: subscriptionError } = await supabase
-      .from('subscriptions')
-      .insert({
-        user_id: user.id,
-        plan: 'Professional', // Trial users get Professional features
-        status: 'trial',
-        current_period_start: now.toISOString(),
-        current_period_end: trialEnd.toISOString()
-      })
-
-    if (subscriptionError) {
-      console.error('Error creating trial subscription:', subscriptionError)
-      throw subscriptionError
-    }
-
-    console.log('Successfully created profile and trial subscription for user:', user.id)
+    console.log('Successfully created profile for user:', user.id)
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { 'Content-Type': 'application/json' },
