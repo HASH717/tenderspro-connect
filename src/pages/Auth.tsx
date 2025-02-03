@@ -79,12 +79,13 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted p-4">
       <Card className="w-full max-w-md p-6">
-        <div className="flex justify-center mb-6">
+        <div className="flex flex-col items-center mb-6 space-y-2">
           <img 
-            src="https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d" 
-            alt="Logo" 
-            className="h-16 w-auto object-contain"
+            src="/lovable-uploads/dd1ac162-5e48-4a48-9eb6-9a93ca0170f1.png" 
+            alt="TendersPRO Logo" 
+            className="h-12 w-auto object-contain"
           />
+          <p className="text-sm text-muted-foreground">#1 Algerian Tenders</p>
         </div>
         <Tabs defaultValue="login" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6">
