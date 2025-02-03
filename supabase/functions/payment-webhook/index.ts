@@ -104,6 +104,18 @@ serve(async (req) => {
 
     // Only update categories if it's not an Enterprise plan
     if (planName !== 'Enterprise' && categories && Array.isArray(categories)) {
+      // First, clear any existing subscription categories
+      const { error: clearError } = await supabase
+        .from('subscription_categories')
+        .delete()
+        .eq('user_id', userId)
+
+      if (clearError) {
+        console.error('Error clearing subscription categories:', clearError)
+        throw new Error(`Failed to clear subscription categories: ${clearError.message}`)
+      }
+
+      // Then insert new categories
       const { error: categoriesError } = await supabase
         .from('subscription_categories')
         .insert({
