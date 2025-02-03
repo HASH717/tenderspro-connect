@@ -47,11 +47,13 @@ export const CategorySelect = ({ value, onChange }: CategorySelectProps) => {
     }
   });
 
+  // Fetch both subscription and subscription categories
   const { data: subscriptionData } = useQuery({
-    queryKey: ['subscription-categories', session?.user?.id],
+    queryKey: ['subscription-data', session?.user?.id],
     enabled: !!session?.user?.id,
     queryFn: async () => {
       try {
+        // Get active subscription
         const { data: subscription, error: subscriptionError } = await supabase
           .from('subscriptions')
           .select('*')
@@ -59,44 +61,63 @@ export const CategorySelect = ({ value, onChange }: CategorySelectProps) => {
           .eq('status', 'active')
           .maybeSingle();
 
-        if (subscriptionError) {
-          console.error('Error fetching subscription:', subscriptionError);
-          return null;
+        if (subscriptionError) throw subscriptionError;
+
+        // If no active subscription, check for trial subscription
+        if (!subscription) {
+          const { data: trialSub, error: trialError } = await supabase
+            .from('subscriptions')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .eq('status', 'trial')
+            .maybeSingle();
+
+          if (trialError) throw trialError;
+          if (!trialSub) return null;
+
+          // For trial users, get their preferred categories from profiles
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('preferred_categories')
+            .eq('id', session.user.id)
+            .single();
+
+          if (profileError) throw profileError;
+
+          return {
+            subscription: trialSub,
+            categories: profile.preferred_categories || []
+          };
         }
 
-        if (!subscription) return null;
-
+        // For paid subscriptions, get categories from subscription_categories
         const { data: subCategories, error: categoriesError } = await supabase
           .from('subscription_categories')
           .select('categories')
           .eq('subscription_id', subscription.id)
           .maybeSingle();
 
-        if (categoriesError) {
-          console.error('Error fetching categories:', categoriesError);
-          return {
-            subscription,
-            categories: []
-          };
-        }
+        if (categoriesError) throw categoriesError;
 
         return {
           subscription,
           categories: subCategories?.categories || []
         };
       } catch (error) {
-        console.error('Error in subscription data fetch:', error);
+        console.error('Error fetching subscription data:', error);
         return null;
       }
     }
   });
 
   const isCategoryAccessible = (category: string) => {
-    if (!session?.user?.id) return true;
+    if (!session?.user?.id) return true; // Non-logged-in users can see all categories
     if (!subscriptionData?.subscription) return false;
     
+    // Enterprise plan has access to all categories
     if (subscriptionData.subscription.plan === 'Enterprise') return true;
     
+    // For trial or paid plans, only allow access to selected categories
     return subscriptionData.categories.includes(category);
   };
 
