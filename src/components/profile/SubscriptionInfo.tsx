@@ -18,6 +18,11 @@ export const SubscriptionInfo = ({ subscription, isMobile }: SubscriptionInfoPro
 
   console.log('SubscriptionInfo - Current subscription:', subscription);
 
+  const isTrialOrNoSubscription = !subscription || subscription.status === 'trial';
+  const subscriptionEndDate = subscription?.current_period_end 
+    ? new Date(subscription.current_period_end).toLocaleDateString()
+    : null;
+
   return (
     <div className="p-6">
       {subscription ? (
@@ -30,23 +35,31 @@ export const SubscriptionInfo = ({ subscription, isMobile }: SubscriptionInfoPro
             </p>
             <p className="flex justify-between items-center">
               <span className="font-medium">Status:</span>
-              <span className={`capitalize font-semibold ${subscription.status === 'active' ? 'text-green-600' : 'text-yellow-600'}`}>
-                {subscription.status}
+              <span className={`capitalize font-semibold ${
+                subscription.status === 'active' 
+                  ? 'text-green-600' 
+                  : subscription.status === 'trial' 
+                    ? 'text-blue-600'
+                    : 'text-yellow-600'
+              }`}>
+                {subscription.status === 'trial' ? 'Trial Period' : subscription.status}
               </span>
             </p>
-            <p className="flex justify-between items-center">
-              <span className="font-medium">Current Period:</span>
-              <span className="text-gray-600">
-                {new Date(subscription.current_period_start).toLocaleDateString()} - {new Date(subscription.current_period_end).toLocaleDateString()}
-              </span>
-            </p>
+            {subscriptionEndDate && (
+              <p className="flex justify-between items-center">
+                <span className="font-medium">
+                  {subscription.status === 'trial' ? 'Trial Ends:' : 'Current Period Ends:'}
+                </span>
+                <span className="text-gray-600">{subscriptionEndDate}</span>
+              </p>
+            )}
           </div>
-          {subscription.status === 'trial' && (
+          {isTrialOrNoSubscription && (
             <Button 
               className="mt-6 w-full bg-green-500 hover:bg-green-600 text-white"
               onClick={() => navigate('/subscriptions')}
             >
-              Upgrade
+              Upgrade to Full Plan
             </Button>
           )}
         </>
@@ -60,7 +73,7 @@ export const SubscriptionInfo = ({ subscription, isMobile }: SubscriptionInfoPro
             className="w-full bg-green-500 hover:bg-green-600 text-white"
             onClick={() => navigate('/subscriptions')}
           >
-            Upgrade
+            Get Started
           </Button>
         </>
       )}
