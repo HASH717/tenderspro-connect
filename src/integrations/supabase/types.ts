@@ -332,10 +332,10 @@ export type Tables<
         PublicSchema["Views"])
     ? (PublicSchema["Tables"] &
         PublicSchema["Views"])[PublicTableNameOrOptions] extends {
-      Row: infer R
-    }
-    ? R
-    : never
+        Row: infer R
+      }
+      ? R
+      : never
     : never
 
 export type TablesInsert<
@@ -355,8 +355,8 @@ export type TablesInsert<
     ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
         Insert: infer I
       }
-    ? I
-    : never
+      ? I
+      : never
     : never
 
 export type TablesUpdate<

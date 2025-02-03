@@ -12,12 +12,17 @@ export const useTenders = (filters: TenderFilters) => {
     enabled: !!session?.user?.id,
     queryFn: async () => {
       try {
-        const { data: subscription } = await supabase
+        const { data: subscription, error: subscriptionError } = await supabase
           .from('subscriptions')
           .select('*')
           .eq('user_id', session.user.id)
           .eq('status', 'active')
-          .single();
+          .maybeSingle();
+
+        if (subscriptionError) {
+          console.error('Error fetching subscription:', subscriptionError);
+          return null;
+        }
 
         if (!subscription) return null;
 
@@ -25,18 +30,26 @@ export const useTenders = (filters: TenderFilters) => {
           return { subscription, categories: null }; // null means no restrictions
         }
 
-        const { data: subCategories } = await supabase
+        const { data: subCategories, error: categoriesError } = await supabase
           .from('subscription_categories')
           .select('categories')
           .eq('subscription_id', subscription.id)
-          .single();
+          .maybeSingle();
+
+        if (categoriesError) {
+          console.error('Error fetching categories:', categoriesError);
+          return {
+            subscription,
+            categories: []
+          };
+        }
 
         return {
           subscription,
           categories: subCategories?.categories || []
         };
       } catch (error) {
-        console.error('Error fetching subscription data:', error);
+        console.error('Error in subscription data fetch:', error);
         return null;
       }
     }
