@@ -8,6 +8,7 @@ import { AdminScraper } from "@/components/AdminScraper";
 import { useAuth } from "@/contexts/AuthContext";
 import { TenderList } from "@/components/TenderList";
 import { useTenders } from "@/hooks/use-tenders";
+import { AnalyticsDashboard } from "@/components/analytics/AnalyticsDashboard";
 
 const Index = () => {
   const [filters, setFilters] = useState<FilterType>({
@@ -33,6 +34,7 @@ const Index = () => {
   };
 
   const logoSrc = "/lovable-uploads/c1c4772c-d5f0-499c-b16f-ae8dcefaa6c3.png";
+  const isAdmin = session?.user.email === "motraxagency@gmail.com";
 
   return (
     <div className={`min-h-screen flex flex-col ${isMobile ? 'pb-16' : 'pb-12'}`}>
@@ -49,10 +51,15 @@ const Index = () => {
                 />
               </div>
             )}
-            {session?.user.email === "motraxagency@gmail.com" && (
-              <div className="mb-8">
-                <AdminScraper />
-              </div>
+            {isAdmin && (
+              <>
+                <div className="mb-8">
+                  <AdminScraper />
+                </div>
+                <div className="mb-8">
+                  <AnalyticsDashboard />
+                </div>
+              </>
             )}
             <TenderFilters onSearch={handleSearch} />
           </div>
