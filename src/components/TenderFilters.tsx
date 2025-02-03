@@ -81,32 +81,32 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
     queryKey: ['subscription-categories', session?.user?.id],
     enabled: !!session?.user?.id,
     queryFn: async () => {
-      // Get active subscription
-      const { data: subscription } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .eq('status', 'active')
-        .single();
+      try {
+        // Get active subscription
+        const { data: subscription } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .eq('status', 'active')
+          .single();
 
-      if (!subscription) return null;
+        if (!subscription) return null;
 
-      // If Enterprise plan, return all categories
-      if (subscription.plan === 'Enterprise') {
-        return { subscription, categories: allCategories };
+        // Get subscription categories
+        const { data: subCategories } = await supabase
+          .from('subscription_categories')
+          .select('categories')
+          .eq('subscription_id', subscription.id)
+          .single();
+
+        return {
+          subscription,
+          categories: subCategories?.categories || []
+        };
+      } catch (error) {
+        console.error('Error fetching subscription data:', error);
+        return null;
       }
-
-      // Get subscription categories
-      const { data: subCategories } = await supabase
-        .from('subscription_categories')
-        .select('categories')
-        .eq('subscription_id', subscription.id)
-        .single();
-
-      return {
-        subscription,
-        categories: subCategories?.categories || []
-      };
     }
   });
 

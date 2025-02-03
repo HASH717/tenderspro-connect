@@ -110,6 +110,38 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_categories: {
+        Row: {
+          categories: string[]
+          created_at: string
+          id: string
+          subscription_id: string
+          user_id: string
+        }
+        Insert: {
+          categories?: string[]
+          created_at?: string
+          id?: string
+          subscription_id: string
+          user_id: string
+        }
+        Update: {
+          categories?: string[]
+          created_at?: string
+          id?: string
+          subscription_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_categories_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           created_at: string
@@ -300,10 +332,10 @@ export type Tables<
         PublicSchema["Views"])
     ? (PublicSchema["Tables"] &
         PublicSchema["Views"])[PublicTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
+      Row: infer R
+    }
+    ? R
+    : never
     : never
 
 export type TablesInsert<
@@ -323,8 +355,8 @@ export type TablesInsert<
     ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
         Insert: infer I
       }
-      ? I
-      : never
+    ? I
+    : never
     : never
 
 export type TablesUpdate<
