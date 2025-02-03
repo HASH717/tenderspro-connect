@@ -1,5 +1,5 @@
 import { corsHeaders } from '../_shared/cors.ts'
-import { handleError, fetchTendersPage, formatTenderData } from '../_shared/tender-scraper-utils.ts'
+import { handleError, fetchTendersPage, formatTenderData, checkTenderExists } from '../_shared/tender-scraper-utils.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
 
 Deno.serve(async (req) => {
@@ -53,11 +53,27 @@ Deno.serve(async (req) => {
     }
 
     let processedCount = 0;
+    let skippedCount = 0;
     let errorCount = 0;
 
     // Process each tender
     for (const tender of data.results) {
       try {
+        // Check if tender already exists
+        const tenderId = tender.id?.toString();
+        if (!tenderId) {
+          console.error('Tender has no ID, skipping');
+          errorCount++;
+          continue;
+        }
+
+        const exists = await checkTenderExists(supabase, tenderId);
+        if (exists) {
+          console.log(`Tender ${tenderId} already exists, skipping`);
+          skippedCount++;
+          continue;
+        }
+
         const formattedTender = formatTenderData(tender, tender);
         
         const { error } = await supabase
@@ -99,8 +115,9 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Processed ${processedCount} tenders with ${errorCount} errors`,
+        message: `Processed ${processedCount} tenders (${skippedCount} skipped) with ${errorCount} errors`,
         count: processedCount,
+        skipped: skippedCount,
         errors: errorCount,
         lastProcessedPage: page,
         hasMore: !!data.next
@@ -111,16 +128,6 @@ Deno.serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Scraper error:', error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error occurred'
-      }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
+    return handleError(error);
   }
 });

@@ -113,6 +113,21 @@ export const fetchTendersPage = async (page: number, authHeader: string) => {
   return response.json();
 };
 
+export const checkTenderExists = async (supabase: any, tenderId: string) => {
+  const { data, error } = await supabase
+    .from('tenders')
+    .select('id')
+    .eq('tender_id', tenderId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') { // PGRST116 is the "not found" error code
+    console.error('Error checking tender existence:', error);
+    throw error;
+  }
+
+  return !!data;
+};
+
 export const handleError = (error: Error) => {
   console.error('Error in scraper:', error);
   return new Response(
