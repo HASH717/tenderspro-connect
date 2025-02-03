@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
+import { Feature, FeatureCollection, Geometry } from 'geojson';
 import algeriaGeoJson from './algeria.json';
 
 interface WilayaData {
@@ -39,7 +40,7 @@ export const AlgeriaMap = ({ data }: AlgeriaMapProps) => {
 
     // Create projection
     const projection = d3.geoMercator()
-      .fitSize([width, height], algeriaGeoJson);
+      .fitSize([width, height], algeriaGeoJson as FeatureCollection);
 
     // Create path generator
     const path = d3.geoPath().projection(projection);
@@ -52,10 +53,10 @@ export const AlgeriaMap = ({ data }: AlgeriaMapProps) => {
 
     // Draw map
     svg.selectAll('path')
-      .data(algeriaGeoJson.features)
+      .data((algeriaGeoJson as FeatureCollection).features)
       .enter()
       .append('path')
-      .attr('d', path)
+      .attr('d', feature => path(feature as Feature))
       .attr('fill', (d: any) => {
         const wilayaData = data.find(item => 
           item.wilaya.toLowerCase() === d.properties.name.toLowerCase()
@@ -67,7 +68,10 @@ export const AlgeriaMap = ({ data }: AlgeriaMapProps) => {
       .attr('opacity', 0)
       .transition()
       .duration(1000)
-      .attr('opacity', 1)
+      .attr('opacity', 1);
+
+    // Add hover effects
+    svg.selectAll('path')
       .on('mouseover', function(event, d: any) {
         const wilayaData = data.find(item => 
           item.wilaya.toLowerCase() === d.properties.name.toLowerCase()

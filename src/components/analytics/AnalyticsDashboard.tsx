@@ -47,8 +47,8 @@ export const AnalyticsDashboard = () => {
         return;
       }
 
-      setMetrics(metricsData);
-      setWilayaData(wilayaData || []);
+      setMetrics(metricsData as AnalyticsMetrics);
+      setWilayaData(wilayaData as WilayaDistribution[]);
     };
 
     fetchAnalytics();
