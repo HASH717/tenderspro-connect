@@ -84,26 +84,36 @@ serve(async (req) => {
     const currentPeriodEnd = new Date(now)
     currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1)
 
-    // Create new subscription
-    const { data: subscription, error: subscriptionError } = await supabase
-      .from('subscriptions')
-      .insert({
-        user_id: userId,
-        plan: planName,
-        status: 'active',
-        current_period_start: currentPeriodStart.toISOString(),
-        current_period_end: currentPeriodEnd.toISOString()
-      })
-      .select()
-      .single()
+    // Create new subscription with retries
+    let subscription
+    let retries = 3
+    while (retries > 0) {
+      const { data: newSubscription, error: subscriptionError } = await supabase
+        .from('subscriptions')
+        .insert({
+          user_id: userId,
+          plan: planName,
+          status: 'active',
+          current_period_start: currentPeriodStart.toISOString(),
+          current_period_end: currentPeriodEnd.toISOString()
+        })
+        .select()
+        .single()
 
-    if (subscriptionError) {
-      console.error('Error creating subscription:', subscriptionError)
-      throw subscriptionError
+      if (!subscriptionError) {
+        subscription = newSubscription
+        break
+      }
+
+      console.error(`Attempt ${4 - retries} failed:`, subscriptionError)
+      retries--
+      if (retries === 0) {
+        throw subscriptionError
+      }
+      
+      // Wait before retrying
+      await new Promise(resolve => setTimeout(resolve, 1000))
     }
-
-    // Keep existing categories from trial period for now
-    // They will be updated when user makes their selection
 
     console.log('Successfully created subscription:', subscription)
 

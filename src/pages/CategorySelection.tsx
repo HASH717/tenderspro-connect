@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import { CategorySelection as CategorySelectionComponent } from "@/components/subscriptions/CategorySelection";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const CategorySelection = () => {
   const navigate = useNavigate();
@@ -16,9 +17,8 @@ const CategorySelection = () => {
   const searchParams = new URLSearchParams(location.search);
   const success = searchParams.get('success');
   const plan = searchParams.get('plan');
-  const checkoutId = searchParams.get('checkout_id');
 
-  const { data: subscription, isLoading } = useQuery({
+  const { data: subscription, isLoading, error } = useQuery({
     queryKey: ['latest-subscription', session?.user?.id],
     enabled: !!session?.user?.id,
     queryFn: async () => {
@@ -31,39 +31,57 @@ const CategorySelection = () => {
         .limit(1)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching subscription:', error);
+        toast.error('Failed to load subscription data');
+        throw error;
+      }
       return data;
     },
     staleTime: 0,
-    retry: 3,
+    retry: 5,
     retryDelay: 1000
   });
 
   useEffect(() => {
     if (!session) {
+      console.log('No session, redirecting to auth');
       navigate('/auth');
       return;
     }
 
-    // Wait for subscription data to load
-    if (isLoading) {
+    if (error) {
+      console.error('Subscription fetch error:', error);
+      toast.error('Failed to load subscription data');
       return;
     }
 
-    // If no subscription, redirect to subscriptions page
+    if (isLoading) {
+      console.log('Loading subscription data...');
+      return;
+    }
+
+    if (!subscription && success === 'true') {
+      console.log('Payment successful but no subscription found, retrying...');
+      return; // Let the query retry
+    }
+
     if (!subscription) {
+      console.log('No subscription found, redirecting to subscriptions');
       navigate('/subscriptions');
       return;
     }
 
-    // If Enterprise plan, redirect to home
     if (subscription.plan === 'Enterprise') {
+      console.log('Enterprise plan, redirecting to home');
       navigate('/');
       return;
     }
-  }, [session, success, checkoutId, subscription, navigate, isLoading]);
 
-  if (!subscription || isLoading) {
+    console.log('Current subscription:', subscription);
+  }, [session, success, subscription, navigate, isLoading, error]);
+
+  if (!session || isLoading || !subscription) {
     return null;
   }
 
