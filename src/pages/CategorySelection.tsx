@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
@@ -10,8 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 const CategorySelection = () => {
   const navigate = useNavigate();
   const { session } = useAuth();
-  const [searchParams] = useSearchParams();
-  const plan = searchParams.get("plan");
+  const location = useLocation();
+  const { plan, subscriptionId } = location.state || {};
 
   const { data: subscription } = useQuery({
     queryKey: ['latest-subscription', session?.user?.id],

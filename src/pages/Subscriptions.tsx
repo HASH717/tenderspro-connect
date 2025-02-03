@@ -86,7 +86,12 @@ const Subscriptions = () => {
     if (success === 'true' && plan) {
       setPlan(plan);
       setSubscriptionId(subscription?.id || null);
-      navigate('/subscriptions/categories');
+      navigate('/subscriptions/categories', { 
+        state: { 
+          plan,
+          subscriptionId: subscription?.id 
+        }
+      });
     } else if (failed === 'true' || success === 'false') {
       toast({
         title: "Payment failed",
