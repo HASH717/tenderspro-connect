@@ -19,7 +19,7 @@ export const PreferencesTab = ({ currentLanguage, onLanguageChange, preferredCat
     <div className="bg-white p-6 rounded-lg border space-y-6">
       <div className="space-y-4">
         <h3 className="text-xl font-semibold tracking-tight text-card-foreground">
-          {t("profile.preferences.language")}
+          Language
         </h3>
         <RadioGroup
           value={currentLanguage}
@@ -43,7 +43,7 @@ export const PreferencesTab = ({ currentLanguage, onLanguageChange, preferredCat
 
       <div className="space-y-4">
         <h3 className="text-xl font-semibold tracking-tight text-card-foreground">
-          {t("profile.preferences.categories")}
+          Categories
         </h3>
         <div className="flex flex-wrap gap-2">
           {preferredCategories?.map((category) => (
@@ -62,7 +62,7 @@ export const PreferencesTab = ({ currentLanguage, onLanguageChange, preferredCat
           onClick={() => navigate('/onboarding')}
           className="mt-2"
         >
-          {t("profile.preferences.update_categories")}
+          Update Categories
         </Button>
       </div>
     </div>
