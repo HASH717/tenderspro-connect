@@ -1,8 +1,6 @@
-import Navigation from "@/components/Navigation";
-import Footer from "@/components/Footer";
+import { useTranslation } from "react-i18next";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -102,7 +100,8 @@ const Subscriptions = () => {
               plan: latestSubscription.plan
             });
             
-            navigate(`/subscriptions/categories?plan=${latestSubscription.plan}`, {
+            // Update the navigation to use the correct path and state
+            navigate('/subscriptions/categories', {
               replace: true,
               state: {
                 subscriptionId: latestSubscription.id,
