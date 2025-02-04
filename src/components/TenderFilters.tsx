@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SearchInput } from "./filters/SearchInput";
-import { CategorySelect } from "./filters/CategorySelect";
-import { WilayaSelect } from "./filters/WilayaSelect";
-import { TenderTypeSelect } from "./filters/TenderTypeSelect";
+import { FilterGrid } from "./filters/FilterGrid";
+import { FilterActions } from "./filters/FilterActions";
 
 interface TenderFiltersProps {
   onSearch: (filters: TenderFilters) => void;
@@ -73,35 +71,9 @@ const TenderFilters = ({ onSearch, initialFilters }: TenderFiltersProps) => {
         value={filters.search}
         onChange={(value) => handleFilterChange("search", value)}
       />
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-        <TenderTypeSelect
-          value={filters.tenderType}
-          onChange={(value) => handleFilterChange("tenderType", value)}
-        />
-
-        <CategorySelect
-          value={filters.category}
-          onChange={(value) => handleFilterChange("category", value)}
-        />
-
-        <WilayaSelect
-          value={filters.wilaya}
-          onChange={(value) => handleFilterChange("wilaya", value)}
-        />
-      </div>
-
+      <FilterGrid filters={filters} onFilterChange={handleFilterChange} />
       <Separator className="my-4 bg-muted/30" />
-
-      <div className="flex flex-col sm:flex-row gap-2">
-        <Button 
-          variant="outline"
-          onClick={handleClearFilters}
-          className="w-full sm:w-auto bg-white/80 backdrop-blur-sm hover:bg-white/90"
-        >
-          Clear Filters
-        </Button>
-      </div>
+      <FilterActions onClear={handleClearFilters} />
     </div>
   );
 };

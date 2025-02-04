@@ -4,7 +4,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState } from "react";
-import { Button } from "./ui/button";
+import { LoadingState } from "./tenders/LoadingState";
+import { EmptyState } from "./tenders/EmptyState";
+import { ShowMoreButton } from "./tenders/ShowMoreButton";
 
 interface TenderListProps {
   tenders: any[];
@@ -43,28 +45,18 @@ export const TenderList = ({ tenders, isLoading }: TenderListProps) => {
 
     try {
       const isFavorite = favorites.includes(tenderId);
+      const { error } = await supabase
+        .from('favorites')
+        [isFavorite ? 'delete' : 'insert']({
+          user_id: session.user.id,
+          tender_id: tenderId
+        })
+        [isFavorite ? 'eq' : '']('user_id', session.user.id)
+        [isFavorite ? 'eq' : '']('tender_id', tenderId);
 
-      if (isFavorite) {
-        const { error } = await supabase
-          .from('favorites')
-          .delete()
-          .eq('user_id', session.user.id)
-          .eq('tender_id', tenderId);
-
-        if (error) throw error;
-        toast.success('Removed from favorites');
-      } else {
-        const { error } = await supabase
-          .from('favorites')
-          .insert({
-            user_id: session.user.id,
-            tender_id: tenderId
-          });
-
-        if (error) throw error;
-        toast.success('Added to favorites');
-      }
-
+      if (error) throw error;
+      
+      toast.success(isFavorite ? 'Removed from favorites' : 'Added to favorites');
       await queryClient.invalidateQueries({ queryKey: ['favorites'] });
     } catch (error: any) {
       console.error('Error toggling favorite:', error);
@@ -72,13 +64,8 @@ export const TenderList = ({ tenders, isLoading }: TenderListProps) => {
     }
   };
 
-  if (isLoading || isLoadingFavorites) {
-    return <div className="text-center py-8">Loading tenders...</div>;
-  }
-
-  if (tenders.length === 0) {
-    return <div className="text-center py-8">No tenders found</div>;
-  }
+  if (isLoading || isLoadingFavorites) return <LoadingState />;
+  if (tenders.length === 0) return <EmptyState />;
 
   const displayedTenders = tenders.slice(0, displayCount);
   const hasMore = displayCount < tenders.length;
@@ -103,14 +90,7 @@ export const TenderList = ({ tenders, isLoading }: TenderListProps) => {
       </div>
       
       {hasMore && (
-        <div className="flex justify-center pt-4 pb-8">
-          <Button 
-            onClick={() => setDisplayCount(prev => prev + 10)}
-            variant="outline"
-          >
-            Show More
-          </Button>
-        </div>
+        <ShowMoreButton onClick={() => setDisplayCount(prev => prev + 10)} />
       )}
     </div>
   );
