@@ -1,9 +1,10 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, MapPin, Building, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "react-i18next";
@@ -16,7 +17,7 @@ const TenderDetails = () => {
   const isMobile = useIsMobile();
   const { t } = useTranslation();
 
-  const { data: tender, isLoading, refetch } = useQuery({
+  const { data: tender, isLoading } = useQuery({
     queryKey: ['tender', id],
     queryFn: async () => {
       if (!id) {
@@ -45,28 +46,6 @@ const TenderDetails = () => {
       }
 
       return data;
-    }
-  });
-
-  const processImageMutation = useMutation({
-    mutationFn: async () => {
-      const response = await supabase.functions.invoke('manual-process-image', {
-        body: { tenderId: id }
-      });
-      
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
-      
-      return response.data;
-    },
-    onSuccess: () => {
-      toast.success('Image processing started');
-      // Refetch the tender details to get the updated image URL
-      setTimeout(() => refetch(), 2000);
-    },
-    onError: (error) => {
-      toast.error('Failed to process image: ' + error.message);
     }
   });
 
@@ -175,20 +154,10 @@ const TenderDetails = () => {
 
               {(tender.original_image_url || tender.image_url) && (
                 <div className="mt-8">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-semibold">Tender Document</h2>
-                    {!tender.processed_image_url && (
-                      <Button 
-                        onClick={() => processImageMutation.mutate()}
-                        disabled={processImageMutation.isPending}
-                      >
-                        {processImageMutation.isPending ? 'Processing...' : 'Process Image'}
-                      </Button>
-                    )}
-                  </div>
+                  <h2 className="text-lg font-semibold mb-4">Tender Document</h2>
                   <div className="relative border rounded-lg overflow-hidden">
                     <img 
-                      src={tender.processed_image_url || tender.original_image_url || tender.image_url}
+                      src={tender.original_image_url || tender.image_url}
                       alt="Tender Document"
                       className="w-full object-contain max-h-[800px]"
                       onError={(e) => {
