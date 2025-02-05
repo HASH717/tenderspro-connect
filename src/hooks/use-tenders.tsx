@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { TenderFilters } from "@/components/TenderFilters";
@@ -25,6 +26,11 @@ export const useTenders = (filters: TenderFilters) => {
         }
 
         if (!subscription) return null;
+
+        // Check if subscription has expired
+        if (new Date(subscription.current_period_end) <= new Date()) {
+          return null;
+        }
 
         if (subscription.plan === 'Enterprise') {
           return { subscription, categories: null }; // null means no restrictions
@@ -89,8 +95,16 @@ export const useTenders = (filters: TenderFilters) => {
         return [];
       }
 
-      // If user is logged in and has a subscription, filter by allowed categories
-      if (session?.user?.id && subscriptionData?.subscription) {
+      // If user is not logged in or has no active subscription, blur all tenders except first 3
+      if (!session?.user?.id || !subscriptionData?.subscription) {
+        return tenders.map((tender, index) => ({
+          ...tender,
+          isBlurred: index >= 3
+        }));
+      }
+
+      // If user is logged in and has a subscription
+      if (subscriptionData.subscription) {
         if (subscriptionData.subscription.plan !== 'Enterprise' && subscriptionData.categories) {
           return tenders.map(tender => ({
             ...tender,
