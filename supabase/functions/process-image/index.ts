@@ -31,25 +31,35 @@ serve(async (req) => {
       throw new Error('Missing required parameters')
     }
 
-    // Construct and validate the full URL
-    let fullImageUrl = imageUrl;
-    if (!isValidHttpUrl(imageUrl)) {
-      // Remove any leading slashes and construct the full URL
-      const cleanPath = imageUrl.replace(/^\/+/, '');
-      fullImageUrl = `https://old.dztenders.com/${cleanPath}`;
-    }
+    // Clean and construct full image URL
+    const cleanPath = imageUrl.replace(/^\/+/, '').replace(/^sites\/default\/files\//, '');
+    const fullImageUrl = isValidHttpUrl(imageUrl)
+      ? imageUrl
+      : `https://old.dztenders.com/sites/default/files/${cleanPath}`;
+
+    console.log('Attempting to fetch image from URL:', fullImageUrl);
 
     // Validate the constructed URL
     if (!isValidHttpUrl(fullImageUrl)) {
       throw new Error(`Invalid URL constructed: ${fullImageUrl}`);
     }
 
-    console.log('Attempting to fetch image from URL:', fullImageUrl);
+    try {
+      // Test if the URL is accessible
+      const testResponse = await fetch(fullImageUrl, { method: 'HEAD' });
+      if (!testResponse.ok) {
+        throw new Error(`URL not accessible: ${testResponse.status} ${testResponse.statusText}`);
+      }
+    } catch (error) {
+      console.error('Error testing URL accessibility:', error);
+      throw new Error(`Failed to access URL: ${fullImageUrl}`);
+    }
 
     // Initialize Hugging Face client
     const hf = new HfInference(Deno.env.get('HUGGING_FACE_ACCESS_TOKEN'))
     
     // Fetch the image
+    console.log('Fetching image...');
     const imageResponse = await fetch(fullImageUrl)
     if (!imageResponse.ok) {
       throw new Error(`Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`)
@@ -143,3 +153,4 @@ serve(async (req) => {
     )
   }
 })
+
