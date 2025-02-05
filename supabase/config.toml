@@ -28,3 +28,7 @@ enabled = true
 [[functions]]
 [functions.scrape-tenders]
 verify_jwt = false
+
+[[functions]]
+[functions.convert-to-png]
+verify_jwt = false
