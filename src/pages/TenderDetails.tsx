@@ -71,10 +71,14 @@ const TenderDetails = () => {
     return new Date(dateString).toLocaleDateString();
   };
 
-  const getImageUrl = (url?: string | null) => {
-    if (!url) return null;
-    if (url.startsWith('http')) return url;
-    return `https://old.dztenders.com/${url}`;
+  const getImageUrl = (tender: any) => {
+    // Prefer PNG version if available
+    if (tender?.png_image_url) return tender.png_image_url;
+    
+    // Fall back to original image
+    if (!tender?.image_url && !tender?.link) return null;
+    const url = tender?.image_url || tender?.link;
+    return url.startsWith('http') ? url : `https://old.dztenders.com/${url}`;
   };
 
   return (
@@ -159,11 +163,11 @@ const TenderDetails = () => {
                 </div>
               </div>
 
-              {(tender.image_url || tender.link) && !imageError && (
+              {(tender.image_url || tender.link || tender.png_image_url) && !imageError && (
                 <div className="mt-8">
                   <h2 className="text-lg font-semibold mb-4">Tender Document</h2>
                   <img 
-                    src={getImageUrl(tender.image_url || tender.link)}
+                    src={getImageUrl(tender)}
                     alt="Tender Document"
                     className="w-full h-auto object-fill"
                     onError={(e) => {

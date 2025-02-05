@@ -1,10 +1,53 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const useScraper = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [lastProcessedPage, setLastProcessedPage] = useState(0);
+
+  const convertExistingImages = async () => {
+    try {
+      setIsLoading(true);
+      setProgress(0);
+
+      // Fetch all tenders that don't have PNG versions
+      const { data: tenders, error } = await supabase
+        .from('tenders')
+        .select('id, image_url')
+        .is('png_image_url', null)
+        .not('image_url', 'is', null);
+
+      if (error) throw error;
+
+      if (!tenders?.length) {
+        toast.info('No images need conversion');
+        return;
+      }
+
+      let processed = 0;
+      for (const tender of tenders) {
+        try {
+          await supabase.functions.invoke('convert-to-png', {
+            body: { imageUrl: tender.image_url, tenderId: tender.id }
+          });
+          processed++;
+          setProgress((processed / tenders.length) * 100);
+        } catch (err) {
+          console.error(`Failed to convert image for tender ${tender.id}:`, err);
+          // Continue with next image even if one fails
+        }
+      }
+
+      toast.success(`Converted ${processed} out of ${tenders.length} images`);
+    } catch (error) {
+      console.error('Error in convertExistingImages:', error);
+      toast.error('Failed to convert images');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleScrape = async () => {
     try {
@@ -34,6 +77,7 @@ export const useScraper = () => {
     isLoading,
     progress,
     handleScrape,
+    convertExistingImages,
     lastProcessedPage
   };
 };
