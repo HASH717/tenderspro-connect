@@ -57,10 +57,10 @@ export const SubscriptionPlans = ({ subscription, onSubscribe }: SubscriptionPla
     },
   ];
 
-  // Apply 25% discount for annual plans
+  // Apply annual pricing (12 months) with 25% discount
   const adjustedPlans = plans.map(plan => ({
     ...plan,
-    priceInDZD: isAnnual ? Math.round(plan.priceInDZD * 0.75) : plan.priceInDZD,
+    priceInDZD: isAnnual ? Math.round(plan.priceInDZD * 12 * 0.75) : plan.priceInDZD,
     billingInterval: isAnnual ? 'annual' as const : 'monthly' as const
   }));
 

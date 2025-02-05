@@ -26,10 +26,11 @@ serve(async (req) => {
     console.log('Selected categories:', categories)
     console.log('Billing interval:', billingInterval)
 
+    // Monthly base prices
     const planPrices = {
-      'Basic': { monthly: 1000, annual: 9000 },
-      'Professional': { monthly: 2000, annual: 18000 },
-      'Enterprise': { monthly: 10000, annual: 90000 }
+      'Basic': { monthly: 1000, annual: 12000 },
+      'Professional': { monthly: 2000, annual: 24000 },
+      'Enterprise': { monthly: 10000, annual: 120000 }
     }
 
     const webhookUrl = `https://achevndenwxikpbabzop.functions.supabase.co/payment-webhook`
@@ -39,8 +40,9 @@ serve(async (req) => {
     const baseUrl = backUrl.split('?')[0]
     const successUrl = `${baseUrl}?success=true&plan=${plan}`
 
+    // Calculate amount based on billing interval
     const amount = billingInterval === 'annual' 
-      ? Math.round(planPrices[plan].annual * 0.75) 
+      ? Math.round(planPrices[plan].annual * 0.75) // 25% discount on annual plans
       : planPrices[plan].monthly;
 
     const checkoutData = {
