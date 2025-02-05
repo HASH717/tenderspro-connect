@@ -4,13 +4,13 @@ import { ArrowLeft, Calendar, MapPin, Building, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import Footer from "@/components/Footer";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const TenderDetails = () => {
   const { id } = useParams();
@@ -19,7 +19,7 @@ const TenderDetails = () => {
   const { t } = useTranslation();
   const [imageError, setImageError] = useState(false);
 
-  const { data: tender, isLoading } = useQuery({
+  const { data: tender, isLoading, refetch } = useQuery({
     queryKey: ['tender', id],
     queryFn: async () => {
       if (!id) {
@@ -50,6 +50,42 @@ const TenderDetails = () => {
       return data;
     }
   });
+
+  // Add mutation for processing image
+  const processImageMutation = useMutation({
+    mutationFn: async ({ imageUrl, tenderId }: { imageUrl: string; tenderId: string }) => {
+      console.log('Processing image:', { imageUrl, tenderId });
+      const response = await supabase.functions.invoke('process-image', {
+        body: { imageUrl, tenderId }
+      });
+      
+      if (response.error) {
+        throw new Error('Failed to process image');
+      }
+      
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Image processing started');
+      // Refetch the tender to get the updated processed_image_url
+      setTimeout(() => refetch(), 5000); // Wait 5 seconds before refetching
+    },
+    onError: (error) => {
+      console.error('Error processing image:', error);
+      toast.error('Failed to process image');
+    }
+  });
+
+  // Trigger image processing if needed
+  useEffect(() => {
+    if (tender && tender.original_image_url && !tender.processed_image_url && !processImageMutation.isPending) {
+      console.log('Triggering image processing for tender:', tender.id);
+      processImageMutation.mutate({
+        imageUrl: tender.original_image_url,
+        tenderId: tender.id
+      });
+    }
+  }, [tender]);
 
   if (isLoading) {
     return (
@@ -191,6 +227,9 @@ const TenderDetails = () => {
                       <div className="flex flex-col items-center justify-center py-16 text-gray-500">
                         <Info className="w-12 h-12 mb-4" />
                         <p>Unable to load tender document image</p>
+                        {processImageMutation.isPending && (
+                          <p className="mt-2 text-blue-500">Processing image...</p>
+                        )}
                       </div>
                     )}
                   </div>
