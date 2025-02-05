@@ -167,7 +167,7 @@ const TenderDetails = () => {
                   <div className="relative border rounded-lg overflow-hidden w-full">
                     {!imageError ? (
                       <img 
-                        src={getImageUrl(tender.original_image_url || tender.image_url)}
+                        src={getImageUrl(tender.processed_image_url || tender.original_image_url || tender.image_url)}
                         alt="Tender Document"
                         className="w-full h-auto object-fill"
                         onError={(e) => {
