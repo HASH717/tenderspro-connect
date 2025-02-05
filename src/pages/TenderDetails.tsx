@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, MapPin, Building, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -151,11 +152,11 @@ const TenderDetails = () => {
                 </div>
               </div>
 
-              {tender.image_url && (
+              {(tender.processed_image_url || tender.image_url) && (
                 <div className="mt-8">
                   <h2 className="text-lg font-semibold mb-4">Tender Document</h2>
                   <img 
-                    src={tender.image_url}
+                    src={tender.processed_image_url || tender.image_url}
                     alt="Tender Document"
                     className="w-full object-contain border rounded-lg"
                   />

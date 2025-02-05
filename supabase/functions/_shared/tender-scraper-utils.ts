@@ -31,6 +31,12 @@ export const formatTenderData = (tender: TenderData, detailData: any) => {
   const imageUrls = tender.files_verbose?.map(formatImageUrl).filter(Boolean) || [];
   const primaryImageUrl = imageUrls[0] || null;
 
+  // Process the image if available
+  if (primaryImageUrl) {
+    // We'll process the image asynchronously to not block the import
+    processImageInBackground(primaryImageUrl, tender.id?.toString());
+  }
+
   return {
     title: tender.title || 'Untitled Tender',
     wilaya: tender.region_verbose?.name || 'Unknown',
@@ -53,6 +59,31 @@ export const formatTenderData = (tender: TenderData, detailData: any) => {
     tender_status: detailData.status || null,
     original_image_url: tender.files_verbose?.[0] || null
   };
+};
+
+const processImageInBackground = async (imageUrl: string, tenderId?: string) => {
+  if (!tenderId) {
+    console.error('Tender ID is required to process the image.');
+    return;
+  }
+
+  try {
+    const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/process-image`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ imageUrl, tenderId }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('Error processing image:', error);
+    }
+  } catch (error) {
+    console.error('Error calling process-image function:', error);
+  }
 };
 
 export const fetchTenderDetails = async (tenderId: number, authHeader: string) => {
