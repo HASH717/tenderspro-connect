@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -12,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { plan, priceId, userId, backUrl, categories } = await req.json()
+    const { plan, priceId, userId, backUrl, categories, billingInterval } = await req.json()
     
     const CHARGILY_PAY_SECRET_KEY = Deno.env.get('CHARGILY_PAY_SECRET_KEY')
     const CHARGILY_PAY_PUBLIC_KEY = Deno.env.get('CHARGILY_PAY_PUBLIC_KEY')
@@ -23,11 +24,12 @@ serve(async (req) => {
 
     console.log(`Creating checkout for plan: ${plan} with priceId: ${priceId} for user: ${userId}`)
     console.log('Selected categories:', categories)
+    console.log('Billing interval:', billingInterval)
 
     const planPrices = {
-      'Basic': 1000,
-      'Professional': 2000,
-      'Enterprise': 10000
+      'Basic': { monthly: 1000, annual: 9000 },
+      'Professional': { monthly: 2000, annual: 18000 },
+      'Enterprise': { monthly: 10000, annual: 90000 }
     }
 
     const webhookUrl = `https://achevndenwxikpbabzop.functions.supabase.co/payment-webhook`
@@ -37,8 +39,12 @@ serve(async (req) => {
     const baseUrl = backUrl.split('?')[0]
     const successUrl = `${baseUrl}?success=true&plan=${plan}`
 
+    const amount = billingInterval === 'annual' 
+      ? Math.round(planPrices[plan].annual * 0.75) 
+      : planPrices[plan].monthly;
+
     const checkoutData = {
-      amount: planPrices[plan],
+      amount: amount,
       currency: "dzd",
       payment_method: "edahabia",
       success_url: successUrl,
@@ -46,7 +52,8 @@ serve(async (req) => {
       metadata: {
         plan,
         user_id: userId,
-        categories: categories || []
+        categories: categories || [],
+        billing_interval: billingInterval || 'monthly'
       }
     }
 

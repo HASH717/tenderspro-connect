@@ -155,7 +155,8 @@ const Subscriptions = () => {
           priceId: plan.priceId,
           userId: session.user.id,
           backUrl: `${window.location.origin}/subscriptions?success=true&plan=${plan.name}`,
-          categories: profile.preferred_categories
+          categories: profile.preferred_categories,
+          billingInterval: plan.billingInterval
         }
       });
 

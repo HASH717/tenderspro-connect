@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,6 +19,7 @@ interface PlanProps {
   categoryLimit?: number;
   subscription: Subscription | null;
   onSubscribe: (plan: any) => void;
+  billingInterval?: 'monthly' | 'annual';
 }
 
 export const PlanCard = ({
@@ -27,9 +29,10 @@ export const PlanCard = ({
   features,
   subscription,
   onSubscribe,
+  billingInterval = 'monthly',
 }: PlanProps) => {
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col hover:shadow-lg transition-shadow duration-200">
       <CardHeader>
         <CardTitle>{name}</CardTitle>
         <CardDescription>{description}</CardDescription>
@@ -39,12 +42,17 @@ export const PlanCard = ({
           <span className="text-3xl font-bold">
             {priceInDZD.toLocaleString()} DZD
           </span>
-          <span className="text-muted-foreground">/month</span>
+          <span className="text-muted-foreground">/{billingInterval}</span>
+          {billingInterval === 'annual' && (
+            <div className="mt-1 text-sm text-emerald-600 font-medium">
+              25% discount applied
+            </div>
+          )}
         </div>
         <ul className="space-y-2">
           {features.map((feature) => (
             <li key={feature} className="flex items-center">
-              <span className="mr-2">✓</span>
+              <span className="mr-2 text-emerald-600">✓</span>
               {feature}
             </li>
           ))}
@@ -53,7 +61,7 @@ export const PlanCard = ({
       <CardFooter>
         <Button
           className="w-full"
-          onClick={() => onSubscribe({ name, priceInDZD })}
+          onClick={() => onSubscribe({ name, priceInDZD, billingInterval })}
           disabled={subscription?.status === 'active' && subscription?.plan === name}
         >
           {subscription?.status === 'active' && subscription?.plan === name

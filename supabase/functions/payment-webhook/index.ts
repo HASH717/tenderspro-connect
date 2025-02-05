@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
 import { corsHeaders } from '../_shared/cors.ts'
@@ -58,13 +59,14 @@ serve(async (req) => {
     const userId = metadata.user_id
     const planName = metadata.plan
     const categories = metadata.categories
+    const billingInterval = metadata.billing_interval || 'monthly'
 
     if (!userId || !planName) {
       console.error('Missing required metadata:', metadata)
       throw new Error('Missing required metadata (user_id or plan)')
     }
 
-    console.log('Extracted data:', { userId, planName, categories })
+    console.log('Extracted data:', { userId, planName, categories, billingInterval })
 
     // First, deactivate any existing subscriptions
     const { error: deactivateError } = await supabase
@@ -82,7 +84,11 @@ serve(async (req) => {
     const now = new Date()
     const currentPeriodStart = now
     const currentPeriodEnd = new Date(now)
-    currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1)
+    if (billingInterval === 'annual') {
+      currentPeriodEnd.setFullYear(currentPeriodEnd.getFullYear() + 1)
+    } else {
+      currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1)
+    }
 
     // Create new subscription with retries
     let subscription
@@ -95,7 +101,8 @@ serve(async (req) => {
           plan: planName,
           status: 'active',
           current_period_start: currentPeriodStart.toISOString(),
-          current_period_end: currentPeriodEnd.toISOString()
+          current_period_end: currentPeriodEnd.toISOString(),
+          billing_interval: billingInterval
         })
         .select()
         .single()
