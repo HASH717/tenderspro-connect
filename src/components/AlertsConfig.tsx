@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Bell, Plus, Trash2, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -125,6 +125,97 @@ export const AlertsConfig = () => {
   const [selectedTenderTypes, setSelectedTenderTypes] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [editingAlertId, setEditingAlertId] = useState<string | null>(null);
+  const [notificationsPermission, setNotificationsPermission] = useState<NotificationPermission>("default");
+
+  useEffect(() => {
+    // Check if the browser supports notifications
+    if ("Notification" in window) {
+      setNotificationsPermission(Notification.permission);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    // Subscribe to real-time notifications
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'tender_notifications',
+          filter: `user_id=eq.${session.user.id}`
+        },
+        async (payload) => {
+          console.log('New notification received:', payload);
+          
+          // Fetch the tender details
+          const { data: tender } = await supabase
+            .from('tenders')
+            .select('*')
+            .eq('id', payload.new.tender_id)
+            .single();
+
+          if (!tender) return;
+
+          // Show desktop notification if permitted
+          if (notificationsPermission === "granted") {
+            const notification = new Notification("New Tender Match!", {
+              body: `A new tender matching your alert: ${tender.title}`,
+              icon: "/favicon.ico",
+            });
+
+            notification.onclick = () => {
+              window.focus();
+              // You can add navigation to the tender details page here
+            };
+          }
+
+          // Show toast notification
+          toast({
+            title: "New Tender Match!",
+            description: `A new tender matching your alert: ${tender.title}`,
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session?.user?.id, notificationsPermission, toast]);
+
+  const requestNotificationPermission = async () => {
+    if (!("Notification" in window)) {
+      toast({
+        title: "Notifications Not Supported",
+        description: "Your browser doesn't support desktop notifications",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      setNotificationsPermission(permission);
+      
+      if (permission === "granted") {
+        toast({
+          title: "Notifications Enabled",
+          description: "You will now receive desktop notifications for new tenders",
+        });
+      }
+    } catch (error) {
+      console.error('Error requesting notification permission:', error);
+      toast({
+        title: "Permission Error",
+        description: "Failed to request notification permission",
+        variant: "destructive",
+      });
+    }
+  };
 
   const { data: alerts = [], refetch } = useQuery({
     queryKey: ["alerts"],
@@ -276,21 +367,33 @@ export const AlertsConfig = () => {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-primary">{t("pages.alerts")}</h1>
-        <Button
-          onClick={() => {
-            setShowNewAlert(true);
-            setEditingAlertId(null);
-            setAlertName("");
-            setSelectedWilayas([]);
-            setSelectedTenderTypes([]);
-            setSelectedCategories([]);
-          }}
-          className="gap-2"
-          variant={showNewAlert ? "secondary" : "default"}
-        >
-          <Plus className="h-4 w-4" />
-          New Alert
-        </Button>
+        <div className="flex gap-2">
+          {notificationsPermission === "default" && (
+            <Button
+              onClick={requestNotificationPermission}
+              variant="outline"
+              className="gap-2"
+            >
+              <Bell className="h-4 w-4" />
+              Enable Notifications
+            </Button>
+          )}
+          <Button
+            onClick={() => {
+              setShowNewAlert(true);
+              setEditingAlertId(null);
+              setAlertName("");
+              setSelectedWilayas([]);
+              setSelectedTenderTypes([]);
+              setSelectedCategories([]);
+            }}
+            className="gap-2"
+            variant={showNewAlert ? "secondary" : "default"}
+          >
+            <Plus className="h-4 w-4" />
+            New Alert
+          </Button>
+        </div>
       </div>
 
       {showNewAlert && (
