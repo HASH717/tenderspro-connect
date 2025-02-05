@@ -22,13 +22,20 @@ serve(async (req) => {
       throw new Error('Missing required parameters')
     }
 
+    // Ensure the URL has the correct prefix
+    const fullImageUrl = imageUrl.startsWith('http') 
+      ? imageUrl 
+      : `https://old.dztenders.com/${imageUrl.replace(/^\//, '')}`;
+    
+    console.log('Full image URL:', fullImageUrl);
+
     // Initialize Hugging Face client
     const hf = new HfInference(Deno.env.get('HUGGING_FACE_ACCESS_TOKEN'))
     
     // Fetch the image
-    const imageResponse = await fetch(imageUrl)
+    const imageResponse = await fetch(fullImageUrl)
     if (!imageResponse.ok) {
-      throw new Error('Failed to fetch image')
+      throw new Error(`Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`)
     }
     const imageBlob = await imageResponse.blob()
 

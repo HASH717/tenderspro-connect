@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, MapPin, Building, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -112,17 +111,16 @@ const TenderDetails = () => {
     if (!imageUrl) return null;
     
     // First try to use the processed image if available
-    if (tender.processed_image_url) {
+    if (tender?.processed_image_url) {
       return tender.processed_image_url;
     }
     
-    // Then try the original image URL
-    if (imageUrl.startsWith('http')) {
-      return imageUrl;
+    // Ensure the URL has the correct prefix
+    if (!imageUrl.startsWith('http')) {
+      return `https://old.dztenders.com/${imageUrl.replace(/^\//, '')}`;
     }
     
-    // Finally, construct the URL with the old domain
-    return `https://old.dztenders.com/${imageUrl.replace(/^\//, '')}`;
+    return imageUrl;
   };
 
   const imageUrl = getImageUrl(tender.original_image_url || tender.image_url);
