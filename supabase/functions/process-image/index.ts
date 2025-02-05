@@ -32,10 +32,7 @@ Deno.serve(async (req) => {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), timeout);
           
-          const fullUrl = url.startsWith('http') ? url : `https://old.dztenders.com/${url.replace(/^\//, '')}`;
-          console.log(`Using full URL: ${fullUrl}`);
-          
-          const response = await fetch(fullUrl, {
+          const response = await fetch(url, {
             signal: controller.signal,
             headers: {
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -81,19 +78,29 @@ Deno.serve(async (req) => {
     let processedBlob = imageBlob
     if (imageBlob.type === 'image/gif') {
       console.log('Converting GIF to PNG...')
-      const image = await createImageBitmap(imageBlob)
-      const canvas = new OffscreenCanvas(image.width, image.height)
-      const ctx = canvas.getContext('2d')
-      
-      if (!ctx) {
-        throw new Error('Failed to get canvas context')
+      try {
+        const image = await createImageBitmap(imageBlob)
+        const canvas = new OffscreenCanvas(image.width, image.height)
+        const ctx = canvas.getContext('2d')
+        
+        if (!ctx) {
+          throw new Error('Failed to get canvas context')
+        }
+        
+        // Draw white background first
+        ctx.fillStyle = '#FFFFFF'
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+        
+        // Draw the image
+        ctx.drawImage(image, 0, 0)
+        
+        processedBlob = await canvas.convertToBlob({ type: 'image/png' })
+        console.log('Converted GIF to PNG, new size:', processedBlob.size)
+      } catch (error) {
+        console.error('Error converting GIF to PNG:', error)
+        // If conversion fails, use the original image
+        processedBlob = imageBlob
       }
-      
-      ctx.fillStyle = '#FFFFFF'
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-      ctx.drawImage(image, 0, 0)
-      processedBlob = await canvas.convertToBlob({ type: 'image/png' })
-      console.log('Converted GIF to PNG, new size:', processedBlob.size)
     }
 
     try {
@@ -125,19 +132,21 @@ Deno.serve(async (req) => {
       const ctx = canvas.getContext('2d')
       if (!ctx) throw new Error('Failed to get canvas context')
 
+      // Set canvas dimensions
       canvas.width = image.width
       canvas.height = image.height
       
       // Draw white background first
       ctx.fillStyle = '#FFFFFF'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
+      
+      // Draw the processed image
       ctx.drawImage(image, 0, 0)
 
-      // Get image data
+      // Apply mask
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
       const data = imageData.data
 
-      // Apply mask
       for (let i = 0; i < result[0].mask.data.length; i++) {
         const alpha = Math.round((1 - result[0].mask.data[i]) * 255)
         data[i * 4 + 3] = alpha
@@ -188,30 +197,7 @@ Deno.serve(async (req) => {
       )
     } catch (processingError) {
       console.error('Error during image processing:', processingError)
-      // If image processing fails, store the original image
-      const fileName = `${tenderId}-original-${Date.now()}.${imageBlob.type.split('/')[1]}`
-      const { error: uploadError } = await supabase.storage
-        .from('tender-documents')
-        .upload(fileName, imageBlob, {
-          contentType: imageBlob.type,
-          upsert: false
-        })
-
-      if (uploadError) {
-        throw uploadError
-      }
-
-      const { data: publicUrlData } = supabase.storage
-        .from('tender-documents')
-        .getPublicUrl(fileName)
-
-      // Update tender with original image URL
-      await supabase
-        .from('tenders')
-        .update({ processed_image_url: publicUrlData.publicUrl })
-        .eq('id', tenderId)
-
-      throw new Error(`Failed to process image: ${processingError.message}, using original image as fallback`)
+      throw processingError
     }
   } catch (error) {
     console.error('Error processing image:', error)
