@@ -30,8 +30,13 @@ serve(async (req) => {
     const headers = new Headers({
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
       'Accept': 'image/*, */*',
-      'Referer': 'https://old.dztenders.com/'
+      'Referer': 'https://old.dztenders.com/',
+      'Origin': 'https://old.dztenders.com'
     });
+
+    // Normalize URL to ensure it's properly encoded
+    const normalizedUrl = encodeURI(decodeURI(imageUrl));
+    console.log('Normalized URL:', normalizedUrl);
 
     // Download the image with retry logic
     let imageResponse;
@@ -39,17 +44,24 @@ serve(async (req) => {
     
     while (retries > 0) {
       try {
-        imageResponse = await fetch(imageUrl, { headers });
-        if (imageResponse.ok) break;
+        imageResponse = await fetch(normalizedUrl, { 
+          headers,
+          redirect: 'follow',
+        });
+        
+        if (imageResponse.ok) {
+          console.log('Image fetch successful, status:', imageResponse.status);
+          break;
+        }
         
         console.log(`Retry ${4 - retries}: Failed to fetch image, status: ${imageResponse.status}`);
         retries--;
-        if (retries > 0) await new Promise(r => setTimeout(r, 1000)); // Wait 1s between retries
+        if (retries > 0) await new Promise(r => setTimeout(r, 2000)); // Wait 2s between retries
       } catch (error) {
         console.error(`Fetch attempt failed:`, error);
         retries--;
         if (retries === 0) throw error;
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise(r => setTimeout(r, 2000));
       }
     }
 
@@ -64,6 +76,10 @@ serve(async (req) => {
     const img = new Canvas.Image()
     img.src = await imageBlob.arrayBuffer()
     
+    if (!img.width || !img.height) {
+      throw new Error('Failed to load image dimensions');
+    }
+    
     console.log('Image dimensions:', img.width, 'x', img.height);
     
     const canvas = Canvas.createCanvas(img.width, img.height)
@@ -73,6 +89,10 @@ serve(async (req) => {
     // Convert to PNG
     const pngBuffer = await canvas.toBuffer('image/png')
     console.log('Converted to PNG, size:', pngBuffer.byteLength);
+
+    if (!pngBuffer || pngBuffer.byteLength === 0) {
+      throw new Error('PNG conversion failed - empty buffer');
+    }
 
     // Generate a unique filename
     const filename = `${tenderId}-${Date.now()}.png`
