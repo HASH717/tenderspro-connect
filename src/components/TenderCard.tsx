@@ -127,7 +127,7 @@ export const TenderCard = ({
         <div className="absolute inset-0 flex items-center justify-center bg-black/5 backdrop-blur-[2px]">
           <Link
             to="/subscriptions"
-            className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90 transition-colors"
+            className="bg-emerald-600 text-white px-6 py-2.5 rounded-full font-medium hover:bg-emerald-500 transition-colors duration-200 shadow-lg hover:shadow-emerald-500/25 transform hover:-translate-y-0.5"
           >
             Upgrade to View
           </Link>
