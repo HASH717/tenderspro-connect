@@ -66,7 +66,7 @@ const TenderDetails = () => {
     },
     onSuccess: () => {
       toast.success('Image processing started');
-      // Refetch the tender to get the updated processed_image_url
+      // Refetch the tender to get the updated image URLs
       setTimeout(() => refetch(), 5000); // Wait 5 seconds before refetching
     },
     onError: (error) => {
@@ -113,6 +113,11 @@ const TenderDetails = () => {
     // First try to use the processed image if available
     if (tender?.processed_image_url) {
       return tender.processed_image_url;
+    }
+
+    // Otherwise use the original image
+    if (tender?.original_image_url) {
+      return tender.original_image_url;
     }
     
     // Ensure the URL has the correct prefix

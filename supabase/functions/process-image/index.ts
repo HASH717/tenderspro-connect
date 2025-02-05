@@ -102,32 +102,57 @@ serve(async (req) => {
     }
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Upload processed image to Supabase storage
-    const processedImageBuffer = await processedImage.arrayBuffer()
-    const fileName = `processed-${tenderId}.png`
+    // Save original image to Supabase storage
+    const originalImageBuffer = await imageBlob.arrayBuffer()
+    const originalFileName = `original-${tenderId}.png`
     
-    const { data: uploadData, error: uploadError } = await supabase
+    const { data: originalUploadData, error: originalUploadError } = await supabase
       .storage
       .from('tender-documents')
-      .upload(fileName, processedImageBuffer, {
+      .upload(originalFileName, originalImageBuffer, {
         contentType: 'image/png',
         upsert: true
       })
 
-    if (uploadError) {
-      throw uploadError
+    if (originalUploadError) {
+      throw originalUploadError
+    }
+
+    // Get public URL of original image
+    const { data: originalPublicUrlData } = await supabase
+      .storage
+      .from('tender-documents')
+      .getPublicUrl(originalFileName)
+
+    // Upload processed image to Supabase storage
+    const processedImageBuffer = await processedImage.arrayBuffer()
+    const processedFileName = `processed-${tenderId}.png`
+    
+    const { data: processedUploadData, error: processedUploadError } = await supabase
+      .storage
+      .from('tender-documents')
+      .upload(processedFileName, processedImageBuffer, {
+        contentType: 'image/png',
+        upsert: true
+      })
+
+    if (processedUploadError) {
+      throw processedUploadError
     }
 
     // Get public URL of processed image
-    const { data: publicUrlData } = await supabase
+    const { data: processedPublicUrlData } = await supabase
       .storage
       .from('tender-documents')
-      .getPublicUrl(fileName)
+      .getPublicUrl(processedFileName)
 
-    // Update tender record with processed image URL
+    // Update tender record with both image URLs
     const { error: updateError } = await supabase
       .from('tenders')
-      .update({ processed_image_url: publicUrlData.publicUrl })
+      .update({
+        original_image_url: originalPublicUrlData.publicUrl,
+        processed_image_url: processedPublicUrlData.publicUrl
+      })
       .eq('id', tenderId)
 
     if (updateError) {
@@ -137,7 +162,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true,
-        processedImageUrl: publicUrlData.publicUrl
+        originalImageUrl: originalPublicUrlData.publicUrl,
+        processedImageUrl: processedPublicUrlData.publicUrl
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
