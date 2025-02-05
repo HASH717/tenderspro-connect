@@ -25,13 +25,25 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Fetch the image
-    const response = await fetch(imageUrl)
-    if (!response.ok) throw new Error('Failed to fetch image')
+    // Fetch the image with appropriate headers
+    const response = await fetch(imageUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'image/gif,image/jpeg,image/png,application/x-ms-application,image/psd,image/tiff'
+      }
+    })
+    
+    if (!response.ok) {
+      console.error('Failed to fetch image:', await response.text())
+      throw new Error('Failed to fetch image')
+    }
+    
+    const imageBlob = await response.blob()
+    console.log('Successfully fetched image, size:', imageBlob.size)
     
     // Process image with segmentation model
     const result = await hf.imageSegmentation({
-      image: await response.blob(),
+      image: imageBlob,
       model: "Xenova/segformer-b0-finetuned-ade-512-512",
     })
 
@@ -45,7 +57,7 @@ Deno.serve(async (req) => {
     if (!ctx) throw new Error('Failed to get canvas context')
 
     // Load the image into the canvas
-    const img = await createImageBitmap(await response.blob())
+    const img = await createImageBitmap(imageBlob)
     canvas.width = img.width
     canvas.height = img.height
     ctx.drawImage(img, 0, 0)
