@@ -1,19 +1,21 @@
+
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useQuery } from "@tanstack/react-query";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { ProfileTab } from "@/components/profile/ProfileTab";
 import { SubscriptionTab } from "@/components/profile/SubscriptionTab";
 import { PreferencesTab } from "@/components/profile/PreferencesTab";
+import { LogoutButton } from "@/components/profile/LogoutButton";
+import { ProfileLoadingState } from "@/components/profile/LoadingState";
 
 interface Profile {
   first_name: string;
@@ -26,6 +28,8 @@ const Profile = () => {
   const { t } = useTranslation();
   const { session } = useAuth();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
+  const { currentLanguage, changeLanguage } = useLanguage();
   const [profile, setProfile] = useState<Profile>({
     first_name: "",
     last_name: "",
@@ -34,8 +38,6 @@ const Profile = () => {
   });
   const [email, setEmail] = useState("");
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-  const navigate = useNavigate();
-  const { currentLanguage, changeLanguage } = useLanguage();
 
   const { data: subscription } = useQuery({
     queryKey: ['subscription', session?.user?.id],
@@ -91,19 +93,6 @@ const Profile = () => {
     getProfile();
   }, [session?.user?.id, session?.user?.email, navigate]);
 
-  const handleLogout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      navigate("/auth");
-    } catch (error: any) {
-      console.error('Error signing out:', error);
-      toast("Failed to sign out", {
-        description: error.message,
-      });
-    }
-  };
-
   const handleLanguageChange = (value: 'en' | 'fr' | 'ar') => {
     changeLanguage(value);
     toast(t("profile.language_updated"));
@@ -114,17 +103,7 @@ const Profile = () => {
   }
 
   if (isLoadingProfile) {
-    return (
-      <div className="min-h-screen">
-        <Navigation />
-        <div className={`p-4 ${isMobile ? "pt-6" : "pt-24"}`}>
-          <h1 className="text-2xl font-bold text-primary mb-4">{t("pages.profile")}</h1>
-          <div className="flex justify-center items-center h-48">
-            <p>{t("profile.loading")}</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <ProfileLoadingState />;
   }
 
   return (
@@ -134,33 +113,18 @@ const Profile = () => {
         <div className="max-w-4xl mx-auto px-4">
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-2xl font-bold text-primary">{t("pages.profile")}</h1>
-            <Button 
-              variant="outline" 
-              onClick={handleLogout}
-              className="bg-red-500 text-white hover:bg-red-600"
-            >
-              {t("profile.logout")}
-            </Button>
+            <LogoutButton />
           </div>
 
           <Tabs defaultValue="profile" className="w-full">
             <TabsList className="w-full mb-6 bg-gray-100 p-1 flex space-x-1">
-              <TabsTrigger 
-                value="profile" 
-                className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all"
-              >
+              <TabsTrigger value="profile" className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all">
                 {t("profile.tabs.profile")}
               </TabsTrigger>
-              <TabsTrigger 
-                value="subscription" 
-                className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all"
-              >
+              <TabsTrigger value="subscription" className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all">
                 {t("profile.tabs.subscription")}
               </TabsTrigger>
-              <TabsTrigger 
-                value="preferences" 
-                className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all"
-              >
+              <TabsTrigger value="preferences" className="flex-1 data-[state=active]:bg-white data-[state=active]:shadow-md transition-all">
                 {t("profile.tabs.preferences")}
               </TabsTrigger>
             </TabsList>

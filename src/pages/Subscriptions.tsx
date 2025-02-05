@@ -1,15 +1,15 @@
+
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { SubscriptionStatus } from "@/components/subscriptions/SubscriptionStatus";
 import { SubscriptionPlans } from "@/components/subscriptions/SubscriptionPlans";
+import { TestModeAlert } from "@/components/subscriptions/TestModeAlert";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 
@@ -23,7 +23,6 @@ const Subscriptions = () => {
   const navigate = useNavigate();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Fetch profile data
   const { data: profile } = useQuery({
     queryKey: ['profile', session?.user?.id],
     enabled: !!session?.user?.id,
@@ -42,7 +41,6 @@ const Subscriptions = () => {
     }
   });
 
-  // Fetch subscription data with proper filtering
   const { data: subscription, refetch: refetchSubscription } = useQuery({
     queryKey: ['subscription', session?.user?.id],
     enabled: !!session?.user?.id && !isRefreshing,
@@ -74,7 +72,6 @@ const Subscriptions = () => {
     retryDelay: 1000
   });
 
-  // Handle subscription status updates
   useEffect(() => {
     const success = searchParams.get('success');
     const plan = searchParams.get('plan');
@@ -185,19 +182,10 @@ const Subscriptions = () => {
       <div className={`flex-grow ${isMobile ? "pt-6" : "pt-24"} pb-24`}>
         <div className="max-w-6xl mx-auto px-4">
           <SubscriptionStatus subscription={subscription} />
-
-          <Alert variant="default" className="mb-6 border-yellow-500 bg-yellow-50">
-            <AlertCircle className="h-4 w-4 text-yellow-600" />
-            <AlertDescription className="text-yellow-600">
-              You are currently in test mode. Any subscriptions created will be test
-              subscriptions and won't process real payments.
-            </AlertDescription>
-          </Alert>
-
+          <TestModeAlert />
           <h1 className="text-2xl font-bold text-primary mb-8">
             {t("subscription.title", "Choose Your Plan")}
           </h1>
-
           <SubscriptionPlans 
             subscription={subscription}
             onSubscribe={handleSubscribe}
