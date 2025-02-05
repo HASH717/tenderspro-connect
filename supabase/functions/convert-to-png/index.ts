@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import Sharp from 'npm:sharp@0.32.6'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
+import Canvas from 'https://deno.land/x/canvas@v1.4.1/mod.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -32,12 +32,18 @@ serve(async (req) => {
       throw new Error(`Failed to fetch image: ${imageResponse.statusText}`)
     }
 
-    const imageBuffer = await imageResponse.arrayBuffer()
-
-    // Convert to PNG using Sharp
-    const pngBuffer = await Sharp(imageBuffer)
-      .png()
-      .toBuffer()
+    const imageBlob = await imageResponse.blob()
+    
+    // Create a canvas and load the image
+    const img = new Canvas.Image()
+    img.src = await imageBlob.arrayBuffer()
+    
+    const canvas = Canvas.createCanvas(img.width, img.height)
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(img, 0, 0)
+    
+    // Convert to PNG
+    const pngBuffer = await canvas.toBuffer('image/png')
 
     // Generate a unique filename
     const filename = `${tenderId}-${Date.now()}.png`
