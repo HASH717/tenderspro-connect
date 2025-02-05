@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, MapPin, Building, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -187,11 +186,25 @@ const TenderDetails = () => {
                       </Button>
                     )}
                   </div>
-                  <img 
-                    src={tender.processed_image_url || tender.original_image_url || tender.image_url}
-                    alt="Tender Document"
-                    className="w-full object-contain border rounded-lg"
-                  />
+                  <div className="relative border rounded-lg overflow-hidden">
+                    <img 
+                      src={tender.processed_image_url || tender.original_image_url || tender.image_url}
+                      alt="Tender Document"
+                      className="w-full object-contain max-h-[800px]"
+                      onError={(e) => {
+                        const imgElement = e.currentTarget;
+                        // If the URL doesn't start with http, try prepending the base URL
+                        if (!imgElement.src.startsWith('http')) {
+                          imgElement.src = `https://old.dztenders.com/${imgElement.src}`;
+                        } else {
+                          // If that also fails, show an error state
+                          imgElement.onerror = null; // Prevent infinite loop
+                          imgElement.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTMgMTNoLTJ2LTJoMm0wIDZoLTJ2LTJoMm0tMTItM2MwIDUuNTIgNC40OCAxMCAxMCAxMHMxMC00LjQ4IDEwLTEwLTQuNDgtMTAtMTAtMTAtMTAgNC40OC0xMCAxMHoiIGZpbGw9IiM5Q0EzQUYiLz48L3N2Zz4=';
+                          imgElement.className = 'w-16 h-16 mx-auto my-8 opacity-50';
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -204,4 +217,3 @@ const TenderDetails = () => {
 };
 
 export default TenderDetails;
-
