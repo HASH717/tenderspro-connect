@@ -25,6 +25,7 @@ Deno.serve(async (req) => {
       .single()
 
     if (tenderError || !tender?.original_image_url) {
+      console.error('Failed to get tender or image URL:', tenderError)
       throw new Error('Failed to get tender or image URL')
     }
 
@@ -35,13 +36,14 @@ Deno.serve(async (req) => {
 
     console.log('Processing image URL:', imageUrl)
 
-    // Call the process-image function
+    // Call the process-image function with robust headers
     const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/process-image`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
         'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'image/gif,image/jpeg,image/png,application/x-ms-application,image/psd,image/tiff'
       },
       body: JSON.stringify({ 
         imageUrl,
@@ -50,8 +52,9 @@ Deno.serve(async (req) => {
     })
 
     if (!response.ok) {
-      const error = await response.text()
-      throw new Error(`Failed to process image: ${error}`)
+      const errorText = await response.text()
+      console.error('Process image response error:', errorText)
+      throw new Error(`Failed to process image: ${errorText}`)
     }
 
     const result = await response.json()

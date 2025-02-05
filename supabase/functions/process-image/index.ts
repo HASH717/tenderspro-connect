@@ -10,7 +10,7 @@ Deno.serve(async (req) => {
 
   try {
     const { imageUrl, tenderId } = await req.json()
-    console.log(`Processing image for tender ${tenderId}`)
+    console.log(`Processing image for tender ${tenderId} from URL: ${imageUrl}`)
 
     if (!imageUrl || !tenderId) {
       throw new Error('Missing required parameters')
@@ -25,25 +25,39 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Fetch the image with appropriate headers
+    // Fetch the image with appropriate headers for various image types
     const response = await fetch(imageUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'image/gif,image/jpeg,image/png,application/x-ms-application,image/psd,image/tiff'
+        'Accept': 'image/gif,image/jpeg,image/png,application/x-ms-application,image/psd,image/tiff,*/*'
       }
     })
     
     if (!response.ok) {
       console.error('Failed to fetch image:', await response.text())
-      throw new Error('Failed to fetch image')
+      throw new Error(`Failed to fetch image: ${response.statusText}`)
     }
     
     const imageBlob = await response.blob()
-    console.log('Successfully fetched image, size:', imageBlob.size)
+    console.log('Successfully fetched image, size:', imageBlob.size, 'type:', imageBlob.type)
+
+    // Convert GIF to PNG if needed using canvas
+    let processedBlob = imageBlob
+    if (imageBlob.type === 'image/gif') {
+      console.log('Converting GIF to PNG...')
+      const img = await createImageBitmap(imageBlob)
+      const canvas = new OffscreenCanvas(img.width, img.height)
+      const ctx = canvas.getContext('2d')
+      if (!ctx) throw new Error('Failed to get canvas context')
+      
+      ctx.drawImage(img, 0, 0)
+      processedBlob = await canvas.convertToBlob({ type: 'image/png' })
+      console.log('Converted to PNG, new size:', processedBlob.size)
+    }
     
     // Process image with segmentation model
     const result = await hf.imageSegmentation({
-      image: imageBlob,
+      image: processedBlob,
       model: "Xenova/segformer-b0-finetuned-ade-512-512",
     })
 
@@ -57,7 +71,7 @@ Deno.serve(async (req) => {
     if (!ctx) throw new Error('Failed to get canvas context')
 
     // Load the image into the canvas
-    const img = await createImageBitmap(imageBlob)
+    const img = await createImageBitmap(processedBlob)
     canvas.width = img.width
     canvas.height = img.height
     ctx.drawImage(img, 0, 0)
@@ -75,7 +89,7 @@ Deno.serve(async (req) => {
     ctx.putImageData(imageData, 0, 0)
 
     // Convert to blob
-    const processedBlob = await canvas.convertToBlob({
+    const finalBlob = await canvas.convertToBlob({
       type: 'image/png',
       quality: 1.0
     })
@@ -84,12 +98,15 @@ Deno.serve(async (req) => {
     const fileName = `${tenderId}-processed-${Date.now()}.png`
     const { error: uploadError } = await supabase.storage
       .from('tender-documents')
-      .upload(fileName, processedBlob, {
+      .upload(fileName, finalBlob, {
         contentType: 'image/png',
         upsert: false
       })
 
-    if (uploadError) throw uploadError
+    if (uploadError) {
+      console.error('Upload error:', uploadError)
+      throw uploadError
+    }
 
     // Get public URL of uploaded image
     const { data: publicUrlData } = supabase.storage
@@ -102,7 +119,10 @@ Deno.serve(async (req) => {
       .update({ processed_image_url: publicUrlData.publicUrl })
       .eq('id', tenderId)
 
-    if (updateError) throw updateError
+    if (updateError) {
+      console.error('Update error:', updateError)
+      throw updateError
+    }
 
     return new Response(
       JSON.stringify({ success: true, processedImageUrl: publicUrlData.publicUrl }),
