@@ -43,7 +43,15 @@ serve(async (req) => {
     // Process each tender
     for (const tender of tenders || []) {
       try {
-        if (!tender.original_image_url || !tender.id) continue
+        if (!tender.original_image_url || !tender.id) {
+          results.push({ 
+            tenderId: tender.id, 
+            success: false, 
+            error: 'Missing image URL or tender ID' 
+          })
+          errorCount++
+          continue
+        }
 
         console.log(`Processing tender ${tender.id} with image ${tender.original_image_url}`)
 
@@ -60,20 +68,37 @@ serve(async (req) => {
           })
         })
 
+        const responseText = await response.text()
+        const result = responseText ? JSON.parse(responseText) : null
+
         if (!response.ok) {
-          const error = await response.text()
-          throw new Error(`Failed to process image: ${error}`)
+          throw new Error(result?.error || `Failed to process image: ${response.status} ${response.statusText}`)
         }
 
-        const result = await response.json()
-        results.push({ tenderId: tender.id, success: true, imageUrl: result.imageUrl })
+        results.push({ 
+          tenderId: tender.id, 
+          success: true, 
+          imageUrl: result?.imageUrl 
+        })
         successCount++
         console.log(`Successfully processed tender ${tender.id}`)
 
       } catch (error) {
         console.error(`Error processing tender ${tender.id}:`, error)
-        results.push({ tenderId: tender.id, success: false, error: error.message })
+        results.push({ 
+          tenderId: tender.id, 
+          success: false, 
+          error: error.message 
+        })
         errorCount++
+
+        // Update tender with error message
+        await supabase
+          .from('tenders')
+          .update({
+            image_processing_error: error.message
+          })
+          .eq('id', tender.id)
       }
     }
 
