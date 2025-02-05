@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, MapPin, Building, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,14 +9,12 @@ import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import Footer from "@/components/Footer";
-import { useState } from "react";
 
 const TenderDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { t } = useTranslation();
-  const [imageError, setImageError] = useState(false);
 
   const { data: tender, isLoading } = useQuery({
     queryKey: ['tender', id],
@@ -70,15 +67,6 @@ const TenderDetails = () => {
   const formatDate = (dateString?: string | null) => {
     if (!dateString) return 'Not specified';
     return new Date(dateString).toLocaleDateString();
-  };
-
-  const getImageUrl = (url?: string | null) => {
-    if (!url) return null;
-    // If the URL is relative, convert it to absolute using the old.dztenders.com domain
-    if (url.startsWith('/')) {
-      return `https://old.dztenders.com${url}`;
-    }
-    return url;
   };
 
   return (
@@ -163,27 +151,14 @@ const TenderDetails = () => {
                 </div>
               </div>
 
-              {(tender.image_url || tender.link) && (
+              {tender.image_url && (
                 <div className="mt-8">
                   <h2 className="text-lg font-semibold mb-4">Tender Document</h2>
-                  <div className="relative border rounded-lg overflow-hidden w-full">
-                    {!imageError ? (
-                      <img 
-                        src={getImageUrl(tender.image_url || tender.link)}
-                        alt="Tender Document"
-                        className="w-full h-auto object-contain max-h-[800px]"
-                        onError={(e) => {
-                          console.error('Image load error:', e);
-                          setImageError(true);
-                        }}
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center py-16 text-gray-500">
-                        <Info className="w-12 h-12 mb-4" />
-                        <p>Unable to load tender document image</p>
-                      </div>
-                    )}
-                  </div>
+                  <img 
+                    src={tender.image_url}
+                    alt="Tender Document"
+                    className="w-full object-contain border rounded-lg"
+                  />
                 </div>
               )}
             </div>

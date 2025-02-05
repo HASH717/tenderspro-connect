@@ -12,18 +12,11 @@ export const LogoutButton = () => {
   const handleLogout = async () => {
     try {
       const { error } = await supabase.auth.signOut();
-      if (error) {
-        // If it's a session error, we can still redirect to auth
-        if (error.message.includes('session') || error.status === 403) {
-          navigate("/auth");
-          return;
-        }
-        throw error;
-      }
+      if (error) throw error;
       navigate("/auth");
     } catch (error: any) {
       console.error('Error signing out:', error);
-      toast.error(t("auth.error.logout"), {
+      toast("Failed to sign out", {
         description: error.message,
       });
     }
@@ -39,4 +32,3 @@ export const LogoutButton = () => {
     </Button>
   );
 };
-
