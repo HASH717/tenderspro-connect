@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Bell, Plus, Trash2, Pencil, X } from "lucide-react";
@@ -82,17 +83,12 @@ const TENDER_TYPE_OPTIONS = [
   { value: "adjudication", label: "Adjudication" },
 ];
 
-const ANNOUNCEMENT_TYPE_OPTIONS = [
-  { value: "tenders", label: "Tenders" },
-  { value: "results", label: "Results" },
-];
-
 interface Alert {
   id: string;
   name: string;
   wilaya: string[];
   tenderType: string[];
-  announcementType: string[];
+  category: string[];
 }
 
 const mapFiltersToDb = (filters: Partial<Alert>, userId: string) => {
@@ -101,7 +97,7 @@ const mapFiltersToDb = (filters: Partial<Alert>, userId: string) => {
     name: filters.name,
     wilaya: filters.wilaya?.join(","),
     tender_type: filters.tenderType?.join(","),
-    announcement_type: filters.announcementType?.join(","),
+    category: filters.category?.join(","),
   };
 };
 
@@ -111,7 +107,7 @@ const mapDbToFilters = (dbAlert: any): Alert => {
     name: dbAlert.name,
     wilaya: dbAlert.wilaya ? dbAlert.wilaya.split(",") : [],
     tenderType: dbAlert.tender_type ? dbAlert.tender_type.split(",") : [],
-    announcementType: dbAlert.announcement_type ? dbAlert.announcement_type.split(",") : [],
+    category: dbAlert.category ? dbAlert.category.split(",") : [],
   };
 };
 
@@ -123,7 +119,7 @@ export const AlertsConfig = () => {
   const [alertName, setAlertName] = useState("");
   const [selectedWilayas, setSelectedWilayas] = useState<string[]>([]);
   const [selectedTenderTypes, setSelectedTenderTypes] = useState<string[]>([]);
-  const [selectedAnnouncementTypes, setSelectedAnnouncementTypes] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [editingAlertId, setEditingAlertId] = useState<string | null>(null);
 
   const { data: alerts, refetch } = useQuery({
@@ -143,6 +139,33 @@ export const AlertsConfig = () => {
       }
       return data.map(mapDbToFilters);
     },
+  });
+
+  const { data: categoryOptions = [] } = useQuery({
+    queryKey: ['all-tender-categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('tenders')
+        .select('category')
+        .not('category', 'is', null)
+        .not('category', 'eq', '');
+
+      if (error) {
+        console.error('Error fetching categories:', error);
+        toast.error('Failed to load categories');
+        return [];
+      }
+
+      const uniqueCategories = Array.from(new Set(data.map(tender => tender.category)))
+        .filter(category => category)
+        .sort()
+        .map(category => ({
+          value: category,
+          label: category
+        }));
+
+      return uniqueCategories;
+    }
   });
 
   const handleSaveAlert = async () => {
@@ -168,7 +191,7 @@ export const AlertsConfig = () => {
       name: alertName,
       wilaya: selectedWilayas,
       tenderType: selectedTenderTypes,
-      announcementType: selectedAnnouncementTypes,
+      category: selectedCategories,
       ...(editingAlertId ? { id: editingAlertId } : {}),
     };
 
@@ -194,7 +217,7 @@ export const AlertsConfig = () => {
     setAlertName("");
     setSelectedWilayas([]);
     setSelectedTenderTypes([]);
-    setSelectedAnnouncementTypes([]);
+    setSelectedCategories([]);
     setEditingAlertId(null);
     refetch();
   };
@@ -227,7 +250,7 @@ export const AlertsConfig = () => {
     setAlertName(alert.name);
     setSelectedWilayas(alert.wilaya);
     setSelectedTenderTypes(alert.tenderType);
-    setSelectedAnnouncementTypes(alert.announcementType);
+    setSelectedCategories(alert.category || []);
     setShowNewAlert(true);
   };
 
@@ -242,7 +265,7 @@ export const AlertsConfig = () => {
             setAlertName("");
             setSelectedWilayas([]);
             setSelectedTenderTypes([]);
-            setSelectedAnnouncementTypes([]);
+            setSelectedCategories([]);
           }}
           className="gap-2"
           variant={showNewAlert ? "secondary" : "default"}
@@ -274,7 +297,7 @@ export const AlertsConfig = () => {
                 setAlertName("");
                 setSelectedWilayas([]);
                 setSelectedTenderTypes([]);
-                setSelectedAnnouncementTypes([]);
+                setSelectedCategories([]);
               }}
             >
               <X className="h-4 w-4" />
@@ -299,10 +322,10 @@ export const AlertsConfig = () => {
             />
 
             <MultiSelect
-              label="Announcement type"
-              options={ANNOUNCEMENT_TYPE_OPTIONS}
-              selectedValues={selectedAnnouncementTypes}
-              onChange={setSelectedAnnouncementTypes}
+              label="Categories"
+              options={categoryOptions}
+              selectedValues={selectedCategories}
+              onChange={setSelectedCategories}
               className="bg-muted/50 p-4 rounded-lg"
             />
           </div>
@@ -332,8 +355,8 @@ export const AlertsConfig = () => {
                   {alert.tenderType.length > 0 && (
                     <span>• {alert.tenderType.length} market types</span>
                   )}
-                  {alert.announcementType.length > 0 && (
-                    <span>• {alert.announcementType.length} announcement types</span>
+                  {alert.category?.length > 0 && (
+                    <span>• {alert.category.length} categories</span>
                   )}
                 </p>
               </div>
