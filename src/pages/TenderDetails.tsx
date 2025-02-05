@@ -165,7 +165,7 @@ const TenderDetails = () => {
                   <img 
                     src={getImageUrl(tender.image_url || tender.link)}
                     alt="Tender Document"
-                    className="w-full h-auto object-contain max-h-[800px]"
+                    className="w-full h-auto object-fill"
                     onError={(e) => {
                       console.error("Image load error:", e);
                       setImageError(true);
