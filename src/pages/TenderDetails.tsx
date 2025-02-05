@@ -9,12 +9,14 @@ import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import Footer from "@/components/Footer";
+import { useState } from "react";
 
 const TenderDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { t } = useTranslation();
+  const [imageError, setImageError] = useState(false);
 
   const { data: tender, isLoading } = useQuery({
     queryKey: ['tender', id],
@@ -67,6 +69,12 @@ const TenderDetails = () => {
   const formatDate = (dateString?: string | null) => {
     if (!dateString) return 'Not specified';
     return new Date(dateString).toLocaleDateString();
+  };
+
+  const getImageUrl = (url?: string | null) => {
+    if (!url) return null;
+    if (url.startsWith('http')) return url;
+    return `https://old.dztenders.com/${url}`;
   };
 
   return (
@@ -151,14 +159,26 @@ const TenderDetails = () => {
                 </div>
               </div>
 
-              {tender.image_url && (
+              {(tender.image_url || tender.link) && !imageError && (
                 <div className="mt-8">
                   <h2 className="text-lg font-semibold mb-4">Tender Document</h2>
                   <img 
-                    src={tender.image_url}
+                    src={getImageUrl(tender.image_url || tender.link)}
                     alt="Tender Document"
-                    className="w-full object-contain border rounded-lg"
+                    className="w-full h-auto object-contain max-h-[800px]"
+                    onError={(e) => {
+                      console.error("Image load error:", e);
+                      setImageError(true);
+                    }}
                   />
+                </div>
+              )}
+              
+              {imageError && (
+                <div className="mt-8 p-4 border border-gray-200 rounded-lg">
+                  <p className="text-gray-600 text-center">
+                    The tender document image could not be loaded. Please try again later.
+                  </p>
                 </div>
               )}
             </div>

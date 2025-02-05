@@ -229,7 +229,6 @@ export type Database = {
           link: string | null
           organization_address: string | null
           organization_name: string | null
-          original_image_url: string | null
           project_description: string | null
           publication_date: string | null
           qualification_details: string | null
@@ -252,7 +251,6 @@ export type Database = {
           link?: string | null
           organization_address?: string | null
           organization_name?: string | null
-          original_image_url?: string | null
           project_description?: string | null
           publication_date?: string | null
           qualification_details?: string | null
@@ -275,7 +273,6 @@ export type Database = {
           link?: string | null
           organization_address?: string | null
           organization_name?: string | null
-          original_image_url?: string | null
           project_description?: string | null
           publication_date?: string | null
           qualification_details?: string | null
