@@ -10,16 +10,12 @@ import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import Footer from "@/components/Footer";
-import { removeBackground, loadImage } from "@/utils/imageProcessing";
-import { useState } from "react";
 
 const TenderDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { t } = useTranslation();
-  const [isProcessingImage, setIsProcessingImage] = useState(false);
-  const [processedImageUrl, setProcessedImageUrl] = useState<string | null>(null);
 
   const { data: tender, isLoading } = useQuery({
     queryKey: ['tender', id],
@@ -52,58 +48,6 @@ const TenderDetails = () => {
       return data;
     }
   });
-
-  const handleProcessImage = async () => {
-    if (!tender?.image_url) return;
-
-    try {
-      setIsProcessingImage(true);
-      // Fetch the image
-      const response = await fetch(tender.image_url);
-      const imageBlob = await response.blob();
-      
-      // Load the image
-      const img = await loadImage(imageBlob);
-      
-      // Process the image
-      const processedBlob = await removeBackground(img);
-      
-      // Create object URL for display
-      const processedUrl = URL.createObjectURL(processedBlob);
-      setProcessedImageUrl(processedUrl);
-      
-      // Upload to Supabase if needed
-      const fileName = `${tender.id}-processed-${Date.now()}.png`;
-      const { error: uploadError } = await supabase.storage
-        .from('tender-documents')
-        .upload(fileName, processedBlob, {
-          contentType: 'image/png',
-          upsert: false
-        });
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: publicUrlData } = supabase.storage
-        .from('tender-documents')
-        .getPublicUrl(fileName);
-
-      // Update tender with processed image URL
-      const { error: updateError } = await supabase
-        .from('tenders')
-        .update({ processed_image_url: publicUrlData.publicUrl })
-        .eq('id', tender.id);
-
-      if (updateError) throw updateError;
-
-      toast.success('Image processed successfully');
-    } catch (error) {
-      console.error('Error processing image:', error);
-      toast.error('Failed to process image');
-    } finally {
-      setIsProcessingImage(false);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -208,20 +152,11 @@ const TenderDetails = () => {
                 </div>
               </div>
 
-              {(processedImageUrl || tender.processed_image_url || tender.image_url) && (
+              {(tender.processed_image_url || tender.image_url) && (
                 <div className="mt-8">
                   <h2 className="text-lg font-semibold mb-4">Tender Document</h2>
-                  {tender.image_url && !tender.processed_image_url && !processedImageUrl && (
-                    <Button
-                      onClick={handleProcessImage}
-                      disabled={isProcessingImage}
-                      className="mb-4"
-                    >
-                      {isProcessingImage ? 'Processing...' : 'Remove Watermark'}
-                    </Button>
-                  )}
                   <img 
-                    src={processedImageUrl || tender.processed_image_url || tender.image_url}
+                    src={tender.processed_image_url || tender.image_url}
                     alt="Tender Document"
                     className="w-full object-contain border rounded-lg"
                   />

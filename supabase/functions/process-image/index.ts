@@ -1,0 +1,107 @@
+
+import { corsHeaders } from '../_shared/cors.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
+import { HfInference } from 'https://esm.sh/@huggingface/inference@2.3.2'
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
+  try {
+    const { imageUrl, tenderId } = await req.json()
+    console.log(`Processing image for tender ${tenderId}`)
+
+    if (!imageUrl || !tenderId) {
+      throw new Error('Missing required parameters')
+    }
+
+    // Initialize Hugging Face client
+    const hf = new HfInference(Deno.env.get('HUGGING_FACE_ACCESS_TOKEN'))
+
+    // Initialize Supabase client
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    // Fetch the image
+    const response = await fetch(imageUrl)
+    if (!response.ok) throw new Error('Failed to fetch image')
+    
+    // Process image with segmentation model
+    const result = await hf.imageSegmentation({
+      image: await response.blob(),
+      model: "Xenova/segformer-b0-finetuned-ade-512-512",
+    })
+
+    if (!result || !Array.isArray(result) || result.length === 0) {
+      throw new Error('Invalid segmentation result')
+    }
+
+    // Create a canvas to process the image
+    const canvas = new OffscreenCanvas(800, 600)
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('Failed to get canvas context')
+
+    // Load the image into the canvas
+    const img = await createImageBitmap(await response.blob())
+    canvas.width = img.width
+    canvas.height = img.height
+    ctx.drawImage(img, 0, 0)
+
+    // Get image data
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    const data = imageData.data
+
+    // Apply mask
+    for (let i = 0; i < result[0].mask.data.length; i++) {
+      const alpha = Math.round((1 - result[0].mask.data[i]) * 255)
+      data[i * 4 + 3] = alpha
+    }
+
+    ctx.putImageData(imageData, 0, 0)
+
+    // Convert to blob
+    const processedBlob = await canvas.convertToBlob({
+      type: 'image/png',
+      quality: 1.0
+    })
+
+    // Upload processed image to Supabase Storage
+    const fileName = `${tenderId}-processed-${Date.now()}.png`
+    const { error: uploadError } = await supabase.storage
+      .from('tender-documents')
+      .upload(fileName, processedBlob, {
+        contentType: 'image/png',
+        upsert: false
+      })
+
+    if (uploadError) throw uploadError
+
+    // Get public URL of uploaded image
+    const { data: publicUrlData } = supabase.storage
+      .from('tender-documents')
+      .getPublicUrl(fileName)
+
+    // Update tender with processed image URL
+    const { error: updateError } = await supabase
+      .from('tenders')
+      .update({ processed_image_url: publicUrlData.publicUrl })
+      .eq('id', tenderId)
+
+    if (updateError) throw updateError
+
+    return new Response(
+      JSON.stringify({ success: true, processedImageUrl: publicUrlData.publicUrl }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+
+  } catch (error) {
+    console.error('Error processing image:', error)
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+    )
+  }
+})

@@ -32,7 +32,7 @@ export const formatTenderData = (tender: TenderData, detailData: any) => {
   const primaryImageUrl = imageUrls[0] || null;
 
   // Process the image if available
-  if (primaryImageUrl) {
+  if (primaryImageUrl && tender.id) {
     // We'll process the image asynchronously to not block the import
     processImageInBackground(primaryImageUrl, tender.id?.toString());
   }
