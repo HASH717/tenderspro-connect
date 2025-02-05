@@ -97,17 +97,21 @@ const mapFiltersToDb = (filters: Partial<Alert>, userId: string) => {
     name: filters.name,
     wilaya: filters.wilaya && filters.wilaya.length > 0 ? filters.wilaya.join(",") : null,
     tender_type: filters.tenderType && filters.tenderType.length > 0 ? filters.tenderType.join(",") : null,
-    category: filters.category && filters.category.length > 0 ? filters.category.join(",") : null,
+    category: filters.category && filters.category.length > 0 ? filters.category.filter(Boolean).join(",") : null,
   };
 };
 
 const mapDbToFilters = (dbAlert: any): Alert => {
+  const wilaya = dbAlert.wilaya ? dbAlert.wilaya.split(",").filter(Boolean) : [];
+  const tenderType = dbAlert.tender_type ? dbAlert.tender_type.split(",").filter(Boolean) : [];
+  const category = dbAlert.category ? dbAlert.category.split(",").filter(Boolean) : [];
+  
   return {
     id: dbAlert.id,
     name: dbAlert.name,
-    wilaya: dbAlert.wilaya ? dbAlert.wilaya.split(",").filter(Boolean) : [],
-    tenderType: dbAlert.tender_type ? dbAlert.tender_type.split(",").filter(Boolean) : [],
-    category: dbAlert.category ? dbAlert.category.split(",").filter(Boolean) : [],
+    wilaya,
+    tenderType,
+    category,
   };
 };
 
@@ -201,6 +205,8 @@ export const AlertsConfig = () => {
       category: selectedCategories.filter(Boolean),
     };
 
+    console.log('Saving alert with data:', alertData);
+
     const { error } = await supabase
       .from("alerts")
       .upsert(
@@ -211,6 +217,7 @@ export const AlertsConfig = () => {
       );
 
     if (error) {
+      console.error('Error saving alert:', error);
       toast({
         title: editingAlertId ? t("alerts.updateError") : t("alerts.createError"),
         description: error.message,
@@ -261,7 +268,7 @@ export const AlertsConfig = () => {
     setAlertName(alert.name);
     setSelectedWilayas(alert.wilaya);
     setSelectedTenderTypes(alert.tenderType);
-    setSelectedCategories(alert.category || []);
+    setSelectedCategories(alert.category);
     setShowNewAlert(true);
   };
 
@@ -394,3 +401,4 @@ export const AlertsConfig = () => {
     </div>
   );
 };
+
