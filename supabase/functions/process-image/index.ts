@@ -25,23 +25,40 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Fetch the image with robust headers
-    const response = await fetch(imageUrl, {
-      method: 'GET',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'image/gif,image/jpeg,image/png,*/*',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
+    // Use fetch API with timeout and retries
+    const fetchWithRetry = async (url: string, retries = 3) => {
+      let lastError;
+      for (let i = 0; i < retries; i++) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+          
+          const response = await fetch(url, {
+            signal: controller.signal,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+              'Accept': 'image/gif,image/jpeg,image/png,*/*',
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache'
+            }
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          return response;
+        } catch (error) {
+          console.error(`Attempt ${i + 1} failed:`, error);
+          lastError = error;
+          if (i < retries - 1) await new Promise(r => setTimeout(r, 1000 * (i + 1))); // Exponential backoff
+        }
       }
-    })
+      throw lastError;
+    };
 
-    if (!response.ok) {
-      console.error('Failed to fetch image:', await response.text())
-      throw new Error(`Failed to fetch image: ${response.statusText}`)
-    }
-
-    // Get image as blob
+    // Fetch the image with retries
+    console.log('Fetching image...')
+    const response = await fetchWithRetry(imageUrl);
     const imageBlob = await response.blob()
     console.log('Successfully fetched image, size:', imageBlob.size, 'type:', imageBlob.type)
 
@@ -49,11 +66,6 @@ Deno.serve(async (req) => {
     let processedBlob = imageBlob
     if (imageBlob.type === 'image/gif') {
       console.log('Converting GIF to PNG...')
-      const arrayBuffer = await imageBlob.arrayBuffer()
-      const uint8Array = new Uint8Array(arrayBuffer)
-      
-      // For GIFs, we'll take the first frame and convert it to PNG
-      // This is a basic conversion that works for most cases
       const image = await createImageBitmap(imageBlob)
       const canvas = new OffscreenCanvas(image.width, image.height)
       const ctx = canvas.getContext('2d')

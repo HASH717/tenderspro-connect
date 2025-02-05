@@ -36,25 +36,7 @@ Deno.serve(async (req) => {
 
     console.log('Processing image URL:', imageUrl)
 
-    // Prepare fetch options with robust headers
-    const fetchOptions = {
-      method: 'GET',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'image/gif,image/jpeg,image/png,*/*',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      }
-    };
-
-    // First try to fetch the image to verify it exists
-    const imageResponse = await fetch(imageUrl, fetchOptions);
-    if (!imageResponse.ok) {
-      console.error('Failed to fetch original image:', await imageResponse.text());
-      throw new Error(`Failed to fetch original image: ${imageResponse.statusText}`);
-    }
-
-    // Call the process-image function with the verified image URL
+    // Call the process-image function with the image URL
     const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/process-image`, {
       method: 'POST',
       headers: {
