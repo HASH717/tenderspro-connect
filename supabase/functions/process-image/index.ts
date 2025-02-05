@@ -2,6 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { HfInference } from 'https://esm.sh/@huggingface/inference@2.3.2'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
+import { decode } from "https://deno.land/x/imagescript@1.2.15/mod.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -70,17 +71,22 @@ serve(async (req) => {
       const contentType = imageResponse.headers.get('content-type')
       console.log('Image content type:', contentType)
       
-      const imageBlob = await imageResponse.blob()
-
-      // Always convert to PNG before processing
-      const originalFileName = `original-${tenderId}.png`
-      const originalImageBuffer = await imageBlob.arrayBuffer()
+      // Get the image data as an ArrayBuffer
+      const imageBuffer = await imageResponse.arrayBuffer()
       
-      // Save original image to Supabase storage
+      // Convert image to PNG using ImageScript
+      console.log('Converting image to PNG format...')
+      const image = await decode(new Uint8Array(imageBuffer))
+      const pngBuffer = await image.encode() // This will encode to PNG by default
+      
+      // Save original image as PNG to Supabase storage
+      const originalFileName = `original-${tenderId}.png`
+      
+      console.log('Uploading original PNG image...')
       const { data: originalUploadData, error: originalUploadError } = await supabase
         .storage
         .from('tender-documents')
-        .upload(originalFileName, originalImageBuffer, {
+        .upload(originalFileName, pngBuffer, {
           contentType: 'image/png',
           upsert: true
         })
@@ -100,7 +106,7 @@ serve(async (req) => {
       
       console.log('Detecting watermark regions with SAM...')
       const segmentation = await hf.imageSegmentation({
-        inputs: imageBlob,
+        inputs: new Blob([pngBuffer], { type: 'image/png' }),
         model: 'facebook/sam-vit-huge',
         parameters: {
           confidence_threshold: 0.7
@@ -113,7 +119,7 @@ serve(async (req) => {
       console.log('Removing watermark with inpainting...')
       const processedImage = await hf.imageToImage({
         inputs: {
-          image: imageBlob,
+          image: new Blob([pngBuffer], { type: 'image/png' }),
           mask: watermarkMask,
         },
         model: 'stabilityai/stable-diffusion-2-inpainting',
