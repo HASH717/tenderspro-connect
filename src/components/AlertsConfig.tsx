@@ -95,9 +95,9 @@ const mapFiltersToDb = (filters: Partial<Alert>, userId: string) => {
   return {
     user_id: userId,
     name: filters.name,
-    wilaya: filters.wilaya?.join(",") || null,
-    tender_type: filters.tenderType?.join(",") || null,
-    category: filters.category?.join(",") || null,
+    wilaya: filters.wilaya && filters.wilaya.length > 0 ? filters.wilaya.join(",") : null,
+    tender_type: filters.tenderType && filters.tenderType.length > 0 ? filters.tenderType.join(",") : null,
+    category: filters.category && filters.category.length > 0 ? filters.category.join(",") : null,
   };
 };
 
@@ -198,7 +198,7 @@ export const AlertsConfig = () => {
       name: alertName,
       wilaya: selectedWilayas,
       tenderType: selectedTenderTypes,
-      category: selectedCategories,
+      category: selectedCategories.filter(Boolean),
     };
 
     const { error } = await supabase
@@ -366,7 +366,7 @@ export const AlertsConfig = () => {
                   {alert.tenderType.length > 0 && (
                     <span>• {alert.tenderType.length} market types</span>
                   )}
-                  {alert.category?.length > 0 && (
+                  {alert.category.length > 0 && (
                     <span>• {alert.category.length} categories</span>
                   )}
                 </p>
