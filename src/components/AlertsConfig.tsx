@@ -95,9 +95,9 @@ const mapFiltersToDb = (filters: Partial<Alert>, userId: string) => {
   return {
     user_id: userId,
     name: filters.name,
-    wilaya: filters.wilaya?.join(","),
-    tender_type: filters.tenderType?.join(","),
-    category: filters.category?.join(","),
+    wilaya: filters.wilaya?.join(",") || null,
+    tender_type: filters.tenderType?.join(",") || null,
+    category: filters.category?.join(",") || null,
   };
 };
 
@@ -105,9 +105,9 @@ const mapDbToFilters = (dbAlert: any): Alert => {
   return {
     id: dbAlert.id,
     name: dbAlert.name,
-    wilaya: dbAlert.wilaya ? dbAlert.wilaya.split(",") : [],
-    tenderType: dbAlert.tender_type ? dbAlert.tender_type.split(",") : [],
-    category: dbAlert.category ? dbAlert.category.split(",") : [],
+    wilaya: dbAlert.wilaya ? dbAlert.wilaya.split(",").filter(Boolean) : [],
+    tenderType: dbAlert.tender_type ? dbAlert.tender_type.split(",").filter(Boolean) : [],
+    category: dbAlert.category ? dbAlert.category.split(",").filter(Boolean) : [],
   };
 };
 
@@ -127,7 +127,8 @@ export const AlertsConfig = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("alerts")
-        .select("*");
+        .select("*")
+        .eq('user_id', session?.user?.id);
       
       if (error) {
         toast({
@@ -139,6 +140,7 @@ export const AlertsConfig = () => {
       }
       return data.map(mapDbToFilters);
     },
+    enabled: !!session?.user?.id,
   });
 
   const { data: categoryOptions = [] } = useQuery({
@@ -160,10 +162,9 @@ export const AlertsConfig = () => {
         return [];
       }
 
-      // Transform the data into the correct format for MultiSelect
       const uniqueCategories = Array.from(new Set(data
         .map(tender => tender.category)
-        .filter(Boolean))) // Remove any null/undefined values
+        .filter(Boolean)))
         .sort()
         .map(category => ({
           value: category,
@@ -198,12 +199,16 @@ export const AlertsConfig = () => {
       wilaya: selectedWilayas,
       tenderType: selectedTenderTypes,
       category: selectedCategories,
-      ...(editingAlertId ? { id: editingAlertId } : {}),
     };
 
     const { error } = await supabase
       .from("alerts")
-      .upsert(mapFiltersToDb(alertData, session.user.id));
+      .upsert(
+        mapFiltersToDb(
+          editingAlertId ? { ...alertData, id: editingAlertId } : alertData,
+          session.user.id
+        )
+      );
 
     if (error) {
       toast({
