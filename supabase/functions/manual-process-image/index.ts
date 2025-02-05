@@ -20,21 +20,27 @@ Deno.serve(async (req) => {
     // Get the original image URL from the tender
     const { data: tender, error: tenderError } = await supabase
       .from('tenders')
-      .select('original_image_url')
+      .select('original_image_url, image_url')
       .eq('id', tenderId)
       .single()
 
-    if (tenderError || !tender?.original_image_url) {
+    if (tenderError || (!tender?.original_image_url && !tender?.image_url)) {
       console.error('Failed to get tender or image URL:', tenderError)
       throw new Error('Failed to get tender or image URL')
     }
 
-    // Ensure the URL is absolute by adding the base URL if needed
-    const imageUrl = tender.original_image_url.startsWith('http') 
-      ? tender.original_image_url 
-      : `https://old.dztenders.com/${tender.original_image_url}`
+    // Try original_image_url first, then fall back to image_url
+    const imageUrl = tender.original_image_url || tender.image_url
+    if (!imageUrl) {
+      throw new Error('No image URL available')
+    }
 
-    console.log('Processing image URL:', imageUrl)
+    // Ensure the URL is absolute
+    const fullImageUrl = imageUrl.startsWith('http') 
+      ? imageUrl 
+      : `https://old.dztenders.com/${imageUrl}`
+
+    console.log('Processing image URL:', fullImageUrl)
 
     // Call the process-image function with the image URL
     const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/process-image`, {
@@ -45,7 +51,7 @@ Deno.serve(async (req) => {
         ...corsHeaders
       },
       body: JSON.stringify({ 
-        imageUrl,
+        imageUrl: fullImageUrl,
         tenderId 
       })
     })

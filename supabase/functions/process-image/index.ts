@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
             signal: controller.signal,
             headers: {
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-              'Accept': 'image/gif,image/jpeg,image/png,*/*',
+              'Accept': '*/*',
               'Cache-Control': 'no-cache',
               'Pragma': 'no-cache'
             }
@@ -74,6 +74,8 @@ Deno.serve(async (req) => {
         throw new Error('Failed to get canvas context')
       }
       
+      ctx.fillStyle = '#FFFFFF'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
       ctx.drawImage(image, 0, 0)
       processedBlob = await canvas.convertToBlob({ type: 'image/png' })
       console.log('Converted GIF to PNG, new size:', processedBlob.size)
@@ -99,6 +101,10 @@ Deno.serve(async (req) => {
     const img = await createImageBitmap(processedBlob)
     canvas.width = img.width
     canvas.height = img.height
+    
+    // Draw white background first
+    ctx.fillStyle = '#FFFFFF'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
     ctx.drawImage(img, 0, 0)
 
     // Get image data
