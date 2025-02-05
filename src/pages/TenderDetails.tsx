@@ -41,7 +41,7 @@ const TenderDetails = () => {
       }
 
       if (!data) {
-        toast.error('Tender not found');
+        toast.error('Tender not found or has been removed');
         navigate('/');
         return null;
       }
