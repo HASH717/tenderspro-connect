@@ -16,10 +16,8 @@ Deno.serve(async (req) => {
       throw new Error('Missing required parameters')
     }
 
-    // Initialize Hugging Face client
+    // Initialize clients
     const hf = new HfInference(Deno.env.get('HUGGING_FACE_ACCESS_TOKEN'))
-
-    // Initialize Supabase client
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -31,7 +29,7 @@ Deno.serve(async (req) => {
       for (let i = 0; i < retries; i++) {
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+          const timeoutId = setTimeout(() => controller.abort(), 30000);
           
           const response = await fetch(url, {
             signal: controller.signal,
@@ -50,13 +48,13 @@ Deno.serve(async (req) => {
         } catch (error) {
           console.error(`Attempt ${i + 1} failed:`, error);
           lastError = error;
-          if (i < retries - 1) await new Promise(r => setTimeout(r, 1000 * (i + 1))); // Exponential backoff
+          if (i < retries - 1) await new Promise(r => setTimeout(r, 1000 * (i + 1)));
         }
       }
       throw lastError;
     };
 
-    // Fetch the image with retries
+    // Fetch the image
     console.log('Fetching image...')
     const response = await fetchWithRetry(imageUrl);
     const imageBlob = await response.blob()
@@ -81,10 +79,21 @@ Deno.serve(async (req) => {
       console.log('Converted GIF to PNG, new size:', processedBlob.size)
     }
 
-    // Process image with segmentation model
-    console.log('Processing with Hugging Face model...')
-    const result = await hf.imageSegmentation({
+    // First pass: Use watermark removal model
+    console.log('Removing watermarks...')
+    const watermarkResult = await hf.imageToImage({
       image: processedBlob,
+      model: "DamarJati/remove-watermark",
+    })
+
+    if (!watermarkResult) {
+      throw new Error('Failed to remove watermarks')
+    }
+
+    // Second pass: Use segmentation model for background removal
+    console.log('Processing with segmentation model...')
+    const result = await hf.imageSegmentation({
+      image: watermarkResult,
       model: "Xenova/segformer-b0-finetuned-ade-512-512",
     })
 
@@ -92,20 +101,19 @@ Deno.serve(async (req) => {
       throw new Error('Invalid segmentation result')
     }
 
-    // Create a canvas to process the image
-    const canvas = new OffscreenCanvas(800, 600)
+    // Create canvas for final processing
+    const image = await createImageBitmap(watermarkResult)
+    const canvas = new OffscreenCanvas(image.width, image.height)
     const ctx = canvas.getContext('2d')
     if (!ctx) throw new Error('Failed to get canvas context')
 
-    // Load the image into the canvas
-    const img = await createImageBitmap(processedBlob)
-    canvas.width = img.width
-    canvas.height = img.height
+    canvas.width = image.width
+    canvas.height = image.height
     
     // Draw white background first
     ctx.fillStyle = '#FFFFFF'
     ctx.fillRect(0, 0, canvas.width, canvas.height)
-    ctx.drawImage(img, 0, 0)
+    ctx.drawImage(image, 0, 0)
 
     // Get image data
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
