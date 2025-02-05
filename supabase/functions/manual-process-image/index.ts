@@ -28,6 +28,13 @@ Deno.serve(async (req) => {
       throw new Error('Failed to get tender or image URL')
     }
 
+    // Ensure the URL is absolute by adding the base URL if needed
+    const imageUrl = tender.original_image_url.startsWith('http') 
+      ? tender.original_image_url 
+      : `https://old.dztenders.com/${tender.original_image_url}`
+
+    console.log('Processing image URL:', imageUrl)
+
     // Call the process-image function
     const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/process-image`, {
       method: 'POST',
@@ -36,7 +43,7 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ 
-        imageUrl: tender.original_image_url, 
+        imageUrl,
         tenderId 
       }),
     })
