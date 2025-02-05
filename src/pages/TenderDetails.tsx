@@ -154,13 +154,13 @@ const TenderDetails = () => {
                 </div>
               </div>
 
-              {tender.original_image_url && (
+              {tender.image_url && (
                 <div className="mt-8">
                   <h2 className="text-lg font-semibold mb-4">Tender Document</h2>
                   <div className="relative border rounded-lg overflow-hidden w-full">
                     {!imageError ? (
                       <img 
-                        src={tender.original_image_url}
+                        src={tender.image_url}
                         alt="Tender Document"
                         className="w-full h-auto object-contain max-h-[800px]"
                         onError={(e) => {
