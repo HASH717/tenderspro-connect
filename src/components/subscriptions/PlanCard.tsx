@@ -45,7 +45,7 @@ export const PlanCard = ({
           <span className="text-muted-foreground">/{billingInterval}</span>
           {billingInterval === 'annual' && (
             <div className="mt-1 text-sm text-emerald-600 font-medium">
-              25% discount applied
+              3 months saved
             </div>
           )}
         </div>
