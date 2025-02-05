@@ -1,6 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
-import Canvas from 'https://deno.land/x/canvas@v1.4.1/mod.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -86,7 +85,7 @@ serve(async (req) => {
         
         retries--;
         if (retries > 0) {
-          const delay = 2000 * (4 - retries); // Increasing delay with each retry
+          const delay = 2000 * (4 - retries);
           console.log(`Waiting ${delay}ms before retry ${3 - retries}...`);
           await new Promise(r => setTimeout(r, delay));
         }
@@ -115,45 +114,18 @@ serve(async (req) => {
       throw new Error(`Failed to fetch image after all retries: ${imageResponse?.statusText || 'Unknown error'}`)
     }
 
-    const imageBlob = await imageResponse.blob()
-    console.log('Image downloaded successfully, size:', imageBlob.size);
-    
-    // Create a canvas and load the image
-    const img = new Canvas.Image()
-    img.src = await imageBlob.arrayBuffer()
-    
-    if (!img.width || !img.height) {
-      throw new Error('Failed to load image dimensions');
-    }
-    
-    console.log('Image dimensions:', img.width, 'x', img.height);
-    
-    const canvas = Canvas.createCanvas(img.width, img.height)
-    const ctx = canvas.getContext('2d')
-    ctx.drawImage(img, 0, 0)
-    
-    // Convert to PNG with error checking
-    let pngBuffer;
-    try {
-      pngBuffer = await canvas.toBuffer('image/png')
-      console.log('Converted to PNG, size:', pngBuffer.byteLength);
-    } catch (error) {
-      console.error('PNG conversion error:', error);
-      throw new Error(`Failed to convert image to PNG: ${error.message}`);
-    }
-
-    if (!pngBuffer || pngBuffer.byteLength === 0) {
-      throw new Error('PNG conversion failed - empty buffer');
-    }
+    // Get the image data as an ArrayBuffer
+    const imageBuffer = await imageResponse.arrayBuffer()
+    console.log('Image downloaded successfully, size:', imageBuffer.byteLength);
 
     // Generate a unique filename
     const filename = `${tenderId}-${Date.now()}.png`
     
-    // Upload the converted image to Supabase Storage
+    // Upload the image data directly to Supabase Storage
     const { data: uploadData, error: uploadError } = await supabaseClient
       .storage
       .from('tender-documents')
-      .upload(filename, pngBuffer, {
+      .upload(filename, imageBuffer, {
         contentType: 'image/png',
         cacheControl: '3600'
       })
