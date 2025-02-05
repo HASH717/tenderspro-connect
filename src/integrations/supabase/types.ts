@@ -229,6 +229,7 @@ export type Database = {
           link: string | null
           organization_address: string | null
           organization_name: string | null
+          png_image_url: string | null
           project_description: string | null
           publication_date: string | null
           qualification_details: string | null
@@ -251,6 +252,7 @@ export type Database = {
           link?: string | null
           organization_address?: string | null
           organization_name?: string | null
+          png_image_url?: string | null
           project_description?: string | null
           publication_date?: string | null
           qualification_details?: string | null
@@ -273,6 +275,7 @@ export type Database = {
           link?: string | null
           organization_address?: string | null
           organization_name?: string | null
+          png_image_url?: string | null
           project_description?: string | null
           publication_date?: string | null
           qualification_details?: string | null
@@ -321,7 +324,29 @@ export type Database = {
       [_ in never]: never
     }
     CompositeTypes: {
-      [_ in never]: never
+      tender_type: {
+        id: string | null
+        title: string | null
+        wilaya: string | null
+        category: string | null
+        publication_date: string | null
+        deadline: string | null
+        link: string | null
+        tender_id: string | null
+        type: string | null
+        region: string | null
+        specifications_price: string | null
+        withdrawal_address: string | null
+        image_url: string | null
+        png_image_url: string | null
+        tender_number: string | null
+        qualification_required: string | null
+        qualification_details: string | null
+        project_description: string | null
+        organization_name: string | null
+        organization_address: string | null
+        tender_status: string | null
+      }
     }
   }
 }
