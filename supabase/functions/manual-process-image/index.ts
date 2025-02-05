@@ -35,41 +35,92 @@ Deno.serve(async (req) => {
       throw new Error('No image URL available')
     }
 
-    // Ensure the URL is absolute
+    // Ensure the URL is absolute and properly formatted
     const fullImageUrl = imageUrl.startsWith('http') 
       ? imageUrl 
-      : `https://old.dztenders.com/${imageUrl}`
+      : `https://old.dztenders.com/${imageUrl.replace(/^\//, '')}`;
 
     console.log('Processing image URL:', fullImageUrl)
 
-    // Call the process-image function with the image URL
-    const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/process-image`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-        'Content-Type': 'application/json',
-        ...corsHeaders
-      },
-      body: JSON.stringify({ 
-        imageUrl: fullImageUrl,
-        tenderId 
+    try {
+      // Call the process-image function with the image URL
+      const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/process-image`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+          'Content-Type': 'application/json',
+          ...corsHeaders
+        },
+        body: JSON.stringify({ 
+          imageUrl: fullImageUrl,
+          tenderId 
+        })
       })
-    })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Process image response error:', errorText)
-      throw new Error(`Failed to process image: ${errorText}`)
+      const responseText = await response.text()
+      console.log('Process image response:', response.status, responseText)
+
+      if (!response.ok) {
+        throw new Error(`Failed to process image: ${responseText}`)
+      }
+
+      try {
+        const result = JSON.parse(responseText)
+        console.log('Successfully processed image:', result)
+        return new Response(
+          JSON.stringify({ success: true, processedImageUrl: result.processedImageUrl }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      } catch (parseError) {
+        console.error('Failed to parse response:', parseError)
+        throw new Error('Invalid response from image processor')
+      }
+    } catch (processError) {
+      console.error('Error in process-image function:', processError)
+      
+      // If processing fails, store and use the original image
+      const imageResponse = await fetch(fullImageUrl)
+      if (!imageResponse.ok) {
+        throw new Error(`Failed to fetch original image: ${imageResponse.statusText}`)
+      }
+
+      const imageBlob = await imageResponse.blob()
+      const fileName = `${tenderId}-original-${Date.now()}.${imageBlob.type.split('/')[1] || 'png'}`
+      
+      const { error: uploadError } = await supabase.storage
+        .from('tender-documents')
+        .upload(fileName, imageBlob, {
+          contentType: imageBlob.type,
+          upsert: false
+        })
+
+      if (uploadError) {
+        throw new Error(`Failed to upload original image: ${uploadError.message}`)
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('tender-documents')
+        .getPublicUrl(fileName)
+
+      // Update tender with original image URL as fallback
+      const { error: updateError } = await supabase
+        .from('tenders')
+        .update({ processed_image_url: publicUrlData.publicUrl })
+        .eq('id', tenderId)
+
+      if (updateError) {
+        throw new Error(`Failed to update tender with original image: ${updateError.message}`)
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          processedImageUrl: publicUrlData.publicUrl,
+          warning: 'Used original image as fallback'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
-
-    const result = await response.json()
-    console.log('Successfully processed image:', result)
-
-    return new Response(
-      JSON.stringify({ success: true, processedImageUrl: result.processedImageUrl }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-
   } catch (error) {
     console.error('Error in manual image processing:', error)
     return new Response(
