@@ -97,14 +97,16 @@ const mapFiltersToDb = (filters: Partial<Alert>, userId: string) => {
     name: filters.name,
     wilaya: filters.wilaya && filters.wilaya.length > 0 ? filters.wilaya.join(",") : null,
     tender_type: filters.tenderType && filters.tenderType.length > 0 ? filters.tenderType.join(",") : null,
-    category: filters.category && filters.category.length > 0 ? filters.category.filter(Boolean).join(",") : null,
+    // Don't split categories that contain commas - treat each array item as a complete category
+    category: filters.category && filters.category.length > 0 ? filters.category.join("|||") : null,
   };
 };
 
 const mapDbToFilters = (dbAlert: any): Alert => {
-  const wilaya = dbAlert.wilaya ? dbAlert.wilaya.split(",").filter(Boolean) : [];
-  const tenderType = dbAlert.tender_type ? dbAlert.tender_type.split(",").filter(Boolean) : [];
-  const category = dbAlert.category ? dbAlert.category.split(",").filter(Boolean) : [];
+  // Use a different separator (|||) that won't conflict with category names containing commas
+  const wilaya = dbAlert.wilaya ? dbAlert.wilaya.split(",") : [];
+  const tenderType = dbAlert.tender_type ? dbAlert.tender_type.split(",") : [];
+  const category = dbAlert.category ? dbAlert.category.split("|||") : [];
   
   return {
     id: dbAlert.id,
@@ -199,10 +201,11 @@ export const AlertsConfig = () => {
     }
 
     const alertData = {
+      ...(editingAlertId && { id: editingAlertId }),
       name: alertName,
       wilaya: selectedWilayas,
       tenderType: selectedTenderTypes,
-      category: selectedCategories.filter(Boolean),
+      category: selectedCategories,
     };
 
     console.log('Saving alert with data:', alertData);
@@ -210,10 +213,8 @@ export const AlertsConfig = () => {
     const { error } = await supabase
       .from("alerts")
       .upsert(
-        mapFiltersToDb(
-          editingAlertId ? { ...alertData, id: editingAlertId } : alertData,
-          session.user.id
-        )
+        mapFiltersToDb(alertData, session.user.id),
+        { onConflict: 'id' }
       );
 
     if (error) {
@@ -401,4 +402,3 @@ export const AlertsConfig = () => {
     </div>
   );
 };
-

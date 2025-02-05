@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { Check } from "lucide-react";
 import { Button } from "./button";
@@ -28,7 +29,6 @@ export function MultiSelect({
 }: MultiSelectProps) {
   const { toast } = useToast();
 
-  // Enforce max selections on mount and when selectedValues change
   useEffect(() => {
     if (maxSelections && selectedValues.length > maxSelections) {
       const truncatedValues = selectedValues.slice(0, maxSelections);
@@ -102,7 +102,7 @@ export function MultiSelect({
           >
             <div
               className={cn(
-                "w-4 h-4 border rounded-sm flex items-center justify-center",
+                "flex-shrink-0 w-4 h-4 border rounded-sm flex items-center justify-center",
                 selectedValues.includes(option.value)
                   ? "bg-primary border-primary"
                   : "border-primary"
@@ -112,7 +112,7 @@ export function MultiSelect({
                 <Check className="h-3 w-3 text-primary-foreground" />
               )}
             </div>
-            <span className="text-left">{option.label}</span>
+            <span className="text-left flex-1 min-w-0 break-words">{option.label}</span>
           </button>
         ))}
       </div>
