@@ -26,17 +26,45 @@ serve(async (req) => {
       throw new Error('No image URL provided')
     }
 
-    // Download the image
-    const imageResponse = await fetch(imageUrl)
-    if (!imageResponse.ok) {
-      throw new Error(`Failed to fetch image: ${imageResponse.statusText}`)
+    // Add custom headers to bypass potential restrictions
+    const headers = new Headers({
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+      'Accept': 'image/*, */*',
+      'Referer': 'https://old.dztenders.com/'
+    });
+
+    // Download the image with retry logic
+    let imageResponse;
+    let retries = 3;
+    
+    while (retries > 0) {
+      try {
+        imageResponse = await fetch(imageUrl, { headers });
+        if (imageResponse.ok) break;
+        
+        console.log(`Retry ${4 - retries}: Failed to fetch image, status: ${imageResponse.status}`);
+        retries--;
+        if (retries > 0) await new Promise(r => setTimeout(r, 1000)); // Wait 1s between retries
+      } catch (error) {
+        console.error(`Fetch attempt failed:`, error);
+        retries--;
+        if (retries === 0) throw error;
+        await new Promise(r => setTimeout(r, 1000));
+      }
+    }
+
+    if (!imageResponse?.ok) {
+      throw new Error(`Failed to fetch image after retries: ${imageResponse?.statusText || 'Unknown error'}`)
     }
 
     const imageBlob = await imageResponse.blob()
+    console.log('Image downloaded successfully, size:', imageBlob.size);
     
     // Create a canvas and load the image
     const img = new Canvas.Image()
     img.src = await imageBlob.arrayBuffer()
+    
+    console.log('Image dimensions:', img.width, 'x', img.height);
     
     const canvas = Canvas.createCanvas(img.width, img.height)
     const ctx = canvas.getContext('2d')
@@ -44,6 +72,7 @@ serve(async (req) => {
     
     // Convert to PNG
     const pngBuffer = await canvas.toBuffer('image/png')
+    console.log('Converted to PNG, size:', pngBuffer.byteLength);
 
     // Generate a unique filename
     const filename = `${tenderId}-${Date.now()}.png`
@@ -58,6 +87,7 @@ serve(async (req) => {
       })
 
     if (uploadError) {
+      console.error('Upload error:', uploadError);
       throw new Error(`Failed to upload converted image: ${uploadError.message}`)
     }
 
@@ -74,6 +104,7 @@ serve(async (req) => {
       .eq('id', tenderId)
 
     if (updateError) {
+      console.error('Update error:', updateError);
       throw new Error(`Failed to update tender record: ${updateError.message}`)
     }
 
@@ -91,7 +122,7 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Error in convert-to-png function:', error)
+    console.error('Error in convert-to-png function:', error);
     return new Response(
       JSON.stringify({ 
         success: false, 
