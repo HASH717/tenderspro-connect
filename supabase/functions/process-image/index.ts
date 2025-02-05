@@ -69,21 +69,19 @@ serve(async (req) => {
 
       const contentType = imageResponse.headers.get('content-type')
       console.log('Image content type:', contentType)
-
-      // If it's a GIF, we'll just store it without processing
-      const isGif = contentType?.includes('gif')
       
       const imageBlob = await imageResponse.blob()
-      
-      // Save original image to Supabase storage
-      const originalFileName = `original-${tenderId}.${isGif ? 'gif' : 'png'}`
+
+      // Always convert to PNG before processing
+      const originalFileName = `original-${tenderId}.png`
       const originalImageBuffer = await imageBlob.arrayBuffer()
       
+      // Save original image to Supabase storage
       const { data: originalUploadData, error: originalUploadError } = await supabase
         .storage
         .from('tender-documents')
         .upload(originalFileName, originalImageBuffer, {
-          contentType: contentType || 'image/png',
+          contentType: 'image/png',
           upsert: true
         })
 
@@ -97,32 +95,7 @@ serve(async (req) => {
         .from('tender-documents')
         .getPublicUrl(originalFileName)
 
-      // If it's a GIF, skip the processing step
-      if (isGif) {
-        // Update tender record with only original image URL
-        const { error: updateError } = await supabase
-          .from('tenders')
-          .update({
-            original_image_url: originalPublicUrlData.publicUrl,
-            processed_image_url: originalPublicUrlData.publicUrl // Use same URL for processed
-          })
-          .eq('id', tenderId)
-
-        if (updateError) {
-          throw updateError
-        }
-
-        return new Response(
-          JSON.stringify({ 
-            success: true,
-            originalImageUrl: originalPublicUrlData.publicUrl,
-            processedImageUrl: originalPublicUrlData.publicUrl
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-
-      // For non-GIF images, proceed with processing
+      // Initialize Hugging Face
       const hf = new HfInference(Deno.env.get('HUGGING_FACE_ACCESS_TOKEN'))
       
       console.log('Detecting watermark regions with SAM...')
