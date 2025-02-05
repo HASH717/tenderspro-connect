@@ -36,19 +36,36 @@ Deno.serve(async (req) => {
 
     console.log('Processing image URL:', imageUrl)
 
-    // Call the process-image function with robust headers
+    // Prepare fetch options with robust headers
+    const fetchOptions = {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'image/gif,image/jpeg,image/png,*/*',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    };
+
+    // First try to fetch the image to verify it exists
+    const imageResponse = await fetch(imageUrl, fetchOptions);
+    if (!imageResponse.ok) {
+      console.error('Failed to fetch original image:', await imageResponse.text());
+      throw new Error(`Failed to fetch original image: ${imageResponse.statusText}`);
+    }
+
+    // Call the process-image function with the verified image URL
     const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/process-image`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
         'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'image/gif,image/jpeg,image/png,application/x-ms-application,image/psd,image/tiff'
+        ...corsHeaders
       },
       body: JSON.stringify({ 
         imageUrl,
         tenderId 
-      }),
+      })
     })
 
     if (!response.ok) {
@@ -58,6 +75,7 @@ Deno.serve(async (req) => {
     }
 
     const result = await response.json()
+    console.log('Successfully processed image:', result)
 
     return new Response(
       JSON.stringify({ success: true, processedImageUrl: result.processedImageUrl }),

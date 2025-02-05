@@ -25,37 +25,50 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Fetch the image with appropriate headers for various image types
+    // Fetch the image with robust headers
     const response = await fetch(imageUrl, {
+      method: 'GET',
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'image/gif,image/jpeg,image/png,application/x-ms-application,image/psd,image/tiff,*/*'
+        'Accept': 'image/gif,image/jpeg,image/png,*/*',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
       }
     })
-    
+
     if (!response.ok) {
       console.error('Failed to fetch image:', await response.text())
       throw new Error(`Failed to fetch image: ${response.statusText}`)
     }
-    
+
+    // Get image as blob
     const imageBlob = await response.blob()
     console.log('Successfully fetched image, size:', imageBlob.size, 'type:', imageBlob.type)
 
-    // Convert GIF to PNG if needed using canvas
+    // Convert GIF to PNG if needed
     let processedBlob = imageBlob
     if (imageBlob.type === 'image/gif') {
       console.log('Converting GIF to PNG...')
-      const img = await createImageBitmap(imageBlob)
-      const canvas = new OffscreenCanvas(img.width, img.height)
-      const ctx = canvas.getContext('2d')
-      if (!ctx) throw new Error('Failed to get canvas context')
+      const arrayBuffer = await imageBlob.arrayBuffer()
+      const uint8Array = new Uint8Array(arrayBuffer)
       
-      ctx.drawImage(img, 0, 0)
+      // For GIFs, we'll take the first frame and convert it to PNG
+      // This is a basic conversion that works for most cases
+      const image = await createImageBitmap(imageBlob)
+      const canvas = new OffscreenCanvas(image.width, image.height)
+      const ctx = canvas.getContext('2d')
+      
+      if (!ctx) {
+        throw new Error('Failed to get canvas context')
+      }
+      
+      ctx.drawImage(image, 0, 0)
       processedBlob = await canvas.convertToBlob({ type: 'image/png' })
-      console.log('Converted to PNG, new size:', processedBlob.size)
+      console.log('Converted GIF to PNG, new size:', processedBlob.size)
     }
-    
+
     // Process image with segmentation model
+    console.log('Processing with Hugging Face model...')
     const result = await hf.imageSegmentation({
       image: processedBlob,
       model: "Xenova/segformer-b0-finetuned-ade-512-512",
@@ -124,6 +137,7 @@ Deno.serve(async (req) => {
       throw updateError
     }
 
+    console.log('Successfully uploaded and processed image')
     return new Response(
       JSON.stringify({ success: true, processedImageUrl: publicUrlData.publicUrl }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
