@@ -31,21 +31,31 @@ serve(async (req) => {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
       'Accept': 'image/*, */*',
       'Referer': 'https://old.dztenders.com/',
-      'Origin': 'https://old.dztenders.com'
+      'Origin': 'https://old.dztenders.com',
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache'
     });
 
-    // Normalize URL to ensure it's properly encoded
-    const normalizedUrl = encodeURI(decodeURI(imageUrl));
-    console.log('Normalized URL:', normalizedUrl);
+    // Normalize and clean URL
+    const normalizedUrl = encodeURI(decodeURI(imageUrl).trim());
+    console.log('Attempting to fetch image from:', normalizedUrl);
+
+    // Try fetching through a proxy first, then directly
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(normalizedUrl)}`;
+    console.log('Using proxy URL:', proxyUrl);
 
     // Download the image with retry logic
     let imageResponse;
     let retries = 3;
+    let usingProxy = true;
     
     while (retries > 0) {
       try {
-        imageResponse = await fetch(normalizedUrl, { 
-          headers,
+        const urlToTry = usingProxy ? proxyUrl : normalizedUrl;
+        console.log(`Attempt ${4 - retries}: Fetching from ${usingProxy ? 'proxy' : 'direct'} URL`);
+        
+        imageResponse = await fetch(urlToTry, { 
+          headers: usingProxy ? undefined : headers,
           redirect: 'follow',
         });
         
@@ -54,11 +64,29 @@ serve(async (req) => {
           break;
         }
         
-        console.log(`Retry ${4 - retries}: Failed to fetch image, status: ${imageResponse.status}`);
+        console.log(`Failed to fetch image, status: ${imageResponse.status}`);
+        
+        if (usingProxy && retries === 3) {
+          // If proxy fails on first try, switch to direct URL
+          usingProxy = false;
+          console.log('Switching to direct URL fetch');
+          continue;
+        }
+        
         retries--;
-        if (retries > 0) await new Promise(r => setTimeout(r, 2000)); // Wait 2s between retries
+        if (retries > 0) {
+          console.log(`Waiting before retry ${3 - retries}...`);
+          await new Promise(r => setTimeout(r, 2000));
+        }
       } catch (error) {
         console.error(`Fetch attempt failed:`, error);
+        
+        if (usingProxy && retries === 3) {
+          usingProxy = false;
+          console.log('Switching to direct URL fetch after error');
+          continue;
+        }
+        
         retries--;
         if (retries === 0) throw error;
         await new Promise(r => setTimeout(r, 2000));
@@ -86,9 +114,15 @@ serve(async (req) => {
     const ctx = canvas.getContext('2d')
     ctx.drawImage(img, 0, 0)
     
-    // Convert to PNG
-    const pngBuffer = await canvas.toBuffer('image/png')
-    console.log('Converted to PNG, size:', pngBuffer.byteLength);
+    // Convert to PNG with error checking
+    let pngBuffer;
+    try {
+      pngBuffer = await canvas.toBuffer('image/png')
+      console.log('Converted to PNG, size:', pngBuffer.byteLength);
+    } catch (error) {
+      console.error('PNG conversion error:', error);
+      throw new Error(`Failed to convert image to PNG: ${error.message}`);
+    }
 
     if (!pngBuffer || pngBuffer.byteLength === 0) {
       throw new Error('PNG conversion failed - empty buffer');
