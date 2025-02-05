@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Bell, Plus, Trash2, Pencil, X } from "lucide-react";
@@ -93,17 +92,16 @@ interface Alert {
 
 const mapFiltersToDb = (filters: Partial<Alert>, userId: string) => {
   return {
+    ...(filters.id && { id: filters.id }),
     user_id: userId,
     name: filters.name,
     wilaya: filters.wilaya && filters.wilaya.length > 0 ? filters.wilaya.join(",") : null,
     tender_type: filters.tenderType && filters.tenderType.length > 0 ? filters.tenderType.join(",") : null,
-    // Don't split categories that contain commas - treat each array item as a complete category
     category: filters.category && filters.category.length > 0 ? filters.category.join("|||") : null,
   };
 };
 
 const mapDbToFilters = (dbAlert: any): Alert => {
-  // Use a different separator (|||) that won't conflict with category names containing commas
   const wilaya = dbAlert.wilaya ? dbAlert.wilaya.split(",") : [];
   const tenderType = dbAlert.tender_type ? dbAlert.tender_type.split(",") : [];
   const category = dbAlert.category ? dbAlert.category.split("|||") : [];
@@ -210,12 +208,13 @@ export const AlertsConfig = () => {
 
     console.log('Saving alert with data:', alertData);
 
+    const dbData = mapFiltersToDb(alertData, session.user.id);
+    console.log('Mapped data for DB:', dbData);
+
     const { error } = await supabase
       .from("alerts")
-      .upsert(
-        mapFiltersToDb(alertData, session.user.id),
-        { onConflict: 'id' }
-      );
+      .upsert(dbData)
+      .select();
 
     if (error) {
       console.error('Error saving alert:', error);
