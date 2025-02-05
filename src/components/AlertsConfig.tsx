@@ -122,7 +122,7 @@ export const AlertsConfig = () => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [editingAlertId, setEditingAlertId] = useState<string | null>(null);
 
-  const { data: alerts, refetch } = useQuery({
+  const { data: alerts = [], refetch } = useQuery({
     queryKey: ["alerts"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -160,8 +160,10 @@ export const AlertsConfig = () => {
         return [];
       }
 
-      const uniqueCategories = Array.from(new Set(data.map(tender => tender.category)))
-        .filter(category => category)
+      // Transform the data into the correct format for MultiSelect
+      const uniqueCategories = Array.from(new Set(data
+        .map(tender => tender.category)
+        .filter(Boolean))) // Remove any null/undefined values
         .sort()
         .map(category => ({
           value: category,
