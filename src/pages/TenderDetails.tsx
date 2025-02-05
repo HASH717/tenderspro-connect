@@ -72,6 +72,15 @@ const TenderDetails = () => {
     return new Date(dateString).toLocaleDateString();
   };
 
+  const getImageUrl = (url?: string | null) => {
+    if (!url) return null;
+    // If the URL is relative, convert it to absolute using the old.dztenders.com domain
+    if (url.startsWith('/')) {
+      return `https://old.dztenders.com${url}`;
+    }
+    return url;
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navigation />
@@ -154,13 +163,13 @@ const TenderDetails = () => {
                 </div>
               </div>
 
-              {tender.image_url && (
+              {(tender.image_url || tender.link) && (
                 <div className="mt-8">
                   <h2 className="text-lg font-semibold mb-4">Tender Document</h2>
                   <div className="relative border rounded-lg overflow-hidden w-full">
                     {!imageError ? (
                       <img 
-                        src={tender.image_url}
+                        src={getImageUrl(tender.image_url || tender.link)}
                         alt="Tender Document"
                         className="w-full h-auto object-contain max-h-[800px]"
                         onError={(e) => {
