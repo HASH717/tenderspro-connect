@@ -1,6 +1,5 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { HfInference } from 'https://esm.sh/@huggingface/inference@2.3.2'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
 import { decode } from "https://deno.land/x/imagescript@1.2.15/mod.ts"
 
@@ -79,85 +78,33 @@ serve(async (req) => {
       const image = await decode(new Uint8Array(imageBuffer))
       const pngBuffer = await image.encode() // This will encode to PNG by default
       
-      // Save original image as PNG to Supabase storage
-      const originalFileName = `original-${tenderId}.png`
+      // Save image as PNG to Supabase storage
+      const fileName = `tender-${tenderId}.png`
       
-      console.log('Uploading original PNG image...')
-      const { data: originalUploadData, error: originalUploadError } = await supabase
+      console.log('Uploading PNG image...')
+      const { data: uploadData, error: uploadError } = await supabase
         .storage
         .from('tender-documents')
-        .upload(originalFileName, pngBuffer, {
+        .upload(fileName, pngBuffer, {
           contentType: 'image/png',
           upsert: true
         })
 
-      if (originalUploadError) {
-        throw originalUploadError
+      if (uploadError) {
+        throw uploadError
       }
 
-      // Get public URL of original image
-      const { data: originalPublicUrlData } = await supabase
+      // Get public URL of the image
+      const { data: publicUrlData } = await supabase
         .storage
         .from('tender-documents')
-        .getPublicUrl(originalFileName)
+        .getPublicUrl(fileName)
 
-      // Initialize Hugging Face
-      const hf = new HfInference(Deno.env.get('HUGGING_FACE_ACCESS_TOKEN'))
-      
-      console.log('Detecting watermark regions with SAM...')
-      const segmentation = await hf.imageSegmentation({
-        inputs: new Blob([pngBuffer], { type: 'image/png' }),
-        model: 'facebook/sam-vit-huge',
-        parameters: {
-          confidence_threshold: 0.7
-        }
-      })
-
-      // Find the most likely watermark segment
-      const watermarkMask = segmentation[0].mask
-
-      console.log('Removing watermark with inpainting...')
-      const processedImage = await hf.imageToImage({
-        inputs: {
-          image: new Blob([pngBuffer], { type: 'image/png' }),
-          mask: watermarkMask,
-        },
-        model: 'stabilityai/stable-diffusion-2-inpainting',
-        parameters: {
-          prompt: 'clean document page',
-          negative_prompt: 'watermark, text, logo',
-          num_inference_steps: 30,
-        }
-      })
-
-      // Upload processed image to Supabase storage
-      const processedFileName = `processed-${tenderId}.png`
-      const processedImageBuffer = await processedImage.arrayBuffer()
-      
-      const { data: processedUploadData, error: processedUploadError } = await supabase
-        .storage
-        .from('tender-documents')
-        .upload(processedFileName, processedImageBuffer, {
-          contentType: 'image/png',
-          upsert: true
-        })
-
-      if (processedUploadError) {
-        throw processedUploadError
-      }
-
-      // Get public URL of processed image
-      const { data: processedPublicUrlData } = await supabase
-        .storage
-        .from('tender-documents')
-        .getPublicUrl(processedFileName)
-
-      // Update tender record with both image URLs
+      // Update tender record with the image URL
       const { error: updateError } = await supabase
         .from('tenders')
         .update({
-          original_image_url: originalPublicUrlData.publicUrl,
-          processed_image_url: processedPublicUrlData.publicUrl
+          image_url: publicUrlData.publicUrl
         })
         .eq('id', tenderId)
 
@@ -165,32 +112,18 @@ serve(async (req) => {
         throw updateError
       }
 
-      console.log('Successfully processed and stored images')
+      console.log('Successfully processed and stored image')
 
       return new Response(
         JSON.stringify({ 
           success: true,
-          originalImageUrl: originalPublicUrlData.publicUrl,
-          processedImageUrl: processedPublicUrlData.publicUrl
+          imageUrl: publicUrlData.publicUrl
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
 
     } catch (fetchError) {
       console.error('Error fetching or processing image:', fetchError)
-      
-      // Try to update the tender with just the URL if we can't process it
-      const { error: updateError } = await supabase
-        .from('tenders')
-        .update({
-          original_image_url: fullImageUrl
-        })
-        .eq('id', tenderId)
-
-      if (updateError) {
-        console.error('Error updating tender with original URL:', updateError)
-      }
-
       throw new Error(`Failed to process image: ${fetchError.message}`)
     }
 

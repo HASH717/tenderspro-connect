@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import Footer from "@/components/Footer";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 const TenderDetails = () => {
   const { id } = useParams();
@@ -66,9 +66,9 @@ const TenderDetails = () => {
       return response.data;
     },
     onSuccess: () => {
-      toast.success('Image processing started');
-      // Refetch the tender to get the updated image URLs
-      setTimeout(() => refetch(), 5000); // Wait 5 seconds before refetching
+      toast.success('Image processing completed');
+      // Refetch the tender to get the updated image URL
+      setTimeout(() => refetch(), 2000); // Wait 2 seconds before refetching
     },
     onError: (error) => {
       console.error('Error processing image:', error);
@@ -79,10 +79,11 @@ const TenderDetails = () => {
 
   // Trigger image processing if needed
   useEffect(() => {
-    if (tender?.image_url && !tender.processed_image_url && !processImageMutation.isPending) {
+    const originalUrl = tender?.image_url;
+    if (originalUrl && !originalUrl.includes('tender-documents') && !processImageMutation.isPending) {
       console.log('Triggering image processing for tender:', tender.id);
       processImageMutation.mutate({
-        imageUrl: tender.image_url,
+        imageUrl: originalUrl,
         tenderId: tender.id
       });
     }
@@ -108,30 +109,6 @@ const TenderDetails = () => {
     if (!dateString) return 'Not specified';
     return new Date(dateString).toLocaleDateString();
   };
-
-  const getImageUrl = () => {
-    // First try to use the processed image if available
-    if (tender.processed_image_url) {
-      return tender.processed_image_url;
-    }
-
-    // Then try the original image stored in our bucket
-    if (tender.original_image_url) {
-      return tender.original_image_url;
-    }
-
-    // Finally, fall back to the external image URL
-    if (tender.image_url) {
-      if (!tender.image_url.startsWith('http')) {
-        return `https://old.dztenders.com/${tender.image_url.replace(/^\//, '')}`;
-      }
-      return tender.image_url;
-    }
-
-    return null;
-  };
-
-  const imageUrl = getImageUrl();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -215,13 +192,13 @@ const TenderDetails = () => {
                 </div>
               </div>
 
-              {imageUrl && (
+              {tender.image_url && (
                 <div className="mt-8">
                   <h2 className="text-lg font-semibold mb-4">Tender Document</h2>
                   <div className="relative border rounded-lg overflow-hidden w-full">
                     {!imageError ? (
                       <img 
-                        src={imageUrl}
+                        src={tender.image_url}
                         alt="Tender Document"
                         className="w-full h-auto object-contain max-h-[800px]"
                         onError={(e) => {
