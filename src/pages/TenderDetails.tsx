@@ -164,12 +164,12 @@ const TenderDetails = () => {
               {(tender.original_image_url || tender.image_url) && (
                 <div className="mt-8">
                   <h2 className="text-lg font-semibold mb-4">Tender Document</h2>
-                  <div className="relative border rounded-lg overflow-hidden">
+                  <div className="relative border rounded-lg overflow-hidden w-full">
                     {!imageError ? (
                       <img 
                         src={getImageUrl(tender.original_image_url || tender.image_url)}
                         alt="Tender Document"
-                        className="w-full object-contain max-h-[800px]"
+                        className="w-full h-auto object-fill"
                         onError={(e) => {
                           console.error('Image load error:', e);
                           setImageError(true);
