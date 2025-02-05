@@ -8,6 +8,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const isValidHttpUrl = (string: string) => {
+  try {
+    const url = new URL(string);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch (_) {
+    return false;
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -22,12 +31,20 @@ serve(async (req) => {
       throw new Error('Missing required parameters')
     }
 
-    // Ensure the URL has the correct prefix
-    const fullImageUrl = imageUrl.startsWith('http') 
-      ? imageUrl 
-      : `https://old.dztenders.com/${imageUrl.replace(/^\//, '')}`;
-    
-    console.log('Full image URL:', fullImageUrl);
+    // Construct and validate the full URL
+    let fullImageUrl = imageUrl;
+    if (!isValidHttpUrl(imageUrl)) {
+      // Remove any leading slashes and construct the full URL
+      const cleanPath = imageUrl.replace(/^\/+/, '');
+      fullImageUrl = `https://old.dztenders.com/${cleanPath}`;
+    }
+
+    // Validate the constructed URL
+    if (!isValidHttpUrl(fullImageUrl)) {
+      throw new Error(`Invalid URL constructed: ${fullImageUrl}`);
+    }
+
+    console.log('Attempting to fetch image from URL:', fullImageUrl);
 
     // Initialize Hugging Face client
     const hf = new HfInference(Deno.env.get('HUGGING_FACE_ACCESS_TOKEN'))
