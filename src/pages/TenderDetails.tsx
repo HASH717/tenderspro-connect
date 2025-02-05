@@ -72,12 +72,24 @@ const TenderDetails = () => {
     return new Date(dateString).toLocaleDateString();
   };
 
-  const getImageUrl = (imageUrl: string) => {
+  const getImageUrl = (imageUrl?: string | null) => {
+    if (!imageUrl) return null;
+    
+    // First try to use the processed image if available
+    if (tender.processed_image_url) {
+      return tender.processed_image_url;
+    }
+    
+    // Then try the original image URL
     if (imageUrl.startsWith('http')) {
       return imageUrl;
     }
+    
+    // Finally, construct the URL with the old domain
     return `https://old.dztenders.com/${imageUrl.replace(/^\//, '')}`;
   };
+
+  const imageUrl = getImageUrl(tender.original_image_url || tender.image_url);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -161,15 +173,15 @@ const TenderDetails = () => {
                 </div>
               </div>
 
-              {(tender.original_image_url || tender.image_url) && (
+              {imageUrl && (
                 <div className="mt-8">
                   <h2 className="text-lg font-semibold mb-4">Tender Document</h2>
                   <div className="relative border rounded-lg overflow-hidden w-full">
                     {!imageError ? (
                       <img 
-                        src={getImageUrl(tender.processed_image_url || tender.original_image_url || tender.image_url)}
+                        src={imageUrl}
                         alt="Tender Document"
-                        className="w-full h-auto object-fill"
+                        className="w-full h-auto object-contain max-h-[800px]"
                         onError={(e) => {
                           console.error('Image load error:', e);
                           setImageError(true);
