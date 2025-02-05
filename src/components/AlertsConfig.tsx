@@ -152,7 +152,11 @@ export const AlertsConfig = () => {
 
       if (error) {
         console.error('Error fetching categories:', error);
-        toast.error('Failed to load categories');
+        toast({
+          title: t("alerts.error"),
+          description: t("alerts.failedToLoadCategories"),
+          variant: "destructive",
+        });
         return [];
       }
 
