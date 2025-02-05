@@ -41,16 +41,88 @@ serve(async (req) => {
 
     console.log('Using full image URL:', fullImageUrl)
 
+    // Initialize Supabase client early so we can use it for error handling
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing Supabase configuration')
+    }
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
     try {
-      // Attempt to fetch the image directly
-      const imageResponse = await fetch(fullImageUrl)
+      // Try to fetch with a timeout
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+
+      const imageResponse = await fetch(fullImageUrl, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+      })
+
+      clearTimeout(timeout)
+
       if (!imageResponse.ok) {
         throw new Error(`Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`)
       }
+
+      const contentType = imageResponse.headers.get('content-type')
+      console.log('Image content type:', contentType)
+
+      // If it's a GIF, we'll just store it without processing
+      const isGif = contentType?.includes('gif')
       
       const imageBlob = await imageResponse.blob()
+      
+      // Save original image to Supabase storage
+      const originalFileName = `original-${tenderId}.${isGif ? 'gif' : 'png'}`
+      const originalImageBuffer = await imageBlob.arrayBuffer()
+      
+      const { data: originalUploadData, error: originalUploadError } = await supabase
+        .storage
+        .from('tender-documents')
+        .upload(originalFileName, originalImageBuffer, {
+          contentType: contentType || 'image/png',
+          upsert: true
+        })
 
-      // Initialize Hugging Face client
+      if (originalUploadError) {
+        throw originalUploadError
+      }
+
+      // Get public URL of original image
+      const { data: originalPublicUrlData } = await supabase
+        .storage
+        .from('tender-documents')
+        .getPublicUrl(originalFileName)
+
+      // If it's a GIF, skip the processing step
+      if (isGif) {
+        // Update tender record with only original image URL
+        const { error: updateError } = await supabase
+          .from('tenders')
+          .update({
+            original_image_url: originalPublicUrlData.publicUrl,
+            processed_image_url: originalPublicUrlData.publicUrl // Use same URL for processed
+          })
+          .eq('id', tenderId)
+
+        if (updateError) {
+          throw updateError
+        }
+
+        return new Response(
+          JSON.stringify({ 
+            success: true,
+            originalImageUrl: originalPublicUrlData.publicUrl,
+            processedImageUrl: originalPublicUrlData.publicUrl
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      // For non-GIF images, proceed with processing
       const hf = new HfInference(Deno.env.get('HUGGING_FACE_ACCESS_TOKEN'))
       
       console.log('Detecting watermark regions with SAM...')
@@ -79,39 +151,9 @@ serve(async (req) => {
         }
       })
 
-      // Initialize Supabase client
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')
-      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-      if (!supabaseUrl || !supabaseKey) {
-        throw new Error('Missing Supabase configuration')
-      }
-      const supabase = createClient(supabaseUrl, supabaseKey)
-
-      // Save original image to Supabase storage
-      const originalImageBuffer = await imageBlob.arrayBuffer()
-      const originalFileName = `original-${tenderId}.png`
-      
-      const { data: originalUploadData, error: originalUploadError } = await supabase
-        .storage
-        .from('tender-documents')
-        .upload(originalFileName, originalImageBuffer, {
-          contentType: 'image/png',
-          upsert: true
-        })
-
-      if (originalUploadError) {
-        throw originalUploadError
-      }
-
-      // Get public URL of original image
-      const { data: originalPublicUrlData } = await supabase
-        .storage
-        .from('tender-documents')
-        .getPublicUrl(originalFileName)
-
       // Upload processed image to Supabase storage
-      const processedImageBuffer = await processedImage.arrayBuffer()
       const processedFileName = `processed-${tenderId}.png`
+      const processedImageBuffer = await processedImage.arrayBuffer()
       
       const { data: processedUploadData, error: processedUploadError } = await supabase
         .storage
@@ -157,6 +199,19 @@ serve(async (req) => {
 
     } catch (fetchError) {
       console.error('Error fetching or processing image:', fetchError)
+      
+      // Try to update the tender with just the URL if we can't process it
+      const { error: updateError } = await supabase
+        .from('tenders')
+        .update({
+          original_image_url: fullImageUrl
+        })
+        .eq('id', tenderId)
+
+      if (updateError) {
+        console.error('Error updating tender with original URL:', updateError)
+      }
+
       throw new Error(`Failed to process image: ${fetchError.message}`)
     }
 
