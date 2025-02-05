@@ -19,7 +19,7 @@ interface PlanProps {
   categoryLimit?: number;
   subscription: Subscription | null;
   onSubscribe: (plan: any) => void;
-  billingInterval?: 'monthly' | 'annual';
+  billingInterval: 'monthly' | 'annual';
 }
 
 export const PlanCard = ({

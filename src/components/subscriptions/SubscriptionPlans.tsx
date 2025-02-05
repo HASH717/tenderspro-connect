@@ -1,4 +1,5 @@
 
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PlanCard } from "./PlanCard";
 import { Subscription } from "@/types/subscription";
@@ -13,7 +14,7 @@ interface SubscriptionPlansProps {
 
 export const SubscriptionPlans = ({ subscription, onSubscribe }: SubscriptionPlansProps) => {
   const { t } = useTranslation();
-  const [isAnnual, setIsAnnual] = React.useState(false);
+  const [isAnnual, setIsAnnual] = useState(false);
 
   const plans = [
     {
@@ -60,7 +61,7 @@ export const SubscriptionPlans = ({ subscription, onSubscribe }: SubscriptionPla
   const adjustedPlans = plans.map(plan => ({
     ...plan,
     priceInDZD: isAnnual ? Math.round(plan.priceInDZD * 0.75) : plan.priceInDZD,
-    billingInterval: isAnnual ? 'annual' : 'monthly'
+    billingInterval: isAnnual ? 'annual' as const : 'monthly' as const
   }));
 
   const annualSavings = plans.reduce((total, plan) => total + (plan.priceInDZD * 3), 0);
