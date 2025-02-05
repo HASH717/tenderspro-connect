@@ -26,7 +26,18 @@ serve(async (req) => {
       throw new Error('No image URL provided')
     }
 
-    // Add custom headers to bypass potential restrictions
+    // Normalize and clean URL
+    const normalizedUrl = encodeURI(decodeURI(imageUrl).trim());
+    console.log('Attempting to fetch image from:', normalizedUrl);
+
+    // Define multiple proxy services to try
+    const proxyUrls = [
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(normalizedUrl)}`,
+      `https://cors-anywhere.herokuapp.com/${normalizedUrl}`,
+      `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(normalizedUrl)}`
+    ];
+
+    // Custom headers for direct fetch
     const headers = new Headers({
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
       'Accept': 'image/*, */*',
@@ -36,28 +47,24 @@ serve(async (req) => {
       'Pragma': 'no-cache'
     });
 
-    // Normalize and clean URL
-    const normalizedUrl = encodeURI(decodeURI(imageUrl).trim());
-    console.log('Attempting to fetch image from:', normalizedUrl);
-
-    // Try fetching through a proxy first, then directly
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(normalizedUrl)}`;
-    console.log('Using proxy URL:', proxyUrl);
-
-    // Download the image with retry logic
+    // Download the image with enhanced retry logic
     let imageResponse;
     let retries = 3;
+    let currentProxyIndex = 0;
     let usingProxy = true;
     
     while (retries > 0) {
       try {
-        const urlToTry = usingProxy ? proxyUrl : normalizedUrl;
-        console.log(`Attempt ${4 - retries}: Fetching from ${usingProxy ? 'proxy' : 'direct'} URL`);
-        
-        imageResponse = await fetch(urlToTry, { 
-          headers: usingProxy ? undefined : headers,
-          redirect: 'follow',
-        });
+        if (usingProxy) {
+          console.log(`Attempting proxy ${currentProxyIndex + 1}:`, proxyUrls[currentProxyIndex]);
+          imageResponse = await fetch(proxyUrls[currentProxyIndex]);
+        } else {
+          console.log('Attempting direct fetch');
+          imageResponse = await fetch(normalizedUrl, { 
+            headers,
+            redirect: 'follow',
+          });
+        }
         
         if (imageResponse.ok) {
           console.log('Image fetch successful, status:', imageResponse.status);
@@ -66,35 +73,46 @@ serve(async (req) => {
         
         console.log(`Failed to fetch image, status: ${imageResponse.status}`);
         
-        if (usingProxy && retries === 3) {
-          // If proxy fails on first try, switch to direct URL
-          usingProxy = false;
-          console.log('Switching to direct URL fetch');
-          continue;
+        if (usingProxy) {
+          currentProxyIndex++;
+          if (currentProxyIndex >= proxyUrls.length) {
+            usingProxy = false;
+            console.log('All proxies failed, switching to direct fetch');
+          } else {
+            console.log('Trying next proxy');
+            continue;
+          }
         }
         
         retries--;
         if (retries > 0) {
-          console.log(`Waiting before retry ${3 - retries}...`);
-          await new Promise(r => setTimeout(r, 2000));
+          const delay = 2000 * (4 - retries); // Increasing delay with each retry
+          console.log(`Waiting ${delay}ms before retry ${3 - retries}...`);
+          await new Promise(r => setTimeout(r, delay));
         }
       } catch (error) {
         console.error(`Fetch attempt failed:`, error);
         
-        if (usingProxy && retries === 3) {
-          usingProxy = false;
-          console.log('Switching to direct URL fetch after error');
-          continue;
+        if (usingProxy) {
+          currentProxyIndex++;
+          if (currentProxyIndex >= proxyUrls.length) {
+            usingProxy = false;
+            console.log('All proxies failed, switching to direct fetch');
+          } else {
+            console.log('Trying next proxy');
+            continue;
+          }
         }
         
         retries--;
         if (retries === 0) throw error;
-        await new Promise(r => setTimeout(r, 2000));
+        const delay = 2000 * (4 - retries);
+        await new Promise(r => setTimeout(r, delay));
       }
     }
 
     if (!imageResponse?.ok) {
-      throw new Error(`Failed to fetch image after retries: ${imageResponse?.statusText || 'Unknown error'}`)
+      throw new Error(`Failed to fetch image after all retries: ${imageResponse?.statusText || 'Unknown error'}`)
     }
 
     const imageBlob = await imageResponse.blob()
