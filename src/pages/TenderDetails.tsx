@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, MapPin, Building, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -59,7 +60,7 @@ const TenderDetails = () => {
       });
       
       if (response.error) {
-        throw new Error('Failed to process image');
+        throw new Error(response.error.message || 'Failed to process image');
       }
       
       return response.data;
@@ -72,15 +73,16 @@ const TenderDetails = () => {
     onError: (error) => {
       console.error('Error processing image:', error);
       toast.error('Failed to process image');
+      setImageError(true);
     }
   });
 
   // Trigger image processing if needed
   useEffect(() => {
-    if (tender && tender.original_image_url && !tender.processed_image_url && !processImageMutation.isPending) {
+    if (tender?.image_url && !tender.processed_image_url && !processImageMutation.isPending) {
       console.log('Triggering image processing for tender:', tender.id);
       processImageMutation.mutate({
-        imageUrl: tender.original_image_url,
+        imageUrl: tender.image_url,
         tenderId: tender.id
       });
     }
@@ -107,28 +109,29 @@ const TenderDetails = () => {
     return new Date(dateString).toLocaleDateString();
   };
 
-  const getImageUrl = (imageUrl?: string | null) => {
-    if (!imageUrl) return null;
-    
+  const getImageUrl = () => {
     // First try to use the processed image if available
-    if (tender?.processed_image_url) {
+    if (tender.processed_image_url) {
       return tender.processed_image_url;
     }
 
-    // Otherwise use the original image
-    if (tender?.original_image_url) {
+    // Then try the original image stored in our bucket
+    if (tender.original_image_url) {
       return tender.original_image_url;
     }
-    
-    // Ensure the URL has the correct prefix
-    if (!imageUrl.startsWith('http')) {
-      return `https://old.dztenders.com/${imageUrl.replace(/^\//, '')}`;
+
+    // Finally, fall back to the external image URL
+    if (tender.image_url) {
+      if (!tender.image_url.startsWith('http')) {
+        return `https://old.dztenders.com/${tender.image_url.replace(/^\//, '')}`;
+      }
+      return tender.image_url;
     }
-    
-    return imageUrl;
+
+    return null;
   };
 
-  const imageUrl = getImageUrl(tender.original_image_url || tender.image_url);
+  const imageUrl = getImageUrl();
 
   return (
     <div className="min-h-screen flex flex-col">
