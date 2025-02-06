@@ -30,14 +30,15 @@ export const useScraper = () => {
         throw allTendersError;
       }
 
-      // Let's check ALL tenders with images, regardless of PNG status
+      // Let's check ONE tender with an image that hasn't been converted yet
       const { data: tenders, error } = await supabase
         .from('tenders')
         .select('id, image_url, png_image_url')
         .not('image_url', 'is', null)
-        .limit(1); // Limiting to 1 for testing
+        .is('png_image_url', null)
+        .limit(1); // Just one tender for testing
 
-      console.log('Tenders with images:', tenders);
+      console.log('Selected tender for testing:', tenders);
 
       if (error) {
         console.error('Error fetching tenders:', error);
@@ -45,12 +46,12 @@ export const useScraper = () => {
       }
 
       if (!tenders?.length) {
-        console.log('No tenders found with images');
+        console.log('No tenders found with images that need conversion');
         toast.info('No images found to convert');
         return;
       }
 
-      console.log('Found tenders to check:', tenders);
+      console.log('Found tender to convert:', tenders[0]);
 
       let processed = 0;
       for (const tender of tenders) {
