@@ -43,21 +43,26 @@ serve(async (req) => {
         throw new Error(`Failed to fetch image: ${imageResponse.statusText} (${imageResponse.status})`);
       }
 
-      // Get the image data as an ArrayBuffer
-      const imageArrayBuffer = await imageResponse.arrayBuffer();
-      const imageSize = imageArrayBuffer.byteLength;
-      console.log('Image size:', imageSize, 'bytes');
+      // Get the image data
+      const imageBuffer = await imageResponse.arrayBuffer();
+      console.log('Image downloaded, size:', imageBuffer.byteLength, 'bytes');
 
-      // Validate image size
-      if (imageSize > 10 * 1024 * 1024) { // 10MB limit
+      // Validate image size (10MB limit)
+      if (imageBuffer.byteLength > 10 * 1024 * 1024) {
         throw new Error('Image too large (max 10MB)');
       }
 
-      // Create FormData and append the image as a file
+      // Create FormData for the API request
       const formData = new FormData();
-      const imageBlob = new Blob([imageArrayBuffer], { type: 'image/png' });
-      const imageFile = new File([imageBlob], 'image.png', { type: 'image/png' });
-      formData.append('image[]', imageFile);
+      
+      // Create a Blob with the correct MIME type
+      const blob = new Blob([imageBuffer], { type: 'image/png' });
+      
+      // Create a File object from the Blob
+      const file = new File([blob], 'image.png', { type: 'image/png' });
+      
+      // Append the file to FormData with the correct field name
+      formData.append('image[]', file);
 
       // Call imggen.ai API to remove watermark
       console.log('Calling imggen.ai API...');
