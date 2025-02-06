@@ -64,16 +64,12 @@ serve(async (req) => {
 
       // Create FormData for the request
       const formData = new FormData();
-      
-      // Create a File object with explicit PNG type
-      const file = new File(
-        [imageBuffer],
-        'image.png',
-        { type: 'image/png' }
-      );
-      formData.append('image', file);
 
-      console.log('Sending request to imggen.ai with file:', file.name, 'type:', file.type);
+      // Create a Blob with explicit PNG type and .png extension
+      const blob = new Blob([imageBuffer], { type: 'image/png' });
+      formData.append('image', blob, `image-${Date.now()}.png`);
+
+      console.log('Sending request to imggen.ai with blob type:', blob.type);
 
       // Call imggen.ai API to remove watermark
       console.log('Calling imggen.ai API...');
