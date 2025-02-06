@@ -44,12 +44,15 @@ serve(async (req) => {
     // Define the conversion process
     const convertImage = async () => {
       try {
-        // Download the image
-        console.log(`Fetching image from URL: ${imageUrl}`);
-        const imageResponse = await fetch(imageUrl);
+        // Use proxy service to fetch the image
+        const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(imageUrl)}`;
+        console.log(`Fetching image via proxy: ${proxyUrl}`);
+        
+        // Download the image through proxy
+        const imageResponse = await fetch(proxyUrl);
         
         if (!imageResponse.ok) {
-          console.error(`Failed to fetch image, status: ${imageResponse.status}`);
+          console.error(`Failed to fetch image via proxy, status: ${imageResponse.status}`);
           throw new Error(`Failed to fetch image: ${imageResponse.statusText || 'Unknown error'}`);
         }
 
