@@ -62,18 +62,17 @@ serve(async (req) => {
         throw new Error('Image too large (max 20MB)');
       }
 
-      // Create FormData with the PNG file
+      // Prepare form data for imggen.ai API
+      console.log('Preparing FormData for imggen.ai API...');
       const formData = new FormData();
       const file = new File(
         [imageBuffer],
-        'image.png',
+        'watermarked.png',
         { type: 'image/png' }
       );
       formData.append('image', file);
 
       console.log('Sending request to imggen.ai...');
-
-      // Call imggen.ai API to remove watermark
       const removeWatermarkResponse = await fetch('https://app.imggen.ai/v1/remove-watermark', {
         method: 'POST',
         headers: {
@@ -84,7 +83,7 @@ serve(async (req) => {
 
       if (!removeWatermarkResponse.ok) {
         const errorText = await removeWatermarkResponse.text();
-        console.error('imggen.ai API error:', errorText);
+        console.error('imggen.ai API error response:', errorText);
         throw new Error(`Failed to remove watermark: ${removeWatermarkResponse.statusText} (${removeWatermarkResponse.status})`);
       }
 
@@ -97,13 +96,14 @@ serve(async (req) => {
 
       // Convert base64 to buffer
       const processedImageBuffer = Uint8Array.from(atob(result.images[0]), c => c.charCodeAt(0));
+      console.log('Processed image size:', processedImageBuffer.length, 'bytes');
 
-      // Generate a unique filename
+      // Generate a unique filename for the processed image
       const outputFilename = `${tenderId}-processed-${Date.now()}.png`;
       
       // Upload the processed image to Supabase Storage
       console.log('Uploading processed image to Supabase Storage...');
-      const { data: uploadData, error: uploadError } = await supabaseClient
+      const { error: uploadError } = await supabaseClient
         .storage
         .from('tender-documents')
         .upload(outputFilename, processedImageBuffer, {
@@ -134,6 +134,8 @@ serve(async (req) => {
       if (updateError) {
         throw new Error(`Failed to update tender record: ${updateError.message}`);
       }
+
+      console.log('Successfully processed and stored watermarked image for tender:', tenderId);
 
       return new Response(
         JSON.stringify({ 
