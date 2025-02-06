@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
 
@@ -52,10 +53,10 @@ serve(async (req) => {
         throw new Error('Image too large (max 10MB)');
       }
 
-      // Create FormData and append the blob as a file
+      // Create FormData and append the blob with proper filename
       const formData = new FormData();
-      const file = new File([imageBlob], 'image.png', { type: 'image/png' });
-      formData.append('image[]', file);
+      const filename = `image-${Date.now()}.png`;
+      formData.append('image[]', new File([imageBlob], filename, { type: 'image/png' }));
 
       // Call imggen.ai API to remove watermark
       console.log('Calling imggen.ai API...');
@@ -84,14 +85,14 @@ serve(async (req) => {
       const processedImageBuffer = Uint8Array.from(atob(result.images[0]), c => c.charCodeAt(0));
 
       // Generate a unique filename
-      const filename = `${tenderId}-processed-${Date.now()}.png`;
+      const outputFilename = `${tenderId}-processed-${Date.now()}.png`;
       
       // Upload the processed image to Supabase Storage
       console.log('Uploading processed image to Supabase Storage...');
       const { data: uploadData, error: uploadError } = await supabaseClient
         .storage
         .from('tender-documents')
-        .upload(filename, processedImageBuffer, {
+        .upload(outputFilename, processedImageBuffer, {
           contentType: 'image/png',
           cacheControl: '3600'
         });
@@ -104,7 +105,7 @@ serve(async (req) => {
       const { data: { publicUrl } } = supabaseClient
         .storage
         .from('tender-documents')
-        .getPublicUrl(filename);
+        .getPublicUrl(outputFilename);
 
       // Update the tender record
       console.log('Updating tender record with processed image URL...');
