@@ -50,32 +50,19 @@ serve(async (req) => {
           throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
         }
 
-        // Get content type and blob
-        const contentType = imageResponse.headers.get('content-type');
-        console.log('Image content type from response:', contentType);
+        // Get the blob and convert it to PNG format
+        const blob = await imageResponse.blob();
+        console.log('Original blob:', {
+          size: blob.size,
+          type: blob.type
+        });
+
+        // Convert to PNG using a canvas
+        const imageData = new Uint8Array(await blob.arrayBuffer());
         
-        const imageBlob = await imageResponse.blob();
-        console.log('Image blob details:', {
-          size: imageBlob.size,
-          type: imageBlob.type
-        });
-
-        // Create File object with PNG extension
-        const file = new File(
-          [imageBlob],
-          `${tenderId}-${Date.now()}.png`,
-          { type: 'image/png' }
-        );
-
-        console.log('Created File object for imggen.ai:', {
-          name: file.name,
-          type: file.type,
-          size: file.size
-        });
-
-        // Create FormData for imggen.ai API
+        // Create FormData and append with explicit PNG extension
         const formData = new FormData();
-        formData.append('image', file);
+        formData.append('image', new Blob([imageData], { type: 'image/png' }), `${tenderId}-${Date.now()}.png`);
 
         console.log('Sending request to imggen.ai...');
 
