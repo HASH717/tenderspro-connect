@@ -45,9 +45,14 @@ serve(async (req) => {
         throw new Error(`Failed to fetch image: ${imageResponse.statusText} (${imageResponse.status})`);
       }
 
-      // Log content type for debugging
+      // Log content type and response details
       const contentType = imageResponse.headers.get('content-type');
-      console.log('Image content type:', contentType);
+      console.log('Image response details:', {
+        contentType,
+        status: imageResponse.status,
+        statusText: imageResponse.statusText,
+        headers: Object.fromEntries(imageResponse.headers.entries())
+      });
 
       if (!contentType?.includes('image/png')) {
         throw new Error(`Invalid content type: ${contentType}. Only PNG images are supported.`);
@@ -57,36 +62,45 @@ serve(async (req) => {
       const imageBuffer = await imageResponse.arrayBuffer();
       console.log('Image downloaded, size:', imageBuffer.byteLength, 'bytes');
 
-      // Additional PNG validation - check magic numbers
-      const uint8Array = new Uint8Array(imageBuffer.slice(0, 8));
+      // Log first few bytes for debugging
+      const headerBytes = new Uint8Array(imageBuffer.slice(0, 16));
+      console.log('First 16 bytes of image:', Array.from(headerBytes));
+
+      // PNG signature validation
       const pngSignature = [137, 80, 78, 71, 13, 10, 26, 10];
+      const uint8Array = new Uint8Array(imageBuffer.slice(0, 8));
       const isPNG = uint8Array.every((byte, i) => byte === pngSignature[i]);
       
       if (!isPNG) {
+        console.error('PNG signature mismatch. Expected:', pngSignature, 'Got:', Array.from(uint8Array));
         throw new Error('Invalid PNG file signature');
       }
+
+      console.log('PNG signature validation passed');
 
       // Validate image size (20MB limit)
       if (imageBuffer.byteLength > 20 * 1024 * 1024) {
         throw new Error('Image too large (max 20MB)');
       }
 
-      // Prepare form data for imggen.ai API
-      console.log('Preparing FormData for imggen.ai API...');
-      const formData = new FormData();
-      const file = new File(
-        [imageBuffer],
-        'image.png', // Use simpler filename
-        { type: 'image/png' }
-      );
-      formData.append('image', file);
+      // Create a Blob first
+      const blob = new Blob([imageBuffer], { type: 'image/png' });
+      console.log('Created Blob:', {
+        size: blob.size,
+        type: blob.type
+      });
 
-      // Log FormData contents for debugging
-      console.log('FormData file details:', {
+      // Create File from Blob
+      const file = new File([blob], 'image.png', { type: 'image/png' });
+      console.log('Created File:', {
         name: file.name,
         type: file.type,
         size: file.size
       });
+
+      // Prepare form data
+      const formData = new FormData();
+      formData.append('image', file);
 
       console.log('Sending request to imggen.ai...');
       const removeWatermarkResponse = await fetch('https://app.imggen.ai/v1/remove-watermark', {
