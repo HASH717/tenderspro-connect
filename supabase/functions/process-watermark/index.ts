@@ -52,18 +52,26 @@ serve(async (req) => {
           throw new Error(`Failed to fetch image: ${imageResponse.statusText} (${imageResponse.status})`);
         }
 
-        // Convert image to blob
-        const imageBlob = await imageResponse.blob();
-        console.log('Image size:', imageBlob.size, 'bytes');
+        // Get the image data as an ArrayBuffer
+        const imageBuffer = await imageResponse.arrayBuffer();
+        const imageSize = imageBuffer.byteLength;
+        console.log('Image size:', imageSize, 'bytes');
 
         // Validate image size
-        if (imageBlob.size > 10 * 1024 * 1024) { // 10MB limit
+        if (imageSize > 10 * 1024 * 1024) { // 10MB limit
           throw new Error('Image too large (max 10MB)');
         }
 
+        // Create a File object from the buffer
+        const imageFile = new File(
+          [imageBuffer], 
+          'image.png', 
+          { type: 'image/png' }
+        );
+
         // Create FormData for imggen.ai API
         const formData = new FormData();
-        formData.append('image[]', imageBlob, 'image.png');
+        formData.append('image[]', imageFile);
 
         // Call imggen.ai API to remove watermark
         console.log('Calling imggen.ai API...');
