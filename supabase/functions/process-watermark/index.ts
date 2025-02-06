@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
 
@@ -47,12 +48,27 @@ serve(async (req) => {
           throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
         }
 
+        // Get the file extension from Content-Type or URL
+        const contentType = imageResponse.headers.get('content-type') || '';
+        const fileExtension = contentType.split('/')[1] || 'png';
+        console.log(`Content-Type: ${contentType}, File Extension: ${fileExtension}`);
+
         // Convert image to blob
         const imageBlob = await imageResponse.blob();
+        
+        // Create a File object with the correct content-type
+        const fileType = `image/${fileExtension}`;
+        const file = new File(
+          [imageBlob],
+          `image-${Date.now()}.${fileExtension}`,
+          { type: fileType }
+        );
 
-        // Create FormData for imggen.ai API
+        // Create FormData for imggen.ai API with correct field name
         const formData = new FormData();
-        formData.append('image[]', imageBlob);
+        formData.append('image', file); // Changed from 'image[]' to 'image'
+
+        console.log('Sending request to imggen.ai with file:', file.name, file.type);
 
         // Call imggen.ai API to remove watermark
         const removeWatermarkResponse = await fetch('https://app.imggen.ai/v1/remove-watermark', {
@@ -64,10 +80,13 @@ serve(async (req) => {
         });
 
         if (!removeWatermarkResponse.ok) {
+          const errorText = await removeWatermarkResponse.text();
+          console.error('Imggen.ai API error response:', errorText);
           throw new Error(`Failed to remove watermark: ${removeWatermarkResponse.statusText}`);
         }
 
         const result = await removeWatermarkResponse.json();
+        console.log('Imggen.ai API response:', result);
         
         if (!result.success || !result.images?.[0]) {
           throw new Error('Failed to process image with imggen.ai');
