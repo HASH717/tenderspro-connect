@@ -25,10 +25,14 @@ serve(async (req) => {
 
   try {
     const { tenderId, imageUrl } = await req.json()
-    console.log(`Processing watermark for tender ${tenderId}: ${imageUrl}`)
+    console.log(`Processing watermark for tender ${tenderId} with image URL: ${imageUrl}`)
 
     if (!imageUrl) {
       throw new Error('No image URL provided')
+    }
+
+    if (!imageUrl.toLowerCase().endsWith('.png')) {
+      throw new Error('Only PNG images are supported')
     }
 
     // Track this processing
@@ -42,19 +46,27 @@ serve(async (req) => {
     const processImage = async () => {
       try {
         // Download the image
+        console.log('Downloading image...');
         const imageResponse = await fetch(imageUrl);
         if (!imageResponse.ok) {
-          throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
+          throw new Error(`Failed to fetch image: ${imageResponse.statusText} (${imageResponse.status})`);
         }
 
         // Convert image to blob
         const imageBlob = await imageResponse.blob();
+        console.log('Image size:', imageBlob.size, 'bytes');
+
+        // Validate image size
+        if (imageBlob.size > 10 * 1024 * 1024) { // 10MB limit
+          throw new Error('Image too large (max 10MB)');
+        }
 
         // Create FormData for imggen.ai API
         const formData = new FormData();
-        formData.append('image[]', imageBlob);
+        formData.append('image[]', imageBlob, 'image.png');
 
         // Call imggen.ai API to remove watermark
+        console.log('Calling imggen.ai API...');
         const removeWatermarkResponse = await fetch('https://app.imggen.ai/v1/remove-watermark', {
           method: 'POST',
           headers: {
@@ -64,13 +76,16 @@ serve(async (req) => {
         });
 
         if (!removeWatermarkResponse.ok) {
-          throw new Error(`Failed to remove watermark: ${removeWatermarkResponse.statusText}`);
+          const errorText = await removeWatermarkResponse.text();
+          console.error('imggen.ai API error:', errorText);
+          throw new Error(`Failed to remove watermark: ${removeWatermarkResponse.statusText} (${removeWatermarkResponse.status})`);
         }
 
         const result = await removeWatermarkResponse.json();
+        console.log('imggen.ai API response:', result);
         
         if (!result.success || !result.images?.[0]) {
-          throw new Error('Failed to process image with imggen.ai');
+          throw new Error('Failed to process image with imggen.ai: No image returned');
         }
 
         // Convert base64 to buffer
@@ -80,6 +95,7 @@ serve(async (req) => {
         const filename = `${tenderId}-processed-${Date.now()}.png`;
         
         // Upload the processed image to Supabase Storage
+        console.log('Uploading processed image to Supabase Storage...');
         const { data: uploadData, error: uploadError } = await supabaseClient
           .storage
           .from('tender-documents')
@@ -99,6 +115,7 @@ serve(async (req) => {
           .getPublicUrl(filename);
 
         // Update the tender record
+        console.log('Updating tender record with processed image URL...');
         const { error: updateError } = await supabaseClient
           .from('tenders')
           .update({ 
