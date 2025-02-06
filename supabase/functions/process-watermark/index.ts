@@ -28,7 +28,6 @@ serve(async (req) => {
     const { tenderId, imageUrl } = await req.json()
     console.log(`Processing watermark for tender ${tenderId}`)
     console.log(`Image URL to process: ${imageUrl}`)
-    console.log(`URL file extension: ${imageUrl.split('.').pop()}`)
 
     if (!imageUrl) {
       throw new Error('No image URL provided')
@@ -51,9 +50,9 @@ serve(async (req) => {
           throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
         }
 
-        // Get and log response headers
-        const headers = Object.fromEntries(imageResponse.headers.entries());
-        console.log('Image response headers:', headers);
+        // Get content type from response headers
+        const contentType = imageResponse.headers.get('content-type');
+        console.log('Image content type from response:', contentType);
 
         // Convert to blob and log details
         const imageBlob = await imageResponse.blob();
@@ -62,10 +61,10 @@ serve(async (req) => {
           type: imageBlob.type
         });
 
-        // Create File object for imggen.ai
+        // Create File object for imggen.ai with explicit PNG type
         const file = new File(
           [imageBlob],
-          `test-watermark-${Date.now()}.png`,
+          `${tenderId}-${Date.now()}.png`,
           { type: 'image/png' }
         );
 
