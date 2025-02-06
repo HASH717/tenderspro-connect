@@ -55,8 +55,11 @@ serve(async (req) => {
       // Create FormData for the API request
       const formData = new FormData();
       
+      // Convert ArrayBuffer to Uint8Array for proper binary handling
+      const uint8Array = new Uint8Array(imageBuffer);
+      
       // Create a Blob with the correct MIME type
-      const blob = new Blob([imageBuffer], { type: 'image/png' });
+      const blob = new Blob([uint8Array], { type: 'image/png' });
       
       // Create a File object from the Blob
       const file = new File([blob], 'image.png', { type: 'image/png' });
@@ -70,6 +73,7 @@ serve(async (req) => {
         method: 'POST',
         headers: {
           'X-IMGGEN-KEY': Deno.env.get('IMGGEN_API_KEY') ?? '',
+          // Remove Content-Type header to let browser set it with boundary
         },
         body: formData,
       });
