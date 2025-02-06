@@ -71,6 +71,8 @@ export const useScraper = () => {
       }
 
       let processed = 0;
+      let errors = 0;
+
       for (const tender of tenders) {
         try {
           if (!tender.png_image_url) {
@@ -78,27 +80,44 @@ export const useScraper = () => {
             continue;
           }
 
-          // Verify PNG extension
+          // Double check PNG extension and format
           if (!tender.png_image_url.toLowerCase().endsWith('.png')) {
             console.warn(`Skipping tender ${tender.id} - not a PNG image`);
             continue;
           }
 
-          await supabase.functions.invoke('process-watermark', {
+          const { error: processError } = await supabase.functions.invoke('process-watermark', {
             body: { 
               imageUrl: tender.png_image_url,
               tenderId: tender.id 
             }
           });
+
+          if (processError) {
+            console.error(`Error processing tender ${tender.id}:`, processError);
+            errors++;
+            continue;
+          }
+
           processed++;
           setProgress((processed / tenders.length) * 100);
         } catch (err) {
           console.error(`Failed to process watermark for tender ${tender.id}:`, err);
+          errors++;
           // Continue with next image even if one fails
         }
       }
 
-      toast.success(`Processed watermarks for ${processed} out of ${tenders.length} images`);
+      if (errors > 0) {
+        toast.error(`Failed to process ${errors} images`);
+      }
+      
+      if (processed > 0) {
+        toast.success(`Successfully processed watermarks for ${processed} out of ${tenders.length} images`);
+      } else {
+        toast.error('No images were successfully processed');
+      }
+
     } catch (error) {
       console.error('Error in processWatermarks:', error);
       toast.error('Failed to process watermarks');

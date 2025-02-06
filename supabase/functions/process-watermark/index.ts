@@ -24,6 +24,11 @@ serve(async (req) => {
       throw new Error('No image URL provided')
     }
 
+    // Verify PNG extension
+    if (!imageUrl.toLowerCase().endsWith('.png')) {
+      throw new Error('Only PNG images are supported')
+    }
+
     // Track this processing
     activeProcessing.add(tenderId);
 
@@ -44,6 +49,10 @@ serve(async (req) => {
       const contentType = imageResponse.headers.get('content-type');
       console.log('Original image content type:', contentType);
 
+      if (!contentType?.includes('image/png')) {
+        throw new Error(`Invalid content type: ${contentType}. Only PNG images are supported.`);
+      }
+
       // Get the image data as array buffer
       const imageBuffer = await imageResponse.arrayBuffer();
       console.log('Image downloaded, size:', imageBuffer.byteLength, 'bytes');
@@ -56,11 +65,15 @@ serve(async (req) => {
       // Create FormData for the request
       const formData = new FormData();
       
-      // Create a blob with explicit PNG type
-      const blob = new Blob([imageBuffer], { type: 'image/png' });
-      formData.append('image', blob, 'processed-image.png');
+      // Create a File object with explicit PNG type
+      const file = new File(
+        [imageBuffer],
+        'image.png',
+        { type: 'image/png' }
+      );
+      formData.append('image', file);
 
-      console.log('Sending request to imggen.ai with content type:', blob.type);
+      console.log('Sending request to imggen.ai with file:', file.name, 'type:', file.type);
 
       // Call imggen.ai API to remove watermark
       console.log('Calling imggen.ai API...');
