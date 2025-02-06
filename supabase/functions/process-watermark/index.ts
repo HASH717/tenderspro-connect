@@ -40,20 +40,6 @@ serve(async (req) => {
         throw new Error(`Failed to fetch image: ${imageResponse.statusText} (${imageResponse.status})`);
       }
 
-      // Get content type and validate it's an image
-      const contentType = imageResponse.headers.get('content-type');
-      console.log('Image content type:', contentType);
-
-      // Get file extension from content type or URL
-      let fileExtension = 'png'; // default
-      if (contentType?.includes('jpeg') || contentType?.includes('jpg')) {
-        fileExtension = 'jpg';
-      } else if (contentType?.includes('png')) {
-        fileExtension = 'png';
-      } else if (contentType?.includes('webp')) {
-        fileExtension = 'webp';
-      }
-
       // Get the image data as array buffer
       const imageBuffer = await imageResponse.arrayBuffer();
       console.log('Image downloaded, size:', imageBuffer.byteLength, 'bytes');
@@ -66,15 +52,15 @@ serve(async (req) => {
       // Create FormData for the API request
       const formData = new FormData();
       
-      // Create a File object with CORRECT content-type
-      const fileType = `image/${fileExtension}`;
+      // Since we know we're using PNG images from the previous conversion,
+      // force PNG content type and extension
       const file = new File(
         [imageBuffer],
-        `image-${Date.now()}.${fileExtension}`,
-        { type: fileType } // Force correct MIME type
+        `image-${Date.now()}.png`,
+        { type: 'image/png' }
       );
       
-      // Append with correct field name 'image'
+      // Append the file with field name 'image'
       formData.append('image', file);
 
       // Call imggen.ai API to remove watermark
