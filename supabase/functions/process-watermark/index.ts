@@ -54,10 +54,14 @@ serve(async (req) => {
         throw new Error('Image too large (max 20MB)');
       }
 
-      // Create FormData and manually construct proper PNG file
+      // Create FormData with proper PNG file handling
       const formData = new FormData();
-      const blob = new Blob([imageBuffer], { type: 'image/png' });
-      formData.append('image', blob, 'image.png');
+      const file = new File(
+        [new Uint8Array(imageBuffer)],
+        'image.png',
+        { type: 'image/png' }
+      );
+      formData.append('image', file);
 
       // Call imggen.ai API to remove watermark
       console.log('Calling imggen.ai API...');
