@@ -38,8 +38,8 @@ serve(async (req) => {
     )
 
     try {
-      // Download the image
-      console.log('Downloading image...');
+      // Download the PNG image directly
+      console.log('Downloading PNG image...');
       const imageResponse = await fetch(imageUrl);
       if (!imageResponse.ok) {
         throw new Error(`Failed to fetch image: ${imageResponse.statusText} (${imageResponse.status})`);
@@ -47,7 +47,7 @@ serve(async (req) => {
 
       // Log content type for debugging
       const contentType = imageResponse.headers.get('content-type');
-      console.log('Original image content type:', contentType);
+      console.log('Image content type:', contentType);
 
       if (!contentType?.includes('image/png')) {
         throw new Error(`Invalid content type: ${contentType}. Only PNG images are supported.`);
@@ -62,37 +62,10 @@ serve(async (req) => {
         throw new Error('Image too large (max 20MB)');
       }
 
-      // First save to Supabase Storage to ensure proper PNG format
-      const tempFilename = `temp-${tenderId}-${Date.now()}.png`;
-      console.log('Saving temporary file:', tempFilename);
-      
-      const { data: uploadData, error: uploadError } = await supabaseClient
-        .storage
-        .from('tender-documents')
-        .upload(tempFilename, imageBuffer, {
-          contentType: 'image/png',
-          cacheControl: '3600'
-        });
-
-      if (uploadError) {
-        throw new Error(`Failed to upload temporary file: ${uploadError.message}`);
-      }
-
-      // Get the public URL of the temporary file
-      const { data: { publicUrl: tempUrl } } = supabaseClient
-        .storage
-        .from('tender-documents')
-        .getPublicUrl(tempFilename);
-
-      console.log('Temporary file URL:', tempUrl);
-
-      // Create FormData with the temporary file URL
+      // Create FormData with the PNG file
       const formData = new FormData();
-      const tempResponse = await fetch(tempUrl);
-      const tempBuffer = await tempResponse.arrayBuffer();
-      
       const file = new File(
-        [tempBuffer],
+        [imageBuffer],
         'image.png',
         { type: 'image/png' }
       );
@@ -108,16 +81,6 @@ serve(async (req) => {
         },
         body: formData,
       });
-
-      // Delete temporary file after processing
-      const { error: deleteError } = await supabaseClient
-        .storage
-        .from('tender-documents')
-        .remove([tempFilename]);
-
-      if (deleteError) {
-        console.error('Failed to delete temporary file:', deleteError);
-      }
 
       if (!removeWatermarkResponse.ok) {
         const errorText = await removeWatermarkResponse.text();
@@ -140,7 +103,7 @@ serve(async (req) => {
       
       // Upload the processed image to Supabase Storage
       console.log('Uploading processed image to Supabase Storage...');
-      const { data: finalUploadData, error: finalUploadError } = await supabaseClient
+      const { data: uploadData, error: uploadError } = await supabaseClient
         .storage
         .from('tender-documents')
         .upload(outputFilename, processedImageBuffer, {
@@ -148,8 +111,8 @@ serve(async (req) => {
           cacheControl: '3600'
         });
 
-      if (finalUploadError) {
-        throw new Error(`Failed to upload processed image: ${finalUploadError.message}`);
+      if (uploadError) {
+        throw new Error(`Failed to upload processed image: ${uploadError.message}`);
       }
 
       // Get the public URL
