@@ -24,10 +24,6 @@ serve(async (req) => {
       throw new Error('No image URL provided')
     }
 
-    if (!imageUrl.toLowerCase().endsWith('.png')) {
-      throw new Error('Only PNG images are supported')
-    }
-
     // Track this processing
     activeProcessing.add(tenderId);
 
@@ -44,19 +40,22 @@ serve(async (req) => {
         throw new Error(`Failed to fetch image: ${imageResponse.statusText} (${imageResponse.status})`);
       }
 
-      // Get the image data as blob
-      const imageBlob = await imageResponse.blob();
-      console.log('Image downloaded, size:', imageBlob.size, 'bytes');
+      // Get the image data as array buffer
+      const imageBuffer = await imageResponse.arrayBuffer();
+      console.log('Image downloaded, size:', imageBuffer.byteLength, 'bytes');
 
       // Validate image size (10MB limit)
-      if (imageBlob.size > 10 * 1024 * 1024) {
+      if (imageBuffer.byteLength > 10 * 1024 * 1024) {
         throw new Error('Image too large (max 10MB)');
       }
 
       // Create FormData for the API request
       const formData = new FormData();
       
-      // Convert Blob to File with proper PNG MIME type
+      // Create a Blob with the correct MIME type
+      const imageBlob = new Blob([imageBuffer], { type: 'image/png' });
+      
+      // Convert Blob to File with proper PNG MIME type and extension
       const imageFile = new File([imageBlob], `image-${Date.now()}.png`, {
         type: 'image/png',
       });
