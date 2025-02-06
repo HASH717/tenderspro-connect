@@ -64,6 +64,11 @@ serve(async (req) => {
         const imageBuffer = await imageBlob.arrayBuffer();
         const uint8Array = new Uint8Array(imageBuffer);
 
+        // First 12 bytes for format detection
+        const firstBytes = Array.from(uint8Array.slice(0, 12))
+          .map(b => b.toString(16).padStart(2, '0'));
+        console.log('First 12 bytes:', firstBytes);
+
         // Check magic bytes for supported formats
         let isPNG = false;
         let isJPEG = false;
@@ -84,7 +89,6 @@ serve(async (req) => {
             [0x57, 0x45, 0x42, 0x50].every((byte, i) => uint8Array[i + 8] === byte); // "WEBP"
         }
 
-        console.log('First 12 bytes:', Array.from(uint8Array.slice(0, 12)).map(b => b.toString(16)));
         console.log('Image format detection:', { isPNG, isJPEG, isWEBP });
 
         if (uint8Array.length < 12) {
@@ -93,9 +97,7 @@ serve(async (req) => {
 
         if (!isPNG && !isJPEG && !isWEBP) {
           throw new Error(
-            `Unsupported image type. Detected header: ${Array.from(uint8Array.slice(0, 12))
-              .map(b => b.toString(16).padStart(2, '0'))
-              .join(' ')}`
+            `Unsupported image type. Detected header: ${firstBytes.join(' ')}`
           );
         }
 
