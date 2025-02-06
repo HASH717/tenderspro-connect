@@ -54,12 +54,12 @@ export const useScraper = () => {
       setIsLoading(true);
       setProgress(0);
 
-      // Fetch all tenders that don't have watermarked versions
+      // Fetch all tenders that have PNG versions but no watermarked versions
       const { data: tenders, error } = await supabase
         .from('tenders')
-        .select('id, image_url')
+        .select('id, png_image_url')
         .is('watermarked_image_url', null)
-        .not('image_url', 'is', null);
+        .not('png_image_url', 'is', null);
 
       if (error) throw error;
 
@@ -72,7 +72,7 @@ export const useScraper = () => {
       for (const tender of tenders) {
         try {
           await supabase.functions.invoke('process-watermark', {
-            body: { imageUrl: tender.image_url, tenderId: tender.id }
+            body: { imageUrl: tender.png_image_url, tenderId: tender.id }
           });
           processed++;
           setProgress((processed / tenders.length) * 100);
