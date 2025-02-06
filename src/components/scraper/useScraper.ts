@@ -18,22 +18,26 @@ export const useScraper = () => {
         .from('tenders')
         .select('id, image_url, png_image_url');
 
-      console.log('All tenders:', allTenders);
+      console.log('All tenders:', allTenders?.map(t => ({
+        id: t.id,
+        image_url: t.image_url,
+        png_url: t.png_image_url,
+        originalFormat: t.image_url?.split('.')?.pop()?.toLowerCase()
+      })));
       
       if (allTendersError) {
         console.error('Error fetching all tenders:', allTendersError);
         throw allTendersError;
       }
 
-      // Now let's check tenders that need conversion
+      // Let's check ALL tenders with images, regardless of PNG status
       const { data: tenders, error } = await supabase
         .from('tenders')
         .select('id, image_url, png_image_url')
         .not('image_url', 'is', null)
-        .is('png_image_url', null)
         .limit(1); // Limiting to 1 for testing
 
-      console.log('Tenders needing conversion:', tenders);
+      console.log('Tenders with images:', tenders);
 
       if (error) {
         console.error('Error fetching tenders:', error);
@@ -41,17 +45,22 @@ export const useScraper = () => {
       }
 
       if (!tenders?.length) {
-        console.log('No tenders found matching criteria');
-        toast.info('No images need conversion');
+        console.log('No tenders found with images');
+        toast.info('No images found to convert');
         return;
       }
 
-      console.log('Found tenders to convert:', tenders);
+      console.log('Found tenders to check:', tenders);
 
       let processed = 0;
       for (const tender of tenders) {
         try {
-          console.log('Converting tender:', tender.id, tender.image_url);
+          console.log('Converting tender:', {
+            id: tender.id,
+            imageUrl: tender.image_url,
+            fileExtension: tender.image_url?.split('.')?.pop()?.toLowerCase(),
+            hasPngVersion: !!tender.png_image_url
+          });
           
           const { data, error } = await supabase.functions.invoke('convert-to-png', {
             body: { imageUrl: tender.image_url, tenderId: tender.id }
@@ -70,7 +79,7 @@ export const useScraper = () => {
         }
       }
 
-      toast.success(`Converted ${processed} out of ${tenders.length} images`);
+      toast.success(`Checked ${processed} out of ${tenders.length} images`);
     } catch (error) {
       console.error('Error in convertExistingImages:', error);
       toast.error('Failed to convert images');
