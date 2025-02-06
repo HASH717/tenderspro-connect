@@ -46,6 +46,11 @@ const TenderDetails = () => {
         return null;
       }
 
+      // Log the tender data and URL
+      console.log('Tender data:', data);
+      const url = getImageUrl(data);
+      console.log('Image URL to process:', url);
+
       return data;
     }
   });
