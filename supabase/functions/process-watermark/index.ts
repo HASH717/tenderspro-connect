@@ -33,12 +33,6 @@ serve(async (req) => {
     )
 
     try {
-      // Pre-validate extension and URL
-      const fileExtension = imageUrl.split('.').pop()?.toLowerCase();
-      if (fileExtension !== 'png') {
-        throw new Error(`Invalid file extension: ${fileExtension}. Only PNG files are supported.`);
-      }
-
       // Download the image
       console.log('Downloading image...');
       const imageResponse = await fetch(imageUrl);
@@ -46,42 +40,13 @@ serve(async (req) => {
         throw new Error(`Failed to fetch image: ${imageResponse.statusText} (${imageResponse.status})`);
       }
 
-      // Get content type and validate
+      // Get content type and log it
       const contentType = imageResponse.headers.get('content-type');
-      console.log('Content-Type:', contentType);
+      console.log('Content-Type from response:', contentType);
       
-      if (!contentType?.toLowerCase().includes('image/png')) {
-        throw new Error(`Invalid content type: ${contentType}. Only PNG images are supported.`);
-      }
-
       // Get the image data
       const imageBuffer = await imageResponse.arrayBuffer();
       console.log('Image size:', imageBuffer.byteLength, 'bytes');
-
-      // Validate PNG signature
-      const pngSignature = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
-      const fileSignature = new Uint8Array(imageBuffer.slice(0, 8));
-      
-      // Log signatures for debugging
-      console.log('Expected PNG signature:', Array.from(pngSignature));
-      console.log('Actual file signature:', Array.from(fileSignature));
-      
-      // Compare signatures
-      const isValidPNG = pngSignature.every((byte, i) => byte === fileSignature[i]);
-      if (!isValidPNG) {
-        // Detect if it's a GIF
-        const gifSignature = new Uint8Array([71, 73, 70]); // "GIF"
-        const isGIF = gifSignature.every((byte, i) => byte === fileSignature[i]);
-        if (isGIF) {
-          throw new Error('File is a GIF. Please provide a PNG file.');
-        }
-        throw new Error('Invalid PNG file - signature mismatch');
-      }
-
-      // Check file size
-      if (imageBuffer.byteLength > 20 * 1024 * 1024) {
-        throw new Error('Image too large (max 20MB)');
-      }
 
       // Create File object
       const file = new File([imageBuffer], 'image.png', { type: 'image/png' });
