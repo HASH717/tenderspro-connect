@@ -97,7 +97,7 @@ serve(async (req) => {
         }
 
         // Convert base64 to buffer
-        const imageBuffer = Uint8Array.from(atob(result.images[0]), c => c.charCodeAt(0));
+        const processedImageBuffer = Uint8Array.from(atob(result.images[0]), c => c.charCodeAt(0));
 
         // Generate a unique filename
         const filename = `${tenderId}-processed-${Date.now()}.png`;
@@ -107,7 +107,7 @@ serve(async (req) => {
         const { data: uploadData, error: uploadError } = await supabaseClient
           .storage
           .from('tender-documents')
-          .upload(filename, imageBuffer, {
+          .upload(filename, processedImageBuffer, {
             contentType: 'image/png',
             cacheControl: '3600'
           });
