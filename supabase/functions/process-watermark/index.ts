@@ -43,130 +43,118 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const processImage = async () => {
-      try {
-        // Download the image
-        console.log('Downloading image...');
-        const imageResponse = await fetch(imageUrl);
-        if (!imageResponse.ok) {
-          throw new Error(`Failed to fetch image: ${imageResponse.statusText} (${imageResponse.status})`);
-        }
+    try {
+      // Download the image
+      console.log('Downloading image...');
+      const imageResponse = await fetch(imageUrl);
+      if (!imageResponse.ok) {
+        throw new Error(`Failed to fetch image: ${imageResponse.statusText} (${imageResponse.status})`);
+      }
 
-        // Get the image data as an ArrayBuffer
-        const imageBuffer = await imageResponse.arrayBuffer();
-        const imageSize = imageBuffer.byteLength;
-        console.log('Image size:', imageSize, 'bytes');
+      // Get the image data as a blob
+      const imageBlob = await imageResponse.blob();
+      const imageSize = imageBlob.size;
+      console.log('Image size:', imageSize, 'bytes');
 
-        // Validate image size
-        if (imageSize > 10 * 1024 * 1024) { // 10MB limit
-          throw new Error('Image too large (max 10MB)');
-        }
+      // Validate image size
+      if (imageSize > 10 * 1024 * 1024) { // 10MB limit
+        throw new Error('Image too large (max 10MB)');
+      }
 
-        // Create a File object from the buffer
-        const imageFile = new File(
-          [imageBuffer], 
-          'image.png', 
-          { type: 'image/png' }
-        );
+      // Create a File object from the blob
+      const imageFile = new File(
+        [imageBlob], 
+        'image.png', 
+        { type: 'image/png' }
+      );
 
-        // Create FormData for imggen.ai API
-        const formData = new FormData();
-        formData.append('image[]', imageFile);
+      // Create FormData for imggen.ai API
+      const formData = new FormData();
+      formData.append('image[]', imageFile);
 
-        // Call imggen.ai API to remove watermark
-        console.log('Calling imggen.ai API...');
-        const removeWatermarkResponse = await fetch('https://app.imggen.ai/v1/remove-watermark', {
-          method: 'POST',
-          headers: {
-            'X-IMGGEN-KEY': Deno.env.get('IMGGEN_API_KEY') ?? '',
-          },
-          body: formData,
+      // Call imggen.ai API to remove watermark
+      console.log('Calling imggen.ai API...');
+      const removeWatermarkResponse = await fetch('https://app.imggen.ai/v1/remove-watermark', {
+        method: 'POST',
+        headers: {
+          'X-IMGGEN-KEY': Deno.env.get('IMGGEN_API_KEY') ?? '',
+        },
+        body: formData,
+      });
+
+      if (!removeWatermarkResponse.ok) {
+        const errorText = await removeWatermarkResponse.text();
+        console.error('imggen.ai API error:', errorText);
+        throw new Error(`Failed to remove watermark: ${removeWatermarkResponse.statusText} (${removeWatermarkResponse.status})`);
+      }
+
+      const result = await removeWatermarkResponse.json();
+      console.log('imggen.ai API response:', result);
+      
+      if (!result.success || !result.images?.[0]) {
+        throw new Error('Failed to process image with imggen.ai: No image returned');
+      }
+
+      // Convert base64 to buffer
+      const processedImageBuffer = Uint8Array.from(atob(result.images[0]), c => c.charCodeAt(0));
+
+      // Generate a unique filename
+      const filename = `${tenderId}-processed-${Date.now()}.png`;
+      
+      // Upload the processed image to Supabase Storage
+      console.log('Uploading processed image to Supabase Storage...');
+      const { data: uploadData, error: uploadError } = await supabaseClient
+        .storage
+        .from('tender-documents')
+        .upload(filename, processedImageBuffer, {
+          contentType: 'image/png',
+          cacheControl: '3600'
         });
 
-        if (!removeWatermarkResponse.ok) {
-          const errorText = await removeWatermarkResponse.text();
-          console.error('imggen.ai API error:', errorText);
-          throw new Error(`Failed to remove watermark: ${removeWatermarkResponse.statusText} (${removeWatermarkResponse.status})`);
-        }
-
-        const result = await removeWatermarkResponse.json();
-        console.log('imggen.ai API response:', result);
-        
-        if (!result.success || !result.images?.[0]) {
-          throw new Error('Failed to process image with imggen.ai: No image returned');
-        }
-
-        // Convert base64 to buffer
-        const processedImageBuffer = Uint8Array.from(atob(result.images[0]), c => c.charCodeAt(0));
-
-        // Generate a unique filename
-        const filename = `${tenderId}-processed-${Date.now()}.png`;
-        
-        // Upload the processed image to Supabase Storage
-        console.log('Uploading processed image to Supabase Storage...');
-        const { data: uploadData, error: uploadError } = await supabaseClient
-          .storage
-          .from('tender-documents')
-          .upload(filename, processedImageBuffer, {
-            contentType: 'image/png',
-            cacheControl: '3600'
-          });
-
-        if (uploadError) {
-          throw new Error(`Failed to upload processed image: ${uploadError.message}`);
-        }
-
-        // Get the public URL
-        const { data: { publicUrl } } = supabaseClient
-          .storage
-          .from('tender-documents')
-          .getPublicUrl(filename);
-
-        // Update the tender record
-        console.log('Updating tender record with processed image URL...');
-        const { error: updateError } = await supabaseClient
-          .from('tenders')
-          .update({ 
-            watermarked_image_url: publicUrl,
-            processed_at: new Date().toISOString()
-          })
-          .eq('id', tenderId);
-
-        if (updateError) {
-          throw new Error(`Failed to update tender record: ${updateError.message}`);
-        }
-
-        return publicUrl;
-      } catch (error) {
-        console.error(`Error in image processing for tender ${tenderId}:`, error);
-        throw error;
-      } finally {
-        // Remove from active processing when done
-        activeProcessing.delete(tenderId);
+      if (uploadError) {
+        throw new Error(`Failed to upload processed image: ${uploadError.message}`);
       }
-    };
 
-    // Start the processing in the background
-    const processingPromise = processImage();
-    
-    // Use EdgeRuntime.waitUntil to ensure the function runs to completion
-    EdgeRuntime.waitUntil(processingPromise);
+      // Get the public URL
+      const { data: { publicUrl } } = supabaseClient
+        .storage
+        .from('tender-documents')
+        .getPublicUrl(filename);
 
-    // Wait for the initial processing result
-    const processedUrl = await processingPromise;
+      // Update the tender record
+      console.log('Updating tender record with processed image URL...');
+      const { error: updateError } = await supabaseClient
+        .from('tenders')
+        .update({ 
+          watermarked_image_url: publicUrl,
+          processed_at: new Date().toISOString()
+        })
+        .eq('id', tenderId);
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        processedUrl 
-      }),
-      { 
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        } 
+      if (updateError) {
+        throw new Error(`Failed to update tender record: ${updateError.message}`);
       }
-    );
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          processedUrl: publicUrl 
+        }),
+        { 
+          headers: { 
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          } 
+        }
+      );
+
+    } catch (error) {
+      console.error(`Error in image processing for tender ${tenderId}:`, error);
+      throw error;
+    } finally {
+      // Remove from active processing when done
+      activeProcessing.delete(tenderId);
+    }
 
   } catch (error) {
     console.error('Error in process-watermark function:', error);
