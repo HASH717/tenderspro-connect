@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -55,13 +54,7 @@ export const useScraper = () => {
       setIsLoading(true);
       setProgress(0);
 
-      // First ensure all images are converted to PNG
-      await convertExistingImages();
-
-      // Wait a moment for the conversions to be fully processed
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Only fetch tenders that haven't been watermark processed
+      // Fetch all tenders that have PNG versions but no watermarked versions
       const { data: tenders, error } = await supabase
         .from('tenders')
         .select('id, png_image_url')
@@ -76,47 +69,20 @@ export const useScraper = () => {
       }
 
       let processed = 0;
-      let errors = 0;
-
       for (const tender of tenders) {
         try {
-          if (!tender.png_image_url) {
-            console.warn(`Skipping tender ${tender.id} - no PNG version available`);
-            continue;
-          }
-
-          const { error: processError } = await supabase.functions.invoke('process-watermark', {
-            body: { 
-              imageUrl: tender.png_image_url,
-              tenderId: tender.id 
-            }
+          await supabase.functions.invoke('process-watermark', {
+            body: { imageUrl: tender.png_image_url, tenderId: tender.id }
           });
-
-          if (processError) {
-            console.error(`Error processing tender ${tender.id}:`, processError);
-            errors++;
-            continue;
-          }
-
           processed++;
           setProgress((processed / tenders.length) * 100);
         } catch (err) {
           console.error(`Failed to process watermark for tender ${tender.id}:`, err);
-          errors++;
           // Continue with next image even if one fails
         }
       }
 
-      if (errors > 0) {
-        toast.error(`Failed to process ${errors} images`);
-      }
-      
-      if (processed > 0) {
-        toast.success(`Successfully processed watermarks for ${processed} out of ${tenders.length} images`);
-      } else {
-        toast.error('No images were successfully processed');
-      }
-
+      toast.success(`Processed watermarks for ${processed} out of ${tenders.length} images`);
     } catch (error) {
       console.error('Error in processWatermarks:', error);
       toast.error('Failed to process watermarks');
