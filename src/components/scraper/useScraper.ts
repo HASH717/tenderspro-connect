@@ -49,6 +49,48 @@ export const useScraper = () => {
     }
   };
 
+  const processWatermarks = async () => {
+    try {
+      setIsLoading(true);
+      setProgress(0);
+
+      // Fetch all tenders that don't have watermarked versions
+      const { data: tenders, error } = await supabase
+        .from('tenders')
+        .select('id, image_url')
+        .is('watermarked_image_url', null)
+        .not('image_url', 'is', null);
+
+      if (error) throw error;
+
+      if (!tenders?.length) {
+        toast.info('No images need watermark processing');
+        return;
+      }
+
+      let processed = 0;
+      for (const tender of tenders) {
+        try {
+          await supabase.functions.invoke('process-watermark', {
+            body: { imageUrl: tender.image_url, tenderId: tender.id }
+          });
+          processed++;
+          setProgress((processed / tenders.length) * 100);
+        } catch (err) {
+          console.error(`Failed to process watermark for tender ${tender.id}:`, err);
+          // Continue with next image even if one fails
+        }
+      }
+
+      toast.success(`Processed watermarks for ${processed} out of ${tenders.length} images`);
+    } catch (error) {
+      console.error('Error in processWatermarks:', error);
+      toast.error('Failed to process watermarks');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleScrape = async () => {
     try {
       setIsLoading(true);
@@ -78,6 +120,7 @@ export const useScraper = () => {
     progress,
     handleScrape,
     convertExistingImages,
+    processWatermarks,
     lastProcessedPage
   };
 };

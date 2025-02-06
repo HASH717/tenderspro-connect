@@ -5,7 +5,7 @@ import { ScraperProgress } from "./scraper/ScraperProgress";
 import { useScraper } from "./scraper/useScraper";
 
 export const AdminScraper = () => {
-  const { isLoading, progress, handleScrape, convertExistingImages } = useScraper();
+  const { isLoading, progress, handleScrape, convertExistingImages, processWatermarks } = useScraper();
   const { t } = useTranslation();
 
   return (
@@ -26,6 +26,15 @@ export const AdminScraper = () => {
           className="w-full"
         >
           {isLoading ? "Converting..." : "Convert Existing Images to PNG"}
+        </Button>
+
+        <Button 
+          onClick={processWatermarks} 
+          disabled={isLoading}
+          variant="outline"
+          className="w-full"
+        >
+          {isLoading ? "Processing..." : "Process Watermarks"}
         </Button>
         
         <ScraperProgress progress={progress} isLoading={isLoading} />
