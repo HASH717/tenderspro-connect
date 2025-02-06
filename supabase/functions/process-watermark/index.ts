@@ -50,16 +50,35 @@ serve(async (req) => {
           throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
         }
 
-        // Get the blob
-        const originalBlob = await imageResponse.blob();
-        console.log('Original blob:', {
-          size: originalBlob.size,
-          type: originalBlob.type
+        // Get the image data
+        const imageData = await imageResponse.arrayBuffer();
+        
+        // Create a new image to ensure proper format
+        const img = new Image();
+        img.src = URL.createObjectURL(new Blob([imageData]));
+        
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
         });
 
-        // Convert to PNG using a new blob with explicit PNG type
-        const pngBlob = new Blob([await originalBlob.arrayBuffer()], { type: 'image/png' });
-        console.log('PNG blob:', {
+        // Create a canvas to draw and convert the image
+        const canvas = new OffscreenCanvas(img.width, img.height);
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          throw new Error('Failed to get canvas context');
+        }
+
+        // Draw the image to canvas
+        ctx.drawImage(img, 0, 0);
+
+        // Convert to PNG blob
+        const pngBlob = await canvas.convertToBlob({
+          type: 'image/png',
+          quality: 1
+        });
+
+        console.log('Converted PNG blob:', {
           size: pngBlob.size,
           type: pngBlob.type
         });
