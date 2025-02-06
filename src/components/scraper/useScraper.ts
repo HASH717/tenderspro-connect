@@ -13,14 +13,19 @@ export const useScraper = () => {
       setIsLoading(true);
       setProgress(0);
 
-      // First, let's log the total number of tenders
-      const { count: totalCount, error: countError } = await supabase
+      // First, let's check raw tenders
+      const { data: allTenders, error: allTendersError } = await supabase
         .from('tenders')
-        .select('*', { count: 'exact', head: true });
+        .select('id, image_url, png_image_url');
 
-      console.log('Total tenders in database:', totalCount);
+      console.log('All tenders:', allTenders);
+      
+      if (allTendersError) {
+        console.error('Error fetching all tenders:', allTendersError);
+        throw allTendersError;
+      }
 
-      // Now fetch all tenders that don't have PNG versions
+      // Now let's check tenders that need conversion
       const { data: tenders, error } = await supabase
         .from('tenders')
         .select('id, image_url, png_image_url')
@@ -28,7 +33,7 @@ export const useScraper = () => {
         .is('png_image_url', null)
         .limit(1); // Limiting to 1 for testing
 
-      console.log('Query results:', { tenders, error });
+      console.log('Tenders needing conversion:', tenders);
 
       if (error) {
         console.error('Error fetching tenders:', error);
