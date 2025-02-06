@@ -1,3 +1,4 @@
+
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
 
@@ -67,16 +68,9 @@ serve(async (req) => {
     // Define the conversion process
     const convertImage = async () => {
       try {
-        // Normalize and clean URL
-        const normalizedUrl = encodeURI(decodeURI(imageUrl).trim());
-        console.log('Attempting to fetch image from:', normalizedUrl);
-
-        // Use only proxy 3 (codetabs) since it's the most reliable
-        const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(normalizedUrl)}`;
-        console.log('Using proxy:', proxyUrl);
-
         // Download the image
-        const imageResponse = await fetch(proxyUrl);
+        console.log(`Fetching image from URL: ${imageUrl}`);
+        const imageResponse = await fetch(imageUrl);
         
         if (!imageResponse.ok) {
           console.error(`Failed to fetch image, status: ${imageResponse.status}`);
@@ -85,9 +79,43 @@ serve(async (req) => {
 
         console.log('Image fetch successful, status:', imageResponse.status);
 
-        // Get the image data as an ArrayBuffer
-        const imageBuffer = await imageResponse.arrayBuffer()
-        console.log('Image downloaded successfully, size:', imageBuffer.byteLength);
+        // Convert image to blob and validate type
+        const imageBlob = await imageResponse.blob();
+        console.log('Image blob details:', {
+          size: imageBlob.size,
+          type: imageBlob.type
+        });
+
+        // Convert to ArrayBuffer to check magic bytes
+        const imageBuffer = await imageBlob.arrayBuffer();
+        const uint8Array = new Uint8Array(imageBuffer);
+
+        // First 12 bytes for format detection
+        const firstBytes = Array.from(uint8Array.slice(0, 12))
+          .map(b => b.toString(16).padStart(2, '0'));
+        console.log('First 12 bytes:', firstBytes);
+
+        // Check magic bytes for supported formats
+        let isPNG = false;
+        let isJPEG = false;
+        let isWEBP = false;
+
+        // First check if we have enough bytes
+        if (uint8Array.length >= 12) {
+          // PNG check (first 8 bytes)
+          isPNG = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
+            .every((byte, i) => uint8Array[i] === byte);
+
+          // JPEG check (first 2 bytes)
+          isJPEG = uint8Array[0] === 0xFF && uint8Array[1] === 0xD8;
+
+          // WEBP check (RIFF header + WEBP marker)
+          isWEBP = 
+            [0x52, 0x49, 0x46, 0x46].every((byte, i) => uint8Array[i] === byte) && // "RIFF"
+            [0x57, 0x45, 0x42, 0x50].every((byte, i) => uint8Array[i + 8] === byte); // "WEBP"
+        }
+
+        console.log('Image format detection:', { isPNG, isJPEG, isWEBP });
 
         // Generate a unique filename
         const filename = `${tenderId}-${Date.now()}.png`
@@ -145,7 +173,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        pngUrl: pngUrl 
+        pngUrl 
       }),
       { 
         headers: { 
