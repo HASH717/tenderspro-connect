@@ -26,7 +26,9 @@ serve(async (req) => {
 
   try {
     const { tenderId, imageUrl } = await req.json()
-    console.log(`Processing watermark for tender ${tenderId}: ${imageUrl}`)
+    console.log(`Processing watermark for tender ${tenderId}`)
+    console.log(`Image URL to process: ${imageUrl}`)
+    console.log(`URL file extension: ${imageUrl.split('.').pop()}`)
 
     if (!imageUrl) {
       throw new Error('No image URL provided')
@@ -60,14 +62,14 @@ serve(async (req) => {
           type: imageBlob.type
         });
 
-        // Create File object with validated type
+        // Create File object for imggen.ai
         const file = new File(
           [imageBlob],
-          `image-${Date.now()}.png`,
+          `test-watermark-${Date.now()}.png`,
           { type: 'image/png' }
         );
 
-        console.log('Created File object:', {
+        console.log('Created File object for imggen.ai:', {
           name: file.name,
           type: file.type,
           size: file.size
@@ -77,11 +79,7 @@ serve(async (req) => {
         const formData = new FormData();
         formData.append('image', file);
 
-        console.log('Sending request to imggen.ai with file:', {
-          fileName: file.name,
-          fileType: file.type,
-          fileSize: file.size
-        });
+        console.log('Sending request to imggen.ai...');
 
         // Call imggen.ai API to remove watermark
         const removeWatermarkResponse = await fetch('https://app.imggen.ai/v1/remove-watermark', {
