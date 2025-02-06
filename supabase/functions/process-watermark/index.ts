@@ -24,11 +24,6 @@ serve(async (req) => {
       throw new Error('No image URL provided')
     }
 
-    // Verify PNG extension
-    if (!imageUrl.toLowerCase().endsWith('.png')) {
-      throw new Error('Only PNG images are supported')
-    }
-
     // Track this processing
     activeProcessing.add(tenderId);
 
@@ -38,67 +33,65 @@ serve(async (req) => {
     )
 
     try {
-      // Download the PNG image directly
-      console.log('Downloading PNG image...');
+      // Pre-validate extension and URL
+      const fileExtension = imageUrl.split('.').pop()?.toLowerCase();
+      if (fileExtension !== 'png') {
+        throw new Error(`Invalid file extension: ${fileExtension}. Only PNG files are supported.`);
+      }
+
+      // Download the image
+      console.log('Downloading image...');
       const imageResponse = await fetch(imageUrl);
       if (!imageResponse.ok) {
         throw new Error(`Failed to fetch image: ${imageResponse.statusText} (${imageResponse.status})`);
       }
 
-      // Log content type and response details
+      // Get content type and validate
       const contentType = imageResponse.headers.get('content-type');
-      console.log('Image response details:', {
-        contentType,
-        status: imageResponse.status,
-        statusText: imageResponse.statusText,
-        headers: Object.fromEntries(imageResponse.headers.entries())
-      });
-
-      if (!contentType?.includes('image/png')) {
+      console.log('Content-Type:', contentType);
+      
+      if (!contentType?.toLowerCase().includes('image/png')) {
         throw new Error(`Invalid content type: ${contentType}. Only PNG images are supported.`);
       }
 
-      // Get the image data as array buffer
+      // Get the image data
       const imageBuffer = await imageResponse.arrayBuffer();
-      console.log('Image downloaded, size:', imageBuffer.byteLength, 'bytes');
+      console.log('Image size:', imageBuffer.byteLength, 'bytes');
 
-      // Log first few bytes for debugging
-      const headerBytes = new Uint8Array(imageBuffer.slice(0, 16));
-      console.log('First 16 bytes of image:', Array.from(headerBytes));
-
-      // PNG signature validation
-      const pngSignature = [137, 80, 78, 71, 13, 10, 26, 10];
-      const uint8Array = new Uint8Array(imageBuffer.slice(0, 8));
-      const isPNG = uint8Array.every((byte, i) => byte === pngSignature[i]);
+      // Validate PNG signature
+      const pngSignature = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
+      const fileSignature = new Uint8Array(imageBuffer.slice(0, 8));
       
-      if (!isPNG) {
-        console.error('PNG signature mismatch. Expected:', pngSignature, 'Got:', Array.from(uint8Array));
-        throw new Error('Invalid PNG file signature');
+      // Log signatures for debugging
+      console.log('Expected PNG signature:', Array.from(pngSignature));
+      console.log('Actual file signature:', Array.from(fileSignature));
+      
+      // Compare signatures
+      const isValidPNG = pngSignature.every((byte, i) => byte === fileSignature[i]);
+      if (!isValidPNG) {
+        // Detect if it's a GIF
+        const gifSignature = new Uint8Array([71, 73, 70]); // "GIF"
+        const isGIF = gifSignature.every((byte, i) => byte === fileSignature[i]);
+        if (isGIF) {
+          throw new Error('File is a GIF. Please provide a PNG file.');
+        }
+        throw new Error('Invalid PNG file - signature mismatch');
       }
 
-      console.log('PNG signature validation passed');
-
-      // Validate image size (20MB limit)
+      // Check file size
       if (imageBuffer.byteLength > 20 * 1024 * 1024) {
         throw new Error('Image too large (max 20MB)');
       }
 
-      // Create a Blob first
-      const blob = new Blob([imageBuffer], { type: 'image/png' });
-      console.log('Created Blob:', {
-        size: blob.size,
-        type: blob.type
-      });
-
-      // Create File from Blob
-      const file = new File([blob], 'image.png', { type: 'image/png' });
-      console.log('Created File:', {
+      // Create File object
+      const file = new File([imageBuffer], 'image.png', { type: 'image/png' });
+      console.log('File created:', {
         name: file.name,
         type: file.type,
         size: file.size
       });
 
-      // Prepare form data
+      // Send to imggen.ai
       const formData = new FormData();
       formData.append('image', file);
 
@@ -128,11 +121,11 @@ serve(async (req) => {
       const processedImageBuffer = Uint8Array.from(atob(result.images[0]), c => c.charCodeAt(0));
       console.log('Processed image size:', processedImageBuffer.length, 'bytes');
 
-      // Generate a unique filename for the processed image
+      // Generate filename
       const outputFilename = `${tenderId}-processed-${Date.now()}.png`;
       
-      // Upload the processed image to Supabase Storage
-      console.log('Uploading processed image to Supabase Storage...');
+      // Upload to Supabase Storage
+      console.log('Uploading to Supabase Storage...');
       const { error: uploadError } = await supabaseClient
         .storage
         .from('tender-documents')
@@ -145,14 +138,14 @@ serve(async (req) => {
         throw new Error(`Failed to upload processed image: ${uploadError.message}`);
       }
 
-      // Get the public URL
+      // Get public URL
       const { data: { publicUrl } } = supabaseClient
         .storage
         .from('tender-documents')
         .getPublicUrl(outputFilename);
 
-      // Update the tender record
-      console.log('Updating tender record with processed image URL...');
+      // Update tender record
+      console.log('Updating tender record...');
       const { error: updateError } = await supabaseClient
         .from('tenders')
         .update({ 
@@ -165,7 +158,7 @@ serve(async (req) => {
         throw new Error(`Failed to update tender record: ${updateError.message}`);
       }
 
-      console.log('Successfully processed and stored watermarked image for tender:', tenderId);
+      console.log('Successfully processed tender:', tenderId);
 
       return new Response(
         JSON.stringify({ 
@@ -181,10 +174,10 @@ serve(async (req) => {
       );
 
     } catch (error) {
-      console.error(`Error in image processing for tender ${tenderId}:`, error);
+      console.error(`Error processing tender ${tenderId}:`, error);
       throw error;
     } finally {
-      // Remove from active processing when done
+      // Clean up
       activeProcessing.delete(tenderId);
     }
 
