@@ -65,17 +65,38 @@ serve(async (req) => {
         const uint8Array = new Uint8Array(imageBuffer);
 
         // Check magic bytes for supported formats
-        const isPNG = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
-          .every((byte, i) => uint8Array[i] === byte);
-        const isJPEG = [0xFF, 0xD8, 0xFF]
-          .every((byte, i) => uint8Array[i] === byte);
-        const isWEBP = [0x52, 0x49, 0x46, 0x46, 0x57, 0x45, 0x42, 0x50]
-          .every((byte, i) => uint8Array[i] === byte);
+        let isPNG = false;
+        let isJPEG = false;
+        let isWEBP = false;
 
+        // First check if we have enough bytes
+        if (uint8Array.length >= 12) {
+          // PNG check (first 8 bytes)
+          isPNG = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
+            .every((byte, i) => uint8Array[i] === byte);
+
+          // JPEG check (first 2 bytes)
+          isJPEG = uint8Array[0] === 0xFF && uint8Array[1] === 0xD8;
+
+          // WEBP check (RIFF header + WEBP marker)
+          isWEBP = 
+            [0x52, 0x49, 0x46, 0x46].every((byte, i) => uint8Array[i] === byte) && // "RIFF"
+            [0x57, 0x45, 0x42, 0x50].every((byte, i) => uint8Array[i + 8] === byte); // "WEBP"
+        }
+
+        console.log('First 12 bytes:', Array.from(uint8Array.slice(0, 12)).map(b => b.toString(16)));
         console.log('Image format detection:', { isPNG, isJPEG, isWEBP });
 
+        if (uint8Array.length < 12) {
+          throw new Error('File too small to be a valid image');
+        }
+
         if (!isPNG && !isJPEG && !isWEBP) {
-          throw new Error('Unsupported image type. Only JPG, PNG, or WEBP allowed.');
+          throw new Error(
+            `Unsupported image type. Detected header: ${Array.from(uint8Array.slice(0, 12))
+              .map(b => b.toString(16).padStart(2, '0'))
+              .join(' ')}`
+          );
         }
 
         // Determine correct extension and MIME type
