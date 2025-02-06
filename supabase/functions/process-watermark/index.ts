@@ -57,6 +57,15 @@ serve(async (req) => {
       const imageBuffer = await imageResponse.arrayBuffer();
       console.log('Image downloaded, size:', imageBuffer.byteLength, 'bytes');
 
+      // Additional PNG validation - check magic numbers
+      const uint8Array = new Uint8Array(imageBuffer.slice(0, 8));
+      const pngSignature = [137, 80, 78, 71, 13, 10, 26, 10];
+      const isPNG = uint8Array.every((byte, i) => byte === pngSignature[i]);
+      
+      if (!isPNG) {
+        throw new Error('Invalid PNG file signature');
+      }
+
       // Validate image size (20MB limit)
       if (imageBuffer.byteLength > 20 * 1024 * 1024) {
         throw new Error('Image too large (max 20MB)');
@@ -67,10 +76,17 @@ serve(async (req) => {
       const formData = new FormData();
       const file = new File(
         [imageBuffer],
-        'watermarked.png',
+        'image.png', // Use simpler filename
         { type: 'image/png' }
       );
       formData.append('image', file);
+
+      // Log FormData contents for debugging
+      console.log('FormData file details:', {
+        name: file.name,
+        type: file.type,
+        size: file.size
+      });
 
       console.log('Sending request to imggen.ai...');
       const removeWatermarkResponse = await fetch('https://app.imggen.ai/v1/remove-watermark', {
