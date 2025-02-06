@@ -242,6 +242,7 @@ export type Database = {
           tender_status: string | null
           title: string
           type: string | null
+          watermarked_image_url: string | null
           wilaya: string
           withdrawal_address: string | null
         }
@@ -266,6 +267,7 @@ export type Database = {
           tender_status?: string | null
           title: string
           type?: string | null
+          watermarked_image_url?: string | null
           wilaya: string
           withdrawal_address?: string | null
         }
@@ -290,6 +292,7 @@ export type Database = {
           tender_status?: string | null
           title?: string
           type?: string | null
+          watermarked_image_url?: string | null
           wilaya?: string
           withdrawal_address?: string | null
         }

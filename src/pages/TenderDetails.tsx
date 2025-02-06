@@ -72,7 +72,10 @@ const TenderDetails = () => {
   };
 
   const getImageUrl = (tender: any) => {
-    // Prefer PNG version if available
+    // Prefer watermarked version if available
+    if (tender?.watermarked_image_url) return tender.watermarked_image_url;
+    
+    // Fall back to PNG version if available
     if (tender?.png_image_url) return tender.png_image_url;
     
     // Fall back to original image
@@ -163,7 +166,7 @@ const TenderDetails = () => {
                 </div>
               </div>
 
-              {(tender.image_url || tender.link || tender.png_image_url) && !imageError && (
+              {(tender.image_url || tender.link || tender.png_image_url || tender.watermarked_image_url) && !imageError && (
                 <div className="mt-8">
                   <h2 className="text-lg font-semibold mb-4">Tender Document</h2>
                   <img 

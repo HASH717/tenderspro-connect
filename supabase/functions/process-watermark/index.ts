@@ -102,7 +102,7 @@ serve(async (req) => {
         const { error: updateError } = await supabaseClient
           .from('tenders')
           .update({ 
-            png_image_url: publicUrl,
+            watermarked_image_url: publicUrl,
             processed_at: new Date().toISOString()
           })
           .eq('id', tenderId);
