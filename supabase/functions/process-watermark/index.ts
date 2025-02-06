@@ -44,22 +44,23 @@ serve(async (req) => {
       const imageBuffer = await imageResponse.arrayBuffer();
       console.log('Image downloaded, size:', imageBuffer.byteLength, 'bytes');
 
-      // Validate image size (10MB limit)
-      if (imageBuffer.byteLength > 10 * 1024 * 1024) {
-        throw new Error('Image too large (max 10MB)');
+      // Validate image size (20MB limit)
+      if (imageBuffer.byteLength > 20 * 1024 * 1024) {
+        throw new Error('Image too large (max 20MB)');
       }
 
       // Create FormData for the API request
       const formData = new FormData();
       
-      // Convert array buffer to Uint8Array for proper binary handling
-      const uint8Array = new Uint8Array(imageBuffer);
+      // Create a proper File object
+      const file = new File(
+        [imageBuffer], 
+        `image-${Date.now()}.jpg`, // Use .jpg extension as it's supported
+        { type: 'image/jpeg' }
+      );
       
-      // Create a Blob with explicit PNG MIME type
-      const imageBlob = new Blob([uint8Array], { type: 'image/png' });
-      
-      // Append the file directly to FormData without converting to File
-      formData.append('image[]', imageBlob, `image-${Date.now()}.png`);
+      // Append the file with the exact field name expected by the API
+      formData.append('image[]', file);
 
       // Call imggen.ai API to remove watermark
       console.log('Calling imggen.ai API...');
