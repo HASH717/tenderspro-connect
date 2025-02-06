@@ -55,12 +55,13 @@ export const useScraper = () => {
       setIsLoading(true);
       setProgress(0);
 
-      // Fetch all tenders that have PNG versions but no watermarked versions
+      // Only fetch tenders with PNG images that haven't been watermark processed
       const { data: tenders, error } = await supabase
         .from('tenders')
         .select('id, png_image_url')
         .is('watermarked_image_url', null)
-        .not('png_image_url', 'is', null);
+        .not('png_image_url', 'is', null)
+        .filter('png_image_url', 'ilike', '%.png'); // Ensure URL ends with .png
 
       if (error) throw error;
 
@@ -72,15 +73,14 @@ export const useScraper = () => {
       let processed = 0;
       for (const tender of tenders) {
         try {
-          // Make sure we're using the PNG version of the image
-          if (!tender.png_image_url) {
-            console.warn(`Skipping tender ${tender.id} - no PNG version available`);
+          if (!tender.png_image_url?.toLowerCase().endsWith('.png')) {
+            console.warn(`Skipping tender ${tender.id} - not a PNG image`);
             continue;
           }
           
           await supabase.functions.invoke('process-watermark', {
             body: { 
-              imageUrl: tender.png_image_url, // Always use the PNG version
+              imageUrl: tender.png_image_url,
               tenderId: tender.id 
             }
           });

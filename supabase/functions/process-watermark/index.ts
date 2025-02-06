@@ -24,11 +24,6 @@ serve(async (req) => {
       throw new Error('No image URL provided')
     }
 
-    // Strict PNG validation
-    if (!imageUrl.toLowerCase().endsWith('.png')) {
-      throw new Error('Only PNG images are supported')
-    }
-
     // Track this processing
     activeProcessing.add(tenderId);
 
@@ -45,14 +40,6 @@ serve(async (req) => {
         throw new Error(`Failed to fetch image: ${imageResponse.statusText} (${imageResponse.status})`);
       }
 
-      // Verify content type
-      const contentType = imageResponse.headers.get('content-type');
-      console.log('Image content type:', contentType);
-      
-      if (!contentType?.includes('image/png')) {
-        console.warn('Warning: Image content-type is not PNG:', contentType);
-      }
-
       // Get the image data as array buffer
       const imageBuffer = await imageResponse.arrayBuffer();
       console.log('Image downloaded, size:', imageBuffer.byteLength, 'bytes');
@@ -62,20 +49,21 @@ serve(async (req) => {
         throw new Error('Image too large (max 20MB)');
       }
 
-      // Create FormData with strict PNG handling
+      // Create FormData for the request
       const formData = new FormData();
       
-      // Convert ArrayBuffer to Uint8Array for proper binary handling
-      const uint8Array = new Uint8Array(imageBuffer);
+      // Create new File object with forced PNG MIME type
+      const file = new File(
+        [imageBuffer], 
+        'image.png',  // Force .png extension
+        { 
+          type: 'image/png',
+          lastModified: new Date().getTime()
+        }
+      );
       
-      // Create a Blob with explicit PNG type
-      const blob = new Blob([uint8Array], { type: 'image/png' });
-      
-      // Add the blob to FormData with .png extension
-      formData.append('image', blob, 'image.png');
-
-      // Log FormData contents for debugging
-      console.log('FormData created with image blob');
+      // Append the file to FormData
+      formData.append('image', file);
 
       // Call imggen.ai API to remove watermark
       console.log('Calling imggen.ai API...');
