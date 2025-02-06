@@ -53,20 +53,36 @@ serve(async (req) => {
         const headers = Object.fromEntries(imageResponse.headers.entries());
         console.log('Image response headers:', headers);
 
-        // Get the file extension from Content-Type or URL
-        const contentType = imageResponse.headers.get('content-type') || '';
-        const fileExtension = contentType.split('/')[1] || 'png';
-        console.log(`Content-Type: ${contentType}, File Extension: ${fileExtension}`);
-
-        // Convert image to blob and log its properties
+        // Convert image to blob and validate type
         const imageBlob = await imageResponse.blob();
         console.log('Image blob details:', {
           size: imageBlob.size,
           type: imageBlob.type
         });
-        
-        // Create a File object with the correct content-type
+
+        // Convert to ArrayBuffer to check magic bytes
+        const imageBuffer = await imageBlob.arrayBuffer();
+        const uint8Array = new Uint8Array(imageBuffer);
+
+        // Check magic bytes for supported formats
+        const isPNG = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
+          .every((byte, i) => uint8Array[i] === byte);
+        const isJPEG = [0xFF, 0xD8, 0xFF]
+          .every((byte, i) => uint8Array[i] === byte);
+        const isWEBP = [0x52, 0x49, 0x46, 0x46, 0x57, 0x45, 0x42, 0x50]
+          .every((byte, i) => uint8Array[i] === byte);
+
+        console.log('Image format detection:', { isPNG, isJPEG, isWEBP });
+
+        if (!isPNG && !isJPEG && !isWEBP) {
+          throw new Error('Unsupported image type. Only JPG, PNG, or WEBP allowed.');
+        }
+
+        // Determine correct extension and MIME type
+        const fileExtension = isPNG ? 'png' : isJPEG ? 'jpg' : 'webp';
         const fileType = `image/${fileExtension}`;
+        
+        // Create File object with validated type
         const file = new File(
           [imageBlob],
           `image-${Date.now()}.${fileExtension}`,
