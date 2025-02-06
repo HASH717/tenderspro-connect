@@ -63,7 +63,6 @@ serve(async (req) => {
         method: 'POST',
         headers: {
           'X-IMGGEN-KEY': Deno.env.get('IMGGEN_API_KEY') ?? '',
-          'Content-Type': 'multipart/form-data',
         },
         body: formData,
       });
