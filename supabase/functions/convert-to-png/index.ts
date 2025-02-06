@@ -58,7 +58,7 @@ serve(async (req) => {
 
         console.log('Image fetch successful, status:', imageResponse.status);
 
-        // Convert image to blob and validate type
+        // Get the image as a blob
         const imageBlob = await imageResponse.blob();
         console.log('Image blob details:', {
           size: imageBlob.size,
@@ -71,7 +71,7 @@ serve(async (req) => {
         // Generate a unique filename
         const filename = `${tenderId}-${Date.now()}.png`
         
-        // Upload the image data directly to Supabase Storage
+        // Upload to Supabase Storage
         const { data: uploadData, error: uploadError } = await supabaseClient
           .storage
           .from('tender-documents')
@@ -86,13 +86,15 @@ serve(async (req) => {
           throw new Error(`Failed to upload converted image: ${uploadError.message}`)
         }
 
-        // Get the public URL of the uploaded file
+        console.log('Successfully uploaded image:', filename);
+
+        // Get the public URL
         const { data: { publicUrl } } = supabaseClient
           .storage
           .from('tender-documents')
           .getPublicUrl(filename)
 
-        // Update the tender record with the new PNG URL
+        // Update tender record
         const { error: updateError } = await supabaseClient
           .from('tenders')
           .update({ png_image_url: publicUrl })
@@ -103,6 +105,7 @@ serve(async (req) => {
           throw new Error(`Failed to update tender record: ${updateError.message}`)
         }
 
+        console.log('Successfully updated tender record with PNG URL');
         return publicUrl;
       } catch (error) {
         console.error(`Error in conversion process for tender ${tenderId}:`, error);
@@ -113,13 +116,13 @@ serve(async (req) => {
       }
     };
 
-    // Start the conversion process in the background
+    // Start conversion in background
     const conversionPromise = convertImage();
     
-    // Use EdgeRuntime.waitUntil to ensure the function runs to completion
+    // Use EdgeRuntime.waitUntil to ensure completion
     EdgeRuntime.waitUntil(conversionPromise);
 
-    // Wait for the initial conversion result
+    // Wait for initial conversion result
     const pngUrl = await conversionPromise;
 
     return new Response(
