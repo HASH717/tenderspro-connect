@@ -38,30 +38,6 @@ serve(async (req) => {
       throw new Error('No image URL provided')
     }
 
-    // Check if image was already processed
-    const { data: tender } = await supabaseClient
-      .from('tenders')
-      .select('png_image_url')
-      .eq('id', tenderId)
-      .single()
-
-    if (tender?.png_image_url) {
-      console.log('Image already processed, skipping conversion');
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          pngUrl: tender.png_image_url,
-          skipped: true 
-        }),
-        { 
-          headers: { 
-            ...corsHeaders,
-            'Content-Type': 'application/json'
-          } 
-        }
-      )
-    }
-
     // Track this conversion
     activeConversions.add(tenderId);
 
@@ -126,7 +102,8 @@ serve(async (req) => {
           .from('tender-documents')
           .upload(filename, imageBuffer, {
             contentType: 'image/png',
-            cacheControl: '3600'
+            cacheControl: '3600',
+            upsert: true
           })
 
         if (uploadError) {
