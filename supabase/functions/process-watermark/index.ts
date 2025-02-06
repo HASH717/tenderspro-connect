@@ -53,63 +53,18 @@ serve(async (req) => {
         const headers = Object.fromEntries(imageResponse.headers.entries());
         console.log('Image response headers:', headers);
 
-        // Convert image to blob and validate type
+        // Convert to blob and log details
         const imageBlob = await imageResponse.blob();
         console.log('Image blob details:', {
           size: imageBlob.size,
           type: imageBlob.type
         });
 
-        // Convert to ArrayBuffer to check magic bytes
-        const imageBuffer = await imageBlob.arrayBuffer();
-        const uint8Array = new Uint8Array(imageBuffer);
-
-        // First 12 bytes for format detection
-        const firstBytes = Array.from(uint8Array.slice(0, 12))
-          .map(b => b.toString(16).padStart(2, '0'));
-        console.log('First 12 bytes:', firstBytes);
-
-        // Check magic bytes for supported formats
-        let isPNG = false;
-        let isJPEG = false;
-        let isWEBP = false;
-
-        // First check if we have enough bytes
-        if (uint8Array.length >= 12) {
-          // PNG check (first 8 bytes)
-          isPNG = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
-            .every((byte, i) => uint8Array[i] === byte);
-
-          // JPEG check (first 2 bytes)
-          isJPEG = uint8Array[0] === 0xFF && uint8Array[1] === 0xD8;
-
-          // WEBP check (RIFF header + WEBP marker)
-          isWEBP = 
-            [0x52, 0x49, 0x46, 0x46].every((byte, i) => uint8Array[i] === byte) && // "RIFF"
-            [0x57, 0x45, 0x42, 0x50].every((byte, i) => uint8Array[i + 8] === byte); // "WEBP"
-        }
-
-        console.log('Image format detection:', { isPNG, isJPEG, isWEBP });
-
-        if (uint8Array.length < 12) {
-          throw new Error('File too small to be a valid image');
-        }
-
-        if (!isPNG && !isJPEG && !isWEBP) {
-          throw new Error(
-            `Unsupported image type. Detected header: ${firstBytes.join(' ')}`
-          );
-        }
-
-        // Determine correct extension and MIME type
-        const fileExtension = isPNG ? 'png' : isJPEG ? 'jpg' : 'webp';
-        const fileType = `image/${fileExtension}`;
-        
         // Create File object with validated type
         const file = new File(
           [imageBlob],
-          `image-${Date.now()}.${fileExtension}`,
-          { type: fileType }
+          `image-${Date.now()}.png`,
+          { type: 'image/png' }
         );
 
         console.log('Created File object:', {
@@ -118,7 +73,7 @@ serve(async (req) => {
           size: file.size
         });
 
-        // Create FormData for imggen.ai API with correct field name
+        // Create FormData for imggen.ai API
         const formData = new FormData();
         formData.append('image', file);
 
@@ -137,18 +92,27 @@ serve(async (req) => {
           body: formData,
         });
 
+        const responseText = await removeWatermarkResponse.text();
+        console.log('Raw imggen.ai API response:', responseText);
+
         if (!removeWatermarkResponse.ok) {
-          const errorText = await removeWatermarkResponse.text();
           console.error('Imggen.ai API error response:', {
             status: removeWatermarkResponse.status,
             statusText: removeWatermarkResponse.statusText,
-            response: errorText
+            response: responseText
           });
           throw new Error(`Failed to remove watermark: ${removeWatermarkResponse.statusText}`);
         }
 
-        const result = await removeWatermarkResponse.json();
-        console.log('Imggen.ai API response:', result);
+        let result;
+        try {
+          result = JSON.parse(responseText);
+        } catch (error) {
+          console.error('Failed to parse imggen.ai response:', error);
+          throw new Error('Invalid response from imggen.ai');
+        }
+
+        console.log('Parsed imggen.ai API response:', result);
         
         if (!result.success || !result.images?.[0]) {
           throw new Error('Failed to process image with imggen.ai');
