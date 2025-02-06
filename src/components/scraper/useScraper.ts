@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -71,8 +72,17 @@ export const useScraper = () => {
       let processed = 0;
       for (const tender of tenders) {
         try {
+          // Make sure we're using the PNG version of the image
+          if (!tender.png_image_url) {
+            console.warn(`Skipping tender ${tender.id} - no PNG version available`);
+            continue;
+          }
+          
           await supabase.functions.invoke('process-watermark', {
-            body: { imageUrl: tender.png_image_url, tenderId: tender.id }
+            body: { 
+              imageUrl: tender.png_image_url, // Always use the PNG version
+              tenderId: tender.id 
+            }
           });
           processed++;
           setProgress((processed / tenders.length) * 100);
