@@ -55,6 +55,12 @@ export const useScraper = () => {
       setIsLoading(true);
       setProgress(0);
 
+      // First ensure all images are converted to PNG
+      await convertExistingImages();
+
+      // Wait a moment for the conversions to be fully processed
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
       // Only fetch tenders with PNG images that haven't been watermark processed
       const { data: tenders, error } = await supabase
         .from('tenders')
