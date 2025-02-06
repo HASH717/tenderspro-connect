@@ -52,16 +52,14 @@ serve(async (req) => {
       // Create FormData for the API request
       const formData = new FormData();
       
-      // Create a Blob with the correct MIME type
-      const imageBlob = new Blob([imageBuffer], { type: 'image/png' });
+      // Convert array buffer to Uint8Array for proper binary handling
+      const uint8Array = new Uint8Array(imageBuffer);
       
-      // Convert Blob to File with proper PNG MIME type and extension
-      const imageFile = new File([imageBlob], `image-${Date.now()}.png`, {
-        type: 'image/png',
-      });
+      // Create a Blob with explicit PNG MIME type
+      const imageBlob = new Blob([uint8Array], { type: 'image/png' });
       
-      // Append file to FormData with the exact field name expected by the API
-      formData.append('image[]', imageFile);
+      // Append the file directly to FormData without converting to File
+      formData.append('image[]', imageBlob, `image-${Date.now()}.png`);
 
       // Call imggen.ai API to remove watermark
       console.log('Calling imggen.ai API...');
