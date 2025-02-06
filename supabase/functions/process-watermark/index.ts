@@ -66,15 +66,16 @@ serve(async (req) => {
       // Create FormData for the API request
       const formData = new FormData();
       
-      // Create a proper File object with the original content type
+      // Create a File object with CORRECT content-type
+      const fileType = `image/${fileExtension}`;
       const file = new File(
-        [imageBuffer], 
+        [imageBuffer],
         `image-${Date.now()}.${fileExtension}`,
-        { type: contentType || `image/${fileExtension}` }
+        { type: fileType } // Force correct MIME type
       );
       
-      // Append the file with the exact field name expected by the API
-      formData.append('image[]', file);
+      // Append with correct field name 'image'
+      formData.append('image', file);
 
       // Call imggen.ai API to remove watermark
       console.log('Calling imggen.ai API...');
