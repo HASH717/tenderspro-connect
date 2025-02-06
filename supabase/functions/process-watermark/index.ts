@@ -50,16 +50,23 @@ serve(async (req) => {
           throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
         }
 
-        // Get the blob and verify content type
-        const blob = await imageResponse.blob();
+        // Get the blob
+        const originalBlob = await imageResponse.blob();
         console.log('Original blob:', {
-          size: blob.size,
-          type: blob.type
+          size: originalBlob.size,
+          type: originalBlob.type
         });
 
-        // Create FormData with a properly named file
+        // Convert to PNG using a new blob with explicit PNG type
+        const pngBlob = new Blob([await originalBlob.arrayBuffer()], { type: 'image/png' });
+        console.log('PNG blob:', {
+          size: pngBlob.size,
+          type: pngBlob.type
+        });
+
+        // Create FormData with PNG file
         const formData = new FormData();
-        formData.append('image', blob, `image_${tenderId}.png`);
+        formData.append('image', pngBlob, `${tenderId}.png`);
 
         console.log('Sending request to imggen.ai...');
 
