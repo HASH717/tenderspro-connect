@@ -24,6 +24,11 @@ serve(async (req) => {
       throw new Error('No image URL provided')
     }
 
+    // Verify it's a PNG URL
+    if (!imageUrl.toLowerCase().endsWith('.png')) {
+      throw new Error('Only PNG images are supported')
+    }
+
     // Track this processing
     activeProcessing.add(tenderId);
 
@@ -49,19 +54,10 @@ serve(async (req) => {
         throw new Error('Image too large (max 20MB)');
       }
 
-      // Create FormData for the API request
+      // Create FormData and manually construct proper PNG file
       const formData = new FormData();
-      
-      // Since we know we're using PNG images from the previous conversion,
-      // force PNG content type and extension
-      const file = new File(
-        [imageBuffer],
-        `image-${Date.now()}.png`,
-        { type: 'image/png' }
-      );
-      
-      // Append the file with field name 'image'
-      formData.append('image', file);
+      const blob = new Blob([imageBuffer], { type: 'image/png' });
+      formData.append('image', blob, 'image.png');
 
       // Call imggen.ai API to remove watermark
       console.log('Calling imggen.ai API...');
