@@ -40,6 +40,20 @@ serve(async (req) => {
         throw new Error(`Failed to fetch image: ${imageResponse.statusText} (${imageResponse.status})`);
       }
 
+      // Get content type and validate it's an image
+      const contentType = imageResponse.headers.get('content-type');
+      console.log('Image content type:', contentType);
+
+      // Get file extension from content type or URL
+      let fileExtension = 'png'; // default
+      if (contentType?.includes('jpeg') || contentType?.includes('jpg')) {
+        fileExtension = 'jpg';
+      } else if (contentType?.includes('png')) {
+        fileExtension = 'png';
+      } else if (contentType?.includes('webp')) {
+        fileExtension = 'webp';
+      }
+
       // Get the image data as array buffer
       const imageBuffer = await imageResponse.arrayBuffer();
       console.log('Image downloaded, size:', imageBuffer.byteLength, 'bytes');
@@ -52,11 +66,11 @@ serve(async (req) => {
       // Create FormData for the API request
       const formData = new FormData();
       
-      // Create a proper File object
+      // Create a proper File object with the original content type
       const file = new File(
         [imageBuffer], 
-        `image-${Date.now()}.jpg`, // Use .jpg extension as it's supported
-        { type: 'image/jpeg' }
+        `image-${Date.now()}.${fileExtension}`,
+        { type: contentType || `image/${fileExtension}` }
       );
       
       // Append the file with the exact field name expected by the API
