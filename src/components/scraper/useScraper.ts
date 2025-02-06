@@ -13,13 +13,22 @@ export const useScraper = () => {
       setIsLoading(true);
       setProgress(0);
 
-      // Fetch all tenders that don't have PNG versions
+      // First, let's log the total number of tenders
+      const { count: totalCount, error: countError } = await supabase
+        .from('tenders')
+        .select('*', { count: 'exact', head: true });
+
+      console.log('Total tenders in database:', totalCount);
+
+      // Now fetch all tenders that don't have PNG versions
       const { data: tenders, error } = await supabase
         .from('tenders')
-        .select('id, image_url')
-        .is('png_image_url', null)
+        .select('id, image_url, png_image_url')
         .not('image_url', 'is', null)
+        .is('png_image_url', null)
         .limit(1); // Limiting to 1 for testing
+
+      console.log('Query results:', { tenders, error });
 
       if (error) {
         console.error('Error fetching tenders:', error);
@@ -27,6 +36,7 @@ export const useScraper = () => {
       }
 
       if (!tenders?.length) {
+        console.log('No tenders found matching criteria');
         toast.info('No images need conversion');
         return;
       }
