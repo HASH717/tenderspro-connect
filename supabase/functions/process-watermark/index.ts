@@ -62,21 +62,45 @@ serve(async (req) => {
         throw new Error('Image too large (max 20MB)');
       }
 
-      // Create FormData for the request
-      const formData = new FormData();
+      // First save to Supabase Storage to ensure proper PNG format
+      const tempFilename = `temp-${tenderId}-${Date.now()}.png`;
+      console.log('Saving temporary file:', tempFilename);
+      
+      const { data: uploadData, error: uploadError } = await supabaseClient
+        .storage
+        .from('tender-documents')
+        .upload(tempFilename, imageBuffer, {
+          contentType: 'image/png',
+          cacheControl: '3600'
+        });
 
-      // Create a File object with explicit PNG type and extension
+      if (uploadError) {
+        throw new Error(`Failed to upload temporary file: ${uploadError.message}`);
+      }
+
+      // Get the public URL of the temporary file
+      const { data: { publicUrl: tempUrl } } = supabaseClient
+        .storage
+        .from('tender-documents')
+        .getPublicUrl(tempFilename);
+
+      console.log('Temporary file URL:', tempUrl);
+
+      // Create FormData with the temporary file URL
+      const formData = new FormData();
+      const tempResponse = await fetch(tempUrl);
+      const tempBuffer = await tempResponse.arrayBuffer();
+      
       const file = new File(
-        [imageBuffer], 
-        'image.png',  // Use a simple .png filename
+        [tempBuffer],
+        'image.png',
         { type: 'image/png' }
       );
       formData.append('image', file);
 
-      console.log('Sending request to imggen.ai with file:', file.name, 'type:', file.type);
+      console.log('Sending request to imggen.ai...');
 
       // Call imggen.ai API to remove watermark
-      console.log('Calling imggen.ai API...');
       const removeWatermarkResponse = await fetch('https://app.imggen.ai/v1/remove-watermark', {
         method: 'POST',
         headers: {
@@ -84,6 +108,16 @@ serve(async (req) => {
         },
         body: formData,
       });
+
+      // Delete temporary file after processing
+      const { error: deleteError } = await supabaseClient
+        .storage
+        .from('tender-documents')
+        .remove([tempFilename]);
+
+      if (deleteError) {
+        console.error('Failed to delete temporary file:', deleteError);
+      }
 
       if (!removeWatermarkResponse.ok) {
         const errorText = await removeWatermarkResponse.text();
@@ -106,7 +140,7 @@ serve(async (req) => {
       
       // Upload the processed image to Supabase Storage
       console.log('Uploading processed image to Supabase Storage...');
-      const { data: uploadData, error: uploadError } = await supabaseClient
+      const { data: finalUploadData, error: finalUploadError } = await supabaseClient
         .storage
         .from('tender-documents')
         .upload(outputFilename, processedImageBuffer, {
@@ -114,8 +148,8 @@ serve(async (req) => {
           cacheControl: '3600'
         });
 
-      if (uploadError) {
-        throw new Error(`Failed to upload processed image: ${uploadError.message}`);
+      if (finalUploadError) {
+        throw new Error(`Failed to upload processed image: ${finalUploadError.message}`);
       }
 
       // Get the public URL
