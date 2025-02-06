@@ -24,7 +24,7 @@ serve(async (req) => {
       throw new Error('No image URL provided')
     }
 
-    // Verify it's a PNG URL
+    // Strict PNG validation
     if (!imageUrl.toLowerCase().endsWith('.png')) {
       throw new Error('Only PNG images are supported')
     }
@@ -45,6 +45,14 @@ serve(async (req) => {
         throw new Error(`Failed to fetch image: ${imageResponse.statusText} (${imageResponse.status})`);
       }
 
+      // Verify content type
+      const contentType = imageResponse.headers.get('content-type');
+      console.log('Image content type:', contentType);
+      
+      if (!contentType?.includes('image/png')) {
+        console.warn('Warning: Image content-type is not PNG:', contentType);
+      }
+
       // Get the image data as array buffer
       const imageBuffer = await imageResponse.arrayBuffer();
       console.log('Image downloaded, size:', imageBuffer.byteLength, 'bytes');
@@ -54,14 +62,20 @@ serve(async (req) => {
         throw new Error('Image too large (max 20MB)');
       }
 
-      // Create FormData with proper PNG file handling
+      // Create FormData with strict PNG handling
       const formData = new FormData();
-      const file = new File(
-        [new Uint8Array(imageBuffer)],
-        'image.png',
-        { type: 'image/png' }
-      );
-      formData.append('image', file);
+      
+      // Convert ArrayBuffer to Uint8Array for proper binary handling
+      const uint8Array = new Uint8Array(imageBuffer);
+      
+      // Create a Blob with explicit PNG type
+      const blob = new Blob([uint8Array], { type: 'image/png' });
+      
+      // Add the blob to FormData with .png extension
+      formData.append('image', blob, 'image.png');
+
+      // Log FormData contents for debugging
+      console.log('FormData created with image blob');
 
       // Call imggen.ai API to remove watermark
       console.log('Calling imggen.ai API...');
