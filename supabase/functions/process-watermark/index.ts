@@ -157,18 +157,18 @@ serve(async (req) => {
         console.error(`Error in image processing for tender ${tenderId}:`, error);
         throw error;
       } finally {
-        // Remove from active processing when done
+        // Remove from active processing
         activeProcessing.delete(tenderId);
       }
     };
 
-    // Start the processing in the background
+    // Start the processing
     const processingPromise = processImage();
     
-    // Use EdgeRuntime.waitUntil to ensure the function runs to completion
+    // Use EdgeRuntime.waitUntil to ensure completion
     EdgeRuntime.waitUntil(processingPromise);
 
-    // Wait for the initial processing result
+    // Wait for initial processing result
     const processedUrl = await processingPromise;
 
     return new Response(
