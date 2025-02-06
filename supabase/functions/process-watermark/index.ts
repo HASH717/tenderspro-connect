@@ -43,18 +43,27 @@ serve(async (req) => {
     const processImage = async () => {
       try {
         // Download the image
+        console.log(`Fetching image from URL: ${imageUrl}`);
         const imageResponse = await fetch(imageUrl);
         if (!imageResponse.ok) {
           throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
         }
+
+        // Get and log response headers
+        const headers = Object.fromEntries(imageResponse.headers.entries());
+        console.log('Image response headers:', headers);
 
         // Get the file extension from Content-Type or URL
         const contentType = imageResponse.headers.get('content-type') || '';
         const fileExtension = contentType.split('/')[1] || 'png';
         console.log(`Content-Type: ${contentType}, File Extension: ${fileExtension}`);
 
-        // Convert image to blob
+        // Convert image to blob and log its properties
         const imageBlob = await imageResponse.blob();
+        console.log('Image blob details:', {
+          size: imageBlob.size,
+          type: imageBlob.type
+        });
         
         // Create a File object with the correct content-type
         const fileType = `image/${fileExtension}`;
@@ -64,11 +73,21 @@ serve(async (req) => {
           { type: fileType }
         );
 
+        console.log('Created File object:', {
+          name: file.name,
+          type: file.type,
+          size: file.size
+        });
+
         // Create FormData for imggen.ai API with correct field name
         const formData = new FormData();
-        formData.append('image', file); // Changed from 'image[]' to 'image'
+        formData.append('image', file);
 
-        console.log('Sending request to imggen.ai with file:', file.name, file.type);
+        console.log('Sending request to imggen.ai with file:', {
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size
+        });
 
         // Call imggen.ai API to remove watermark
         const removeWatermarkResponse = await fetch('https://app.imggen.ai/v1/remove-watermark', {
@@ -81,7 +100,11 @@ serve(async (req) => {
 
         if (!removeWatermarkResponse.ok) {
           const errorText = await removeWatermarkResponse.text();
-          console.error('Imggen.ai API error response:', errorText);
+          console.error('Imggen.ai API error response:', {
+            status: removeWatermarkResponse.status,
+            statusText: removeWatermarkResponse.statusText,
+            response: errorText
+          });
           throw new Error(`Failed to remove watermark: ${removeWatermarkResponse.statusText}`);
         }
 
