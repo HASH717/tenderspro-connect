@@ -40,6 +40,10 @@ serve(async (req) => {
         throw new Error(`Failed to fetch image: ${imageResponse.statusText} (${imageResponse.status})`);
       }
 
+      // Log content type for debugging
+      const contentType = imageResponse.headers.get('content-type');
+      console.log('Original image content type:', contentType);
+
       // Get the image data as array buffer
       const imageBuffer = await imageResponse.arrayBuffer();
       console.log('Image downloaded, size:', imageBuffer.byteLength, 'bytes');
@@ -52,18 +56,11 @@ serve(async (req) => {
       // Create FormData for the request
       const formData = new FormData();
       
-      // Create new File object with forced PNG MIME type
-      const file = new File(
-        [imageBuffer], 
-        'image.png',  // Force .png extension
-        { 
-          type: 'image/png',
-          lastModified: new Date().getTime()
-        }
-      );
-      
-      // Append the file to FormData
-      formData.append('image', file);
+      // Create a blob with explicit PNG type
+      const blob = new Blob([imageBuffer], { type: 'image/png' });
+      formData.append('image', blob, 'processed-image.png');
+
+      console.log('Sending request to imggen.ai with content type:', blob.type);
 
       // Call imggen.ai API to remove watermark
       console.log('Calling imggen.ai API...');

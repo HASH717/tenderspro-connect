@@ -61,7 +61,7 @@ export const useScraper = () => {
         .select('id, png_image_url')
         .is('watermarked_image_url', null)
         .not('png_image_url', 'is', null)
-        .filter('png_image_url', 'ilike', '%.png'); // Ensure URL ends with .png
+        .filter('png_image_url', 'ilike', '%.png');
 
       if (error) throw error;
 
@@ -73,11 +73,17 @@ export const useScraper = () => {
       let processed = 0;
       for (const tender of tenders) {
         try {
-          if (!tender.png_image_url?.toLowerCase().endsWith('.png')) {
+          if (!tender.png_image_url) {
+            console.warn(`Skipping tender ${tender.id} - no PNG version available`);
+            continue;
+          }
+
+          // Verify PNG extension
+          if (!tender.png_image_url.toLowerCase().endsWith('.png')) {
             console.warn(`Skipping tender ${tender.id} - not a PNG image`);
             continue;
           }
-          
+
           await supabase.functions.invoke('process-watermark', {
             body: { 
               imageUrl: tender.png_image_url,
