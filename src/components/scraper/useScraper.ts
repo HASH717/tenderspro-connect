@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -17,25 +18,39 @@ export const useScraper = () => {
         .from('tenders')
         .select('id, image_url')
         .is('png_image_url', null)
-        .not('image_url', 'is', null);
+        .not('image_url', 'is', null)
+        .limit(1); // Limiting to 1 for testing
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching tenders:', error);
+        throw error;
+      }
 
       if (!tenders?.length) {
         toast.info('No images need conversion');
         return;
       }
 
+      console.log('Found tenders to convert:', tenders);
+
       let processed = 0;
       for (const tender of tenders) {
         try {
-          await supabase.functions.invoke('convert-to-png', {
+          console.log('Converting tender:', tender.id, tender.image_url);
+          
+          const { data, error } = await supabase.functions.invoke('convert-to-png', {
             body: { imageUrl: tender.image_url, tenderId: tender.id }
           });
+
+          console.log('Conversion response:', data, error);
+          
+          if (error) throw error;
+          
           processed++;
           setProgress((processed / tenders.length) * 100);
         } catch (err) {
           console.error(`Failed to convert image for tender ${tender.id}:`, err);
+          toast.error(`Failed to convert tender ${tender.id}`);
           // Continue with next image even if one fails
         }
       }
