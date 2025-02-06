@@ -65,36 +65,8 @@ serve(async (req) => {
           type: imageBlob.type
         });
 
-        // Convert to ArrayBuffer to check magic bytes
+        // Convert to ArrayBuffer
         const imageBuffer = await imageBlob.arrayBuffer();
-        const uint8Array = new Uint8Array(imageBuffer);
-
-        // First 12 bytes for format detection
-        const firstBytes = Array.from(uint8Array.slice(0, 12))
-          .map(b => b.toString(16).padStart(2, '0'));
-        console.log('First 12 bytes:', firstBytes);
-
-        // Check magic bytes for supported formats
-        let isPNG = false;
-        let isJPEG = false;
-        let isWEBP = false;
-
-        // First check if we have enough bytes
-        if (uint8Array.length >= 12) {
-          // PNG check (first 8 bytes)
-          isPNG = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
-            .every((byte, i) => uint8Array[i] === byte);
-
-          // JPEG check (first 2 bytes)
-          isJPEG = uint8Array[0] === 0xFF && uint8Array[1] === 0xD8;
-
-          // WEBP check (RIFF header + WEBP marker)
-          isWEBP = 
-            [0x52, 0x49, 0x46, 0x46].every((byte, i) => uint8Array[i] === byte) && // "RIFF"
-            [0x57, 0x45, 0x42, 0x50].every((byte, i) => uint8Array[i + 8] === byte); // "WEBP"
-        }
-
-        console.log('Image format detection:', { isPNG, isJPEG, isWEBP });
 
         // Generate a unique filename
         const filename = `${tenderId}-${Date.now()}.png`
