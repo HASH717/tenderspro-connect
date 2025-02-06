@@ -53,17 +53,45 @@ serve(async (req) => {
         // Get content type from response headers
         const contentType = imageResponse.headers.get('content-type');
         console.log('Image content type from response:', contentType);
-
-        // Convert to blob and log details
+        
+        // Convert to blob and ensure PNG format
         const imageBlob = await imageResponse.blob();
-        console.log('Image blob details:', {
+        console.log('Original image blob details:', {
           size: imageBlob.size,
           type: imageBlob.type
         });
 
-        // Create File object for imggen.ai with explicit PNG type
+        // Create a canvas to convert the image to PNG
+        const img = new Image();
+        const canvas = new OffscreenCanvas(1, 1); // Initial size will be updated
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) {
+          throw new Error('Failed to get canvas context');
+        }
+
+        // Load image and convert to PNG
+        await new Promise((resolve, reject) => {
+          img.onload = () => {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            resolve();
+          };
+          img.onerror = () => reject(new Error('Failed to load image'));
+          img.src = URL.createObjectURL(imageBlob);
+        });
+
+        // Get PNG blob from canvas
+        const pngBlob = await canvas.convertToBlob({ type: 'image/png' });
+        console.log('Converted PNG blob details:', {
+          size: pngBlob.size,
+          type: pngBlob.type
+        });
+
+        // Create File object with PNG blob
         const file = new File(
-          [imageBlob],
+          [pngBlob],
           `${tenderId}-${Date.now()}.png`,
           { type: 'image/png' }
         );
