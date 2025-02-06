@@ -43,7 +43,7 @@ serve(async (req) => {
         throw new Error(`Failed to fetch image: ${imageResponse.statusText} (${imageResponse.status})`);
       }
 
-      // Get the image data as blob directly
+      // Get the image data as blob
       const imageBlob = await imageResponse.blob();
       console.log('Image downloaded, size:', imageBlob.size, 'bytes');
 
@@ -52,9 +52,10 @@ serve(async (req) => {
         throw new Error('Image too large (max 10MB)');
       }
 
-      // Create FormData and append the blob directly
+      // Create FormData and append the blob as a file
       const formData = new FormData();
-      formData.append('image[]', imageBlob, 'image.png');
+      const file = new File([imageBlob], 'image.png', { type: 'image/png' });
+      formData.append('image[]', file);
 
       // Call imggen.ai API to remove watermark
       console.log('Calling imggen.ai API...');
@@ -62,6 +63,7 @@ serve(async (req) => {
         method: 'POST',
         headers: {
           'X-IMGGEN-KEY': Deno.env.get('IMGGEN_API_KEY') ?? '',
+          'Content-Type': 'multipart/form-data',
         },
         body: formData,
       });
