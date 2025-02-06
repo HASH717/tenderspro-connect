@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -30,12 +29,11 @@ export const useScraper = () => {
         throw allTendersError;
       }
 
-      // Let's check ONE tender with an image that hasn't been converted yet
+      // Let's check ONE tender with an image, ignoring PNG status
       const { data: tenders, error } = await supabase
         .from('tenders')
         .select('id, image_url, png_image_url')
         .not('image_url', 'is', null)
-        .is('png_image_url', null)
         .limit(1); // Just one tender for testing
 
       console.log('Selected tender for testing:', tenders);
@@ -46,7 +44,7 @@ export const useScraper = () => {
       }
 
       if (!tenders?.length) {
-        console.log('No tenders found with images that need conversion');
+        console.log('No tenders found with images');
         toast.info('No images found to convert');
         return;
       }
