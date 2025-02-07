@@ -72,9 +72,11 @@ Deno.serve(async (req) => {
     }
 
     try {
-      // Fetch the image directly
-      console.log('Fetching image from URL:', imageUrl);
-      const imageResponse = await fetch(imageUrl);
+      // Use codetabs proxy for the image URL
+      const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(imageUrl)}`;
+      console.log('Fetching image from proxied URL:', proxyUrl);
+      
+      const imageResponse = await fetch(proxyUrl);
       if (!imageResponse.ok) {
         throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
       }
