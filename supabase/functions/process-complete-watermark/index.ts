@@ -71,11 +71,20 @@ Deno.serve(async (req) => {
 
     const processImage = async () => {
       try {
-        // Step 1: Download the image
+        // Step 1: Download the image with proper headers
         console.log(`Fetching image from URL: ${imageUrl}`);
-        const imageResponse = await fetch(imageUrl);
+        const imageResponse = await fetch(imageUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'image/gif,image/jpeg,image/png,*/*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
+
         if (!imageResponse.ok) {
-          throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
+          throw new Error(`Failed to fetch image: ${imageResponse.statusText} (${imageResponse.status})`);
         }
 
         const imageArrayBuffer = await imageResponse.arrayBuffer();
@@ -112,17 +121,17 @@ Deno.serve(async (req) => {
         image.opacity(1);
 
         // Convert to buffer
-        const processedImageBuffer = await image.getBufferAsync(Jimp.default.MIME_JPEG);
+        const processedImageBuffer = await image.getBufferAsync(Jimp.default.MIME_PNG); // Changed to PNG for better quality
 
         // Generate a unique filename
-        const filename = `${tenderId}-processed-${Date.now()}.jpg`;
+        const filename = `${tenderId}-processed-${Date.now()}.png`; // Changed to .png extension
         
         // Upload the processed image to Supabase Storage
         const { data: uploadData, error: uploadError } = await supabaseClient
           .storage
           .from('tender-documents')
           .upload(filename, processedImageBuffer, {
-            contentType: 'image/jpeg',
+            contentType: 'image/png', // Updated content type
             cacheControl: '3600'
           });
 
