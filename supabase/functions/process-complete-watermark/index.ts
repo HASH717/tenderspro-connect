@@ -72,6 +72,10 @@ Deno.serve(async (req) => {
     }
 
     try {
+      // Use codetabs proxy for the image URL
+      const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(imageUrl)}`;
+      console.log('Using proxied URL for watermark removal:', proxyUrl);
+
       // First, remove the existing watermark using imggen.ai API
       console.log('Removing existing watermark...');
       const response = await fetch('https://api.imggen.ai/remove-watermark', {
@@ -81,7 +85,7 @@ Deno.serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          image_url: imageUrl
+          image_url: proxyUrl
         })
       });
 
