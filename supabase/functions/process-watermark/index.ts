@@ -1,7 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
-import * as Jimp from 'https://esm.sh/jimp@0.22.10'
+import Jimp from 'https://esm.sh/jimp@0.22.10'
 
 // Define Buffer for Node.js compatibility
 const Buffer = {
@@ -74,17 +74,17 @@ serve(async (req) => {
         
         // Step 2: Process with Jimp
         console.log('Processing image with Jimp...');
-        const image = await Jimp.default.read(new Uint8Array(imageArrayBuffer));
+        const image = await Jimp.read(Buffer.from(imageArrayBuffer));
         
         // Add watermark text
         const FONT_SIZE = Math.min(image.getWidth(), image.getHeight()) / 20; // Adjust size based on image dimensions
-        const font = await Jimp.default.loadFont(Jimp.default.FONT_SANS_64_BLACK); // Using default Jimp font
+        const font = await Jimp.loadFont(Jimp.FONT_SANS_64_BLACK); // Using default Jimp font
         
         const watermarkText = 'TENDERSPRO.CO';
         const maxWidth = image.getWidth() * 0.8; // 80% of image width
         
         // Calculate text position (center)
-        const textWidth = Jimp.default.measureText(font, watermarkText);
+        const textWidth = Jimp.measureText(font, watermarkText);
         const x = (image.getWidth() - textWidth) / 2;
         const y = (image.getHeight() - 64) / 2; // 64 is the font height
         
@@ -96,15 +96,15 @@ serve(async (req) => {
           y,
           {
             text: watermarkText,
-            alignmentX: Jimp.default.HORIZONTAL_ALIGN_CENTER,
-            alignmentY: Jimp.default.VERTICAL_ALIGN_MIDDLE
+            alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
+            alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE
           },
           maxWidth
         );
         image.opacity(1);
 
         // Convert to buffer
-        const processedImageBuffer = await image.getBufferAsync(Jimp.default.MIME_JPEG);
+        const processedImageBuffer = await image.getBufferAsync(Jimp.MIME_JPEG);
 
         // Generate a unique filename
         const filename = `${tenderId}-processed-${Date.now()}.jpg`;
