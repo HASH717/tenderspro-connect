@@ -1,7 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
-import { Canvas } from "https://deno.land/x/canvas@v1.4.1/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -55,8 +54,8 @@ serve(async (req) => {
         
         // Create FormData with the image buffer
         const formData = new FormData();
-        const fileName = `${tenderId}-temp.jpg`;
-        const imageBlob = new Blob([imageArrayBuffer], { type: 'image/jpeg' });
+        const fileName = `${tenderId}-temp.gif`;
+        const imageBlob = new Blob([imageArrayBuffer]);
         formData.append('image', imageBlob, fileName);
 
         console.log('Sending request to imggen.ai API...');
