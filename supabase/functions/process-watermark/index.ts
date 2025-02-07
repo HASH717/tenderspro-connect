@@ -79,7 +79,8 @@ serve(async (req) => {
         watermarkFormData.append('color', '#000000');
         watermarkFormData.append('position', 'center');
 
-        const addWatermarkResponse = await fetch('https://api.imggen.ai/v1/add-watermark', {
+        // Updated endpoint to use the watermark endpoint instead of add-watermark
+        const addWatermarkResponse = await fetch('https://api.imggen.ai/v1/watermark', {
           method: 'POST',
           headers: {
             'X-IMGGEN-KEY': Deno.env.get('IMGGEN_API_KEY') ?? '',
@@ -94,7 +95,7 @@ serve(async (req) => {
         console.log('Response headers:', Object.fromEntries(addWatermarkResponse.headers.entries()));
 
         if (!addWatermarkResponse.ok) {
-          throw new Error(`Failed to add watermark: ${addWatermarkResponse.statusText} (${addWatermarkResponse.status})`);
+          throw new Error(`Failed to add watermark: ${addWatermarkResponse.statusText} (${addWatermarkResponse.status}). Response: ${watermarkResponseText}`);
         }
 
         let watermarkResult;
