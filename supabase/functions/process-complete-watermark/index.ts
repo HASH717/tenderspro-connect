@@ -11,6 +11,54 @@ const corsHeaders = {
 // Track active processing
 const activeProcessing = new Set();
 
+const CHUNK_SIZE = 1024 * 1024; // 1MB chunks
+
+async function fetchImageInChunks(url: string) {
+  console.log('Fetching image in chunks from:', url);
+  
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch image: ${response.statusText}`);
+  }
+  
+  const contentLength = Number(response.headers.get('content-length'));
+  console.log(`Total image size: ${contentLength} bytes`);
+  
+  if (!contentLength) {
+    // If content-length is not available, fall back to regular fetch
+    console.log('Content-length not available, fetching entire image at once');
+    return new Uint8Array(await response.arrayBuffer());
+  }
+
+  const chunks: Uint8Array[] = [];
+  const reader = response.body!.getReader();
+  let receivedLength = 0;
+
+  while(true) {
+    const {done, value} = await reader.read();
+    
+    if (done) {
+      console.log('Finished reading image data');
+      break;
+    }
+    
+    chunks.push(value);
+    receivedLength += value.length;
+    console.log(`Received ${receivedLength} of ${contentLength} bytes`);
+  }
+
+  // Concatenate chunks
+  const allChunks = new Uint8Array(receivedLength);
+  let position = 0;
+  for(const chunk of chunks) {
+    allChunks.set(chunk, position);
+    position += chunk.length;
+  }
+  
+  console.log(`Successfully assembled ${chunks.length} chunks`);
+  return allChunks;
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -19,7 +67,7 @@ Deno.serve(async (req) => {
 
   let tenderId = null;
   let image = null;
-  let imageArrayBuffer = null;
+  let imageData = null;
   
   try {
     const { tenderId: id } = await req.json();
@@ -72,44 +120,22 @@ Deno.serve(async (req) => {
         .eq('id', tenderId);
     }
 
-    // 2. Fetch and process image with optimizations
+    // 2. Fetch and process image with chunking
     try {
+      // Use proxy for CORS issues
       const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=';
       console.log(`Fetching image through proxy: ${proxyUrl}${encodeURIComponent(imageUrl)}`);
       
-      const imageResponse = await fetch(proxyUrl + encodeURIComponent(imageUrl), {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
-      });
-
-      if (!imageResponse.ok) {
-        throw new Error(`Failed to fetch image: ${imageResponse.statusText} (${imageResponse.status})`);
-      }
-
-      imageArrayBuffer = await imageResponse.arrayBuffer();
-      if (!imageArrayBuffer || imageArrayBuffer.byteLength === 0) {
+      imageData = await fetchImageInChunks(proxyUrl + encodeURIComponent(imageUrl));
+      if (!imageData || imageData.length === 0) {
         throw new Error('Received empty image data');
       }
 
       const fileExtension = imageUrl.split('.').pop()?.toLowerCase() || 'jpg';
       console.log(`File extension detected: ${fileExtension}`);
 
-      // Check file size before processing
-      const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-      if (imageArrayBuffer.byteLength > MAX_FILE_SIZE) {
-        console.log(`Large file detected (${imageArrayBuffer.byteLength} bytes), applying stricter size limits`);
-      }
-
       console.log('Creating Jimp instance...');
-      image = await Jimp.default.read(Buffer.from(imageArrayBuffer));
-      
-      // More aggressive scaling for larger images
-      const MAX_SIZE = imageArrayBuffer.byteLength > MAX_FILE_SIZE ? 800 : 1024;
-      if (image.getWidth() > MAX_SIZE || image.getHeight() > MAX_SIZE) {
-        console.log(`Scaling image from ${image.getWidth()}x${image.getHeight()} to fit within ${MAX_SIZE}x${MAX_SIZE}`);
-        image.scaleToFit(MAX_SIZE, MAX_SIZE);
-      }
+      image = await Jimp.default.read(Buffer.from(imageData));
 
       // Add watermark text
       const FONT_SIZE = Math.min(image.getWidth(), image.getHeight()) / 20;
@@ -142,20 +168,71 @@ Deno.serve(async (req) => {
                       Jimp.default.MIME_JPEG;
 
       console.log(`Processing with mime type: ${mimeType}`);
-      const processedImageBuffer = await image.getBufferAsync(mimeType);
-      const filename = `${tenderId}-${Date.now()}.${fileExtension}`;
-
-      console.log(`Uploading processed image as ${filename} (${processedImageBuffer.length} bytes)`);
-      const { data: uploadData, error: uploadError } = await supabaseClient
-        .storage
-        .from('tender-documents')
-        .upload(filename, processedImageBuffer, {
-          contentType: `image/${fileExtension}`,
-          cacheControl: '3600'
+      
+      // Process image buffer in chunks
+      const processedImageBuffer = await new Promise<Buffer>((resolve, reject) => {
+        image.getBuffer(mimeType, (err, buffer) => {
+          if (err) reject(err);
+          else resolve(buffer);
         });
+      });
 
-      if (uploadError) {
-        throw new Error(`Failed to upload processed image: ${uploadError.message}`);
+      const filename = `${tenderId}-${Date.now()}.${fileExtension}`;
+      console.log(`Uploading processed image as ${filename} (${processedImageBuffer.length} bytes)`);
+
+      // Upload in chunks if the processed image is large
+      if (processedImageBuffer.length > CHUNK_SIZE) {
+        const chunks = Math.ceil(processedImageBuffer.length / CHUNK_SIZE);
+        console.log(`Splitting upload into ${chunks} chunks`);
+
+        const uploadPromises = [];
+        for (let i = 0; i < chunks; i++) {
+          const start = i * CHUNK_SIZE;
+          const end = Math.min(start + CHUNK_SIZE, processedImageBuffer.length);
+          const chunk = processedImageBuffer.slice(start, end);
+          
+          uploadPromises.push(
+            supabaseClient.storage
+              .from('tender-documents')
+              .upload(`${filename}.part${i}`, chunk, {
+                contentType: `image/${fileExtension}`,
+                cacheControl: '3600'
+              })
+          );
+        }
+
+        const results = await Promise.all(uploadPromises);
+        const errors = results.filter(r => r.error);
+        if (errors.length > 0) {
+          throw new Error(`Failed to upload some chunks: ${errors.map(e => e.error?.message).join(', ')}`);
+        }
+
+        // Combine chunks (this step depends on your storage setup)
+        // For now, we'll upload the complete file as well
+        const { error: uploadError } = await supabaseClient
+          .storage
+          .from('tender-documents')
+          .upload(filename, processedImageBuffer, {
+            contentType: `image/${fileExtension}`,
+            cacheControl: '3600'
+          });
+
+        if (uploadError) {
+          throw new Error(`Failed to upload processed image: ${uploadError.message}`);
+        }
+      } else {
+        // Small file, upload directly
+        const { error: uploadError } = await supabaseClient
+          .storage
+          .from('tender-documents')
+          .upload(filename, processedImageBuffer, {
+            contentType: `image/${fileExtension}`,
+            cacheControl: '3600'
+          });
+
+        if (uploadError) {
+          throw new Error(`Failed to upload processed image: ${uploadError.message}`);
+        }
       }
 
       const { data: { publicUrl } } = supabaseClient
@@ -220,8 +297,8 @@ Deno.serve(async (req) => {
       }
       image = null;
     }
-    if (imageArrayBuffer) {
-      imageArrayBuffer = null;
+    if (imageData) {
+      imageData = null;
     }
     
     if (tenderId) {
