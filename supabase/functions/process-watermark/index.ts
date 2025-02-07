@@ -50,31 +50,26 @@ serve(async (req) => {
           throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
         }
 
-        // Get the image buffer and content type
+        // Get the image buffer and ensure it's treated as PNG
         const imageBuffer = await imageResponse.arrayBuffer();
-        const contentType = imageResponse.headers.get('content-type') || 'image/png';
         
-        // Validate content type
-        const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
-        if (!validTypes.includes(contentType.toLowerCase())) {
-          console.error('Invalid content type:', contentType);
-          throw new Error(`Invalid image type: ${contentType}. Must be one of: ${validTypes.join(', ')}`);
-        }
+        // Create a temporary file name for the image with PNG extension
+        const fileName = `${tenderId}-temp.png`;
 
-        console.log('Image content type:', contentType);
-        console.log('Image size:', imageBuffer.byteLength, 'bytes');
-
-        // Create FormData with proper content type
+        // Create FormData and explicitly set PNG MIME type
         const formData = new FormData();
-        formData.append('image', new Blob([imageBuffer], { type: contentType }), `${tenderId}.png`);
+        const blob = new Blob([imageBuffer], { type: 'image/png' });
+        const file = new File([blob], fileName, { type: 'image/png' });
+        formData.append('image', file);
 
-        console.log('Sending request to imggen.ai...');
+        console.log('Sending request to imggen.ai with PNG file...');
 
-        // Call imggen.ai API to remove watermark
+        // Call imggen.ai API to remove watermark with explicit headers
         const removeWatermarkResponse = await fetch('https://app.imggen.ai/v1/remove-watermark', {
           method: 'POST',
           headers: {
             'X-IMGGEN-KEY': Deno.env.get('IMGGEN_API_KEY') ?? '',
+            'Accept': 'application/json',
           },
           body: formData,
         });
