@@ -1,3 +1,4 @@
+
 import { createClient } from 'npm:@supabase/supabase-js@2.38.4'
 import Jimp from 'npm:jimp@0.22.10'
 import { Buffer } from "node:buffer"
@@ -18,6 +19,7 @@ Deno.serve(async (req) => {
 
   let tenderId = null;
   let image = null;
+  let imageArrayBuffer = null;
   
   try {
     const { tenderId: id } = await req.json();
@@ -28,6 +30,11 @@ Deno.serve(async (req) => {
     }
 
     console.log(`Starting watermark processing for tender ${tenderId}`);
+    
+    // Prevent concurrent processing of the same tender
+    if (activeProcessing.has(tenderId)) {
+      throw new Error('This tender is already being processed');
+    }
     activeProcessing.add(tenderId);
 
     const supabaseClient = createClient(
@@ -80,21 +87,28 @@ Deno.serve(async (req) => {
         throw new Error(`Failed to fetch image: ${imageResponse.statusText} (${imageResponse.status})`);
       }
 
-      const imageArrayBuffer = await imageResponse.arrayBuffer();
+      imageArrayBuffer = await imageResponse.arrayBuffer();
       if (!imageArrayBuffer || imageArrayBuffer.byteLength === 0) {
         throw new Error('Received empty image data');
       }
 
-      console.log('Successfully fetched image data, processing with Jimp...');
+      const fileExtension = imageUrl.split('.').pop()?.toLowerCase() || 'jpg';
+      console.log(`File extension detected: ${fileExtension}`);
 
-      // Read image with lower quality to reduce memory usage
+      // Check file size before processing
+      const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+      if (imageArrayBuffer.byteLength > MAX_FILE_SIZE) {
+        console.log(`Large file detected (${imageArrayBuffer.byteLength} bytes), applying stricter size limits`);
+      }
+
+      console.log('Creating Jimp instance...');
       image = await Jimp.default.read(Buffer.from(imageArrayBuffer));
       
-      // Scale down large images
-      const MAX_SIZE = 1024;
+      // More aggressive scaling for larger images
+      const MAX_SIZE = imageArrayBuffer.byteLength > MAX_FILE_SIZE ? 800 : 1024;
       if (image.getWidth() > MAX_SIZE || image.getHeight() > MAX_SIZE) {
+        console.log(`Scaling image from ${image.getWidth()}x${image.getHeight()} to fit within ${MAX_SIZE}x${MAX_SIZE}`);
         image.scaleToFit(MAX_SIZE, MAX_SIZE);
-        console.log(`Scaled image to fit within ${MAX_SIZE}x${MAX_SIZE}`);
       }
 
       // Add watermark text
@@ -122,17 +136,16 @@ Deno.serve(async (req) => {
       );
       image.opacity(1);
 
-      // Keep original format
-      const fileExtension = imageUrl.split('.').pop()?.toLowerCase() || 'jpg';
+      // Set correct mime type based on original format
       const mimeType = fileExtension === 'gif' ? Jimp.default.MIME_GIF :
                       fileExtension === 'png' ? Jimp.default.MIME_PNG :
                       Jimp.default.MIME_JPEG;
 
-      // Get buffer in original format
+      console.log(`Processing with mime type: ${mimeType}`);
       const processedImageBuffer = await image.getBufferAsync(mimeType);
-      const filename = `${tenderId}-processed-${Date.now()}.${fileExtension}`;
+      const filename = `${tenderId}-${Date.now()}.${fileExtension}`;
 
-      console.log(`Uploading processed image as ${filename}...`);
+      console.log(`Uploading processed image as ${filename} (${processedImageBuffer.length} bytes)`);
       const { data: uploadData, error: uploadError } = await supabaseClient
         .storage
         .from('tender-documents')
@@ -200,15 +213,25 @@ Deno.serve(async (req) => {
       }
     );
   } finally {
-    // Clean up resources
+    // Aggressive cleanup
     if (image) {
-      image.bitmap.data = null;
+      if (image.bitmap && image.bitmap.data) {
+        image.bitmap.data = null;
+      }
       image = null;
+    }
+    if (imageArrayBuffer) {
+      imageArrayBuffer = null;
     }
     
     if (tenderId) {
       activeProcessing.delete(tenderId);
       console.log(`Removed tender ${tenderId} from active processing`);
+    }
+
+    // Force garbage collection if available
+    if (typeof global.gc === 'function') {
+      global.gc();
     }
   }
 });
