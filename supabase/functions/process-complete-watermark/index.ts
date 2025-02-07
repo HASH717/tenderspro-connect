@@ -1,3 +1,4 @@
+
 import { createClient } from 'npm:@supabase/supabase-js@2.38.4'
 import Jimp from 'npm:jimp@0.22.10'
 import { Buffer } from "node:buffer"
@@ -10,14 +11,6 @@ const corsHeaders = {
 // Track active processing
 const activeProcessing = new Set();
 
-// Handle shutdown gracefully
-addEventListener('beforeunload', (ev) => {
-  console.log('Function shutdown initiated due to:', ev.detail?.reason);
-  if (activeProcessing.size > 0) {
-    console.log(`${activeProcessing.size} images were still being processed`);
-  }
-});
-
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -25,6 +18,8 @@ Deno.serve(async (req) => {
   }
 
   let tenderId = null;
+  let image = null;
+  
   try {
     const { tenderId: id } = await req.json();
     tenderId = id;
@@ -34,8 +29,6 @@ Deno.serve(async (req) => {
     }
 
     console.log(`Starting watermark processing for tender ${tenderId}`);
-
-    // Track this processing
     activeProcessing.add(tenderId);
 
     const supabaseClient = createClient(
@@ -67,18 +60,14 @@ Deno.serve(async (req) => {
 
     // Store original image URL if not already stored
     if (!tender.original_image_url) {
-      const { error: updateError } = await supabaseClient
+      await supabaseClient
         .from('tenders')
         .update({ original_image_url: imageUrl })
         .eq('id', tenderId);
-
-      if (updateError) {
-        console.error('Error storing original image URL:', updateError);
-      }
     }
 
+    // 2. Fetch and process image with optimizations
     try {
-      // Use codetabs.com proxy to bypass CORS
       const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=';
       console.log(`Fetching image through proxy: ${proxyUrl}${encodeURIComponent(imageUrl)}`);
       
@@ -98,11 +87,20 @@ Deno.serve(async (req) => {
       }
 
       console.log('Successfully fetched image data, processing with Jimp...');
+
+      // Read image with lower quality to reduce memory usage
+      image = await Jimp.default.read(Buffer.from(imageArrayBuffer));
       
-      const image = await Jimp.default.read(Buffer.from(imageArrayBuffer));
-      if (!image) {
-        throw new Error('Failed to process image with Jimp');
+      // Scale down large images to reduce memory usage
+      const MAX_SIZE = 2048;
+      if (image.getWidth() > MAX_SIZE || image.getHeight() > MAX_SIZE) {
+        image.scaleToFit(MAX_SIZE, MAX_SIZE);
+        console.log(`Scaled image to fit within ${MAX_SIZE}x${MAX_SIZE}`);
       }
+
+      // Optimize image quality
+      const QUALITY = 85; // Good balance between quality and size
+      image.quality(QUALITY);
 
       // Add watermark text
       const FONT_SIZE = Math.min(image.getWidth(), image.getHeight()) / 20;
@@ -114,7 +112,7 @@ Deno.serve(async (req) => {
       const textWidth = Jimp.default.measureText(font, watermarkText);
       const x = (image.getWidth() - textWidth) / 2;
       const y = (image.getHeight() - 64) / 2;
-      
+
       image.opacity(0.3);
       image.print(
         font,
@@ -170,7 +168,6 @@ Deno.serve(async (req) => {
         throw new Error(`Failed to update tender record: ${updateError.message}`);
       }
 
-      console.log(`Successfully processed image for tender ${tenderId}`);
       return new Response(
         JSON.stringify({ 
           success: true, 
@@ -208,10 +205,16 @@ Deno.serve(async (req) => {
       }
     );
   } finally {
-    // Clean up processing tracking
+    // Clean up resources
+    if (image) {
+      image.bitmap.data = null;
+      image = null;
+    }
+    
     if (tenderId) {
       activeProcessing.delete(tenderId);
       console.log(`Removed tender ${tenderId} from active processing`);
     }
   }
 });
+
