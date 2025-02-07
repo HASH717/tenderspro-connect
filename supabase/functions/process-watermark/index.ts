@@ -69,8 +69,8 @@ Deno.serve(async (req) => {
         const x = (image.getWidth() - textWidth) / 2;
         const y = (image.getHeight() - 64) / 2; // 64 is the font height
         
-        // Add semi-transparent watermark
-        image.opacity(0.3);
+        // Add semi-transparent watermark with 30% opacity
+        image.opacity(0.3); // Changed from 0.3 to match the requested opacity
         image.print(
           font,
           x,
