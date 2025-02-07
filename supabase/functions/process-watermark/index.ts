@@ -50,19 +50,19 @@ serve(async (req) => {
           throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
         }
 
-        // Get the image buffer and ensure it's treated as PNG
+        // Get the image buffer and ensure it's treated as JPEG
         const imageBuffer = await imageResponse.arrayBuffer();
         
-        // Create a temporary file name for the image with PNG extension
-        const fileName = `${tenderId}-temp.png`;
+        // Create a temporary file name for the image with JPEG extension
+        const fileName = `${tenderId}-temp.jpg`;
 
-        // Create FormData and explicitly set PNG MIME type
+        // Create FormData and explicitly set JPEG MIME type
         const formData = new FormData();
-        const blob = new Blob([imageBuffer], { type: 'image/png' });
-        const file = new File([blob], fileName, { type: 'image/png' });
+        const blob = new Blob([imageBuffer], { type: 'image/jpeg' });
+        const file = new File([blob], fileName, { type: 'image/jpeg' });
         formData.append('image', file);
 
-        console.log('Sending request to imggen.ai with PNG file...');
+        console.log('Sending request to imggen.ai with JPEG file...');
 
         // Call imggen.ai API to remove watermark with explicit headers
         const removeWatermarkResponse = await fetch('https://app.imggen.ai/v1/remove-watermark', {
@@ -104,14 +104,14 @@ serve(async (req) => {
         const processedImageBuffer = Uint8Array.from(atob(result.images[0]), c => c.charCodeAt(0));
 
         // Generate a unique filename
-        const filename = `${tenderId}-processed-${Date.now()}.png`;
+        const filename = `${tenderId}-processed-${Date.now()}.jpg`;
         
         // Upload the processed image to Supabase Storage
         const { data: uploadData, error: uploadError } = await supabaseClient
           .storage
           .from('tender-documents')
           .upload(filename, processedImageBuffer, {
-            contentType: 'image/png',
+            contentType: 'image/jpeg',
             cacheControl: '3600'
           });
 
