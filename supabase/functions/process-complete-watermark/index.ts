@@ -11,49 +11,6 @@ const corsHeaders = {
 // Track active processing
 const activeProcessing = new Set();
 
-const CHUNK_SIZE = 1024 * 1024; // 1MB chunks
-
-async function fetchImageInChunks(url: string) {
-  console.log('Fetching image in chunks from:', url);
-  
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch image: ${response.statusText}`);
-  }
-
-  // Create a buffer to store the image data
-  const chunks: Uint8Array[] = [];
-  let totalSize = 0;
-
-  // Use the ReadableStream API to read the response body
-  const reader = response.body!.getReader();
-
-  while (true) {
-    const { done, value } = await reader.read();
-    
-    if (done) {
-      console.log('Finished reading image data, total size:', totalSize);
-      break;
-    }
-
-    chunks.push(value);
-    totalSize += value.length;
-    console.log(`Received chunk of ${value.length} bytes, total: ${totalSize}`);
-  }
-
-  // Combine chunks into final buffer
-  const finalBuffer = new Uint8Array(totalSize);
-  let offset = 0;
-  
-  for (const chunk of chunks) {
-    finalBuffer.set(chunk, offset);
-    offset += chunk.length;
-  }
-
-  console.log(`Successfully assembled ${chunks.length} chunks into ${totalSize} bytes`);
-  return finalBuffer;
-}
-
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -62,7 +19,6 @@ Deno.serve(async (req) => {
 
   let tenderId = null;
   let image = null;
-  let imageData = null;
   
   try {
     const { tenderId: id } = await req.json();
@@ -116,23 +72,19 @@ Deno.serve(async (req) => {
     }
 
     try {
-      // Use proxy for CORS issues
-      const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=';
-      console.log(`Fetching image through proxy: ${proxyUrl}${encodeURIComponent(imageUrl)}`);
-      
-      imageData = await fetchImageInChunks(proxyUrl + encodeURIComponent(imageUrl));
-      if (!imageData || imageData.length === 0) {
-        throw new Error('Received empty image data');
+      // Download the image
+      console.log(`Fetching image from URL: ${imageUrl}`);
+      const imageResponse = await fetch(imageUrl);
+      if (!imageResponse.ok) {
+        throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
       }
 
-      console.log(`Successfully fetched image data: ${imageData.length} bytes`);
-
-      const fileExtension = imageUrl.split('.').pop()?.toLowerCase() || 'jpg';
-      console.log(`File extension detected: ${fileExtension}`);
-
-      console.log('Creating Jimp instance...');
-      image = await Jimp.default.read(Buffer.from(imageData));
-
+      const imageArrayBuffer = await imageResponse.arrayBuffer();
+      
+      // Process with Jimp
+      console.log('Processing image with Jimp...');
+      image = await Jimp.default.read(Buffer.from(imageArrayBuffer));
+      
       // Add watermark text
       const FONT_SIZE = Math.min(image.getWidth(), image.getHeight()) / 20;
       const font = await Jimp.default.loadFont(Jimp.default.FONT_SANS_64_BLACK);
@@ -158,57 +110,18 @@ Deno.serve(async (req) => {
       );
       image.opacity(1);
 
-      // Set quality to 70%
+      // Set quality and get buffer
       image.quality(70);
+      const processedImageBuffer = await image.getBufferAsync(Jimp.default.MIME_JPEG);
 
-      // Maintain original format but with reduced quality
-      const mimeType = fileExtension === 'gif' ? Jimp.default.MIME_GIF :
-                      fileExtension === 'png' ? Jimp.default.MIME_PNG :
-                      Jimp.default.MIME_JPEG;
-
-      console.log(`Processing with mime type: ${mimeType}`);
+      // Generate filename and upload
+      const filename = `${tenderId}-${Date.now()}.jpg`;
       
-      const processedImageBuffer = await new Promise<Buffer>((resolve, reject) => {
-        image.getBuffer(mimeType, (err, buffer) => {
-          if (err) reject(err);
-          else resolve(buffer);
-        });
-      });
-
-      const filename = `${tenderId}-${Date.now()}.${fileExtension}`;
-      console.log(`Uploading processed image as ${filename} (${processedImageBuffer.length} bytes)`);
-
-      // Upload processed image in chunks if large
-      if (processedImageBuffer.length > CHUNK_SIZE) {
-        console.log(`File is large (${processedImageBuffer.length} bytes), uploading in chunks`);
-        const chunks = Math.ceil(processedImageBuffer.length / CHUNK_SIZE);
-        
-        for (let i = 0; i < chunks; i++) {
-          const start = i * CHUNK_SIZE;
-          const end = Math.min(start + CHUNK_SIZE, processedImageBuffer.length);
-          const chunk = processedImageBuffer.slice(start, end);
-          
-          const { error: chunkError } = await supabaseClient.storage
-            .from('tender-documents')
-            .upload(`${filename}.part${i}`, chunk, {
-              contentType: `image/${fileExtension}`,
-              cacheControl: '3600'
-            });
-
-          if (chunkError) {
-            throw new Error(`Failed to upload chunk ${i}: ${chunkError.message}`);
-          }
-          
-          console.log(`Successfully uploaded chunk ${i + 1}/${chunks}`);
-        }
-      }
-
-      // Upload complete file
       const { error: uploadError } = await supabaseClient
         .storage
         .from('tender-documents')
         .upload(filename, processedImageBuffer, {
-          contentType: `image/${fileExtension}`,
+          contentType: 'image/jpeg',
           cacheControl: '3600'
         });
 
@@ -271,24 +184,15 @@ Deno.serve(async (req) => {
       }
     );
   } finally {
-    // Aggressive cleanup
+    // Cleanup
     if (image) {
       image.bitmap?.data && (image.bitmap.data = null);
       image = null;
     }
-    imageData = null;
     
     if (tenderId) {
       activeProcessing.delete(tenderId);
       console.log(`Removed tender ${tenderId} from active processing`);
-    }
-
-    // Force garbage collection if available
-    try {
-      // @ts-ignore: Deno.core is available in edge runtime
-      Deno.core.gc();
-    } catch {
-      // Ignore if gc is not available
     }
   }
 });
