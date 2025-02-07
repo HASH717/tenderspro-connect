@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, MapPin, Building, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -46,10 +47,10 @@ const TenderDetails = () => {
         return null;
       }
 
-      // Log the tender data and URL
+      // Log the tender data
       console.log('Tender data:', data);
       const url = getImageUrl(data);
-      console.log('Image URL to process:', url);
+      console.log('Image URL to display:', url);
 
       return data;
     }
@@ -79,9 +80,6 @@ const TenderDetails = () => {
   const getImageUrl = (tender: any) => {
     // Prefer watermarked version if available
     if (tender?.watermarked_image_url) return tender.watermarked_image_url;
-    
-    // Fall back to PNG version if available
-    if (tender?.png_image_url) return tender.png_image_url;
     
     // Fall back to original image
     if (!tender?.image_url && !tender?.link) return null;
@@ -171,7 +169,7 @@ const TenderDetails = () => {
                 </div>
               </div>
 
-              {(tender.image_url || tender.link || tender.png_image_url || tender.watermarked_image_url) && !imageError && (
+              {!imageError && getImageUrl(tender) && (
                 <div className="mt-8">
                   <h2 className="text-lg font-semibold mb-4">Tender Document</h2>
                   <img 
