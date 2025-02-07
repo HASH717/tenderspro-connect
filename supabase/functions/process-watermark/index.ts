@@ -53,6 +53,8 @@ serve(async (req) => {
 
         // Step 2: Add custom watermark using imggen.ai
         console.log('Adding custom watermark...');
+        console.log('API Key available:', !!Deno.env.get('IMGGEN_API_KEY'));
+        
         const watermarkFormData = new FormData();
         watermarkFormData.append('image', new Blob([imageArrayBuffer]), `${tenderId}-original.jpg`);
         watermarkFormData.append('text', 'TENDERSPRO.CO');
@@ -61,7 +63,7 @@ serve(async (req) => {
         watermarkFormData.append('color', '#000000');
         watermarkFormData.append('position', 'center');
 
-        const addWatermarkResponse = await fetch('https://app.imggen.ai/v1/add-watermark', {
+        const addWatermarkResponse = await fetch('https://api.imggen.ai/v1/add-watermark', {
           method: 'POST',
           headers: {
             'X-IMGGEN-KEY': Deno.env.get('IMGGEN_API_KEY') ?? '',
@@ -72,9 +74,11 @@ serve(async (req) => {
 
         const watermarkResponseText = await addWatermarkResponse.text();
         console.log('Raw watermark API response:', watermarkResponseText);
+        console.log('Response status:', addWatermarkResponse.status);
+        console.log('Response headers:', Object.fromEntries(addWatermarkResponse.headers.entries()));
 
         if (!addWatermarkResponse.ok) {
-          throw new Error(`Failed to add watermark: ${addWatermarkResponse.statusText}`);
+          throw new Error(`Failed to add watermark: ${addWatermarkResponse.statusText} (${addWatermarkResponse.status})`);
         }
 
         let watermarkResult;
@@ -86,7 +90,7 @@ serve(async (req) => {
         }
 
         if (!watermarkResult.success || !watermarkResult.images?.[0]) {
-          throw new Error('Failed to add watermark');
+          throw new Error('Failed to add watermark - API response indicates failure');
         }
 
         // Convert base64 to buffer for final image
