@@ -1,4 +1,3 @@
-
 import { createClient } from 'npm:@supabase/supabase-js@2.38.4'
 import Jimp from 'npm:jimp@0.22.10'
 import { Buffer } from "node:buffer"
@@ -25,8 +24,10 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
+  let tenderId = null;
   try {
-    const { tenderId } = await req.json()
+    const { tenderId: id } = await req.json()
+    tenderId = id;
     console.log(`Processing complete watermark flow for tender ${tenderId}`)
 
     if (!tenderId) {
@@ -46,7 +47,7 @@ Deno.serve(async (req) => {
       .from('tenders')
       .select('*')
       .eq('id', tenderId)
-      .single();
+      .maybeSingle();
 
     if (tenderError || !tender) {
       throw new Error(`Failed to fetch tender: ${tenderError?.message || 'Tender not found'}`);
@@ -70,27 +71,34 @@ Deno.serve(async (req) => {
     }
 
     const processImage = async () => {
-      let imageArrayBuffer;
       try {
         // Use codetabs.com proxy to bypass CORS
         const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=';
         const targetUrl = imageUrl;
         
         console.log(`Fetching image through proxy from URL: ${targetUrl}`);
-        const imageResponse = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+        const imageResponse = await fetch(proxyUrl + encodeURIComponent(targetUrl), {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+          }
+        });
 
         if (!imageResponse.ok) {
           throw new Error(`Failed to fetch image: ${imageResponse.statusText} (${imageResponse.status})`);
         }
 
-        imageArrayBuffer = await imageResponse.arrayBuffer();
+        const imageArrayBuffer = await imageResponse.arrayBuffer();
+        if (!imageArrayBuffer || imageArrayBuffer.byteLength === 0) {
+          throw new Error('Received empty image data');
+        }
         
         // Step 2: Process with Jimp
         console.log('Processing image with Jimp...');
         const image = await Jimp.default.read(Buffer.from(imageArrayBuffer));
         
-        // Release original array buffer
-        imageArrayBuffer = null;
+        if (!image) {
+          throw new Error('Failed to process image with Jimp');
+        }
 
         // Add watermark text
         const FONT_SIZE = Math.min(image.getWidth(), image.getHeight()) / 20;
@@ -168,27 +176,19 @@ Deno.serve(async (req) => {
         console.error(`Error in image processing for tender ${tenderId}:`, error);
         throw error;
       } finally {
-        // Clean up raw image data
-        imageArrayBuffer = null;
         // Remove from active processing
-        activeProcessing.delete(tenderId);
+        if (tenderId) activeProcessing.delete(tenderId);
       }
     };
 
-    // Start the processing in background
-    const processingPromise = processImage().catch(error => {
-      console.error('Processing error:', error);
-      throw error; // Re-throw to be caught by the main try-catch
-    });
+    // Start the processing and wait for it to complete
+    const publicUrl = await processImage();
 
-    // Use waitUntil to ensure background task completes
-    EdgeRuntime.waitUntil(processingPromise);
-
-    // Return early with success response
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Processing started'
+        message: 'Processing completed',
+        url: publicUrl
       }),
       { 
         headers: { 
