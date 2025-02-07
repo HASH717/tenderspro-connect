@@ -1,26 +1,7 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
-import Jimp from 'https://esm.sh/jimp@0.22.10'
-
-// Define Buffer for Node.js compatibility
-const Buffer = {
-  from: (input: Uint8Array | ArrayBuffer | string, encoding?: string) => {
-    if (input instanceof Uint8Array) {
-      return input;
-    } else if (input instanceof ArrayBuffer) {
-      return new Uint8Array(input);
-    } else if (typeof input === 'string' && encoding === 'base64') {
-      const binary = atob(input);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) {
-        bytes[i] = binary.charCodeAt(i);
-      }
-      return bytes;
-    }
-    throw new Error(`Unsupported input type or encoding`);
-  }
-};
+import { createClient } from 'npm:@supabase/supabase-js@2.38.4'
+import Jimp from 'npm:jimp@0.22.10'
+import { Buffer } from "node:buffer"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -38,7 +19,7 @@ addEventListener('beforeunload', (ev) => {
   }
 });
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -74,18 +55,17 @@ serve(async (req) => {
         
         // Step 2: Process with Jimp
         console.log('Processing image with Jimp...');
-        const JimpConstructor = Jimp as unknown as typeof Jimp & { read: typeof Jimp.read };
-        const image = await JimpConstructor.read(Buffer.from(imageArrayBuffer));
+        const image = await Jimp.default.read(Buffer.from(imageArrayBuffer));
         
         // Add watermark text
         const FONT_SIZE = Math.min(image.getWidth(), image.getHeight()) / 20; // Adjust size based on image dimensions
-        const font = await JimpConstructor.loadFont(JimpConstructor.FONT_SANS_64_BLACK); // Using default Jimp font
+        const font = await Jimp.default.loadFont(Jimp.default.FONT_SANS_64_BLACK); // Using default Jimp font
         
         const watermarkText = 'TENDERSPRO.CO';
         const maxWidth = image.getWidth() * 0.8; // 80% of image width
         
         // Calculate text position (center)
-        const textWidth = JimpConstructor.measureText(font, watermarkText);
+        const textWidth = Jimp.default.measureText(font, watermarkText);
         const x = (image.getWidth() - textWidth) / 2;
         const y = (image.getHeight() - 64) / 2; // 64 is the font height
         
@@ -97,15 +77,15 @@ serve(async (req) => {
           y,
           {
             text: watermarkText,
-            alignmentX: JimpConstructor.HORIZONTAL_ALIGN_CENTER,
-            alignmentY: JimpConstructor.VERTICAL_ALIGN_MIDDLE
+            alignmentX: Jimp.default.HORIZONTAL_ALIGN_CENTER,
+            alignmentY: Jimp.default.VERTICAL_ALIGN_MIDDLE
           },
           maxWidth
         );
         image.opacity(1);
 
         // Convert to buffer
-        const processedImageBuffer = await image.getBufferAsync(JimpConstructor.MIME_JPEG);
+        const processedImageBuffer = await image.getBufferAsync(Jimp.default.MIME_JPEG);
 
         // Generate a unique filename
         const filename = `${tenderId}-processed-${Date.now()}.jpg`;
