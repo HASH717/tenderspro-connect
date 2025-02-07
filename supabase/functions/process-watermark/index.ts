@@ -50,42 +50,12 @@ serve(async (req) => {
           throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
         }
 
-        // Get the image data
-        const imageData = await imageResponse.arrayBuffer();
+        // Get the image buffer
+        const imageBuffer = await imageResponse.arrayBuffer();
         
-        // Create a new image to ensure proper format
-        const img = new Image();
-        img.src = URL.createObjectURL(new Blob([imageData]));
-        
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = reject;
-        });
-
-        // Create a canvas to draw and convert the image
-        const canvas = new OffscreenCanvas(img.width, img.height);
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          throw new Error('Failed to get canvas context');
-        }
-
-        // Draw the image to canvas
-        ctx.drawImage(img, 0, 0);
-
-        // Convert to PNG blob
-        const pngBlob = await canvas.convertToBlob({
-          type: 'image/png',
-          quality: 1
-        });
-
-        console.log('Converted PNG blob:', {
-          size: pngBlob.size,
-          type: pngBlob.type
-        });
-
-        // Create FormData with PNG file
+        // Create FormData with raw image buffer as PNG
         const formData = new FormData();
-        formData.append('image', pngBlob, `${tenderId}.png`);
+        formData.append('image', new Blob([imageBuffer], { type: 'image/png' }), `${tenderId}.png`);
 
         console.log('Sending request to imggen.ai...');
 
