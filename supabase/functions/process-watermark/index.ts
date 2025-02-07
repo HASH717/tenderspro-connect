@@ -43,28 +43,45 @@ serve(async (req) => {
 
     const processImage = async () => {
       try {
-        // Download the image
-        console.log(`Fetching image from URL: ${imageUrl}`);
+        // Create an off-screen canvas
+        const canvas = new OffscreenCanvas(800, 600);
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          throw new Error('Failed to get canvas context');
+        }
+
+        // Load and draw the image onto the canvas
+        console.log(`Loading image from URL: ${imageUrl}`);
         const imageResponse = await fetch(imageUrl);
         if (!imageResponse.ok) {
           throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
         }
 
-        // Get the image buffer and ensure it's treated as JPEG
-        const imageBuffer = await imageResponse.arrayBuffer();
+        const imageBlob = await imageResponse.blob();
+        const imageBitmap = await createImageBitmap(imageBlob);
         
-        // Create a temporary file name for the image with JPEG extension
-        const fileName = `${tenderId}-temp.jpg`;
+        // Adjust canvas size to match image
+        canvas.width = imageBitmap.width;
+        canvas.height = imageBitmap.height;
+        
+        // Draw image to canvas
+        ctx.drawImage(imageBitmap, 0, 0);
+        
+        // Convert to JPEG blob
+        const jpegBlob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.95 });
+        console.log('Successfully converted image to JPEG:', {
+          size: jpegBlob.size,
+          type: jpegBlob.type
+        });
 
-        // Create FormData and explicitly set JPEG MIME type
+        // Create FormData with converted JPEG
         const formData = new FormData();
-        const blob = new Blob([imageBuffer], { type: 'image/jpeg' });
-        const file = new File([blob], fileName, { type: 'image/jpeg' });
-        formData.append('image', file);
+        const fileName = `${tenderId}-temp.jpg`;
+        formData.append('image', jpegBlob, fileName);
 
-        console.log('Sending request to imggen.ai with JPEG file...');
+        console.log('Sending request to imggen.ai with converted JPEG...');
 
-        // Call imggen.ai API to remove watermark with explicit headers
+        // Call imggen.ai API
         const removeWatermarkResponse = await fetch('https://app.imggen.ai/v1/remove-watermark', {
           method: 'POST',
           headers: {
