@@ -98,7 +98,7 @@ serve(async (req) => {
         watermarkFormData.append('image', new Blob([Buffer.from(result.images[0], 'base64')]), `${tenderId}-cleaned.jpg`);
         watermarkFormData.append('text', 'TENDERSPRO.CO');
         watermarkFormData.append('fontSize', '48');
-        watermarkFormData.append('opacity', '0.5');
+        watermarkFormData.append('opacity', '0.3'); // Changed from 0.5 to 0.3 (30%)
         watermarkFormData.append('color', '#000000');
         watermarkFormData.append('position', 'center');
 
