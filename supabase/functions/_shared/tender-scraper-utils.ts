@@ -1,3 +1,4 @@
+
 import { corsHeaders } from './cors.ts'
 
 export interface TenderData {
@@ -29,7 +30,12 @@ export const formatTenderData = (tender: TenderData, detailData: any) => {
   };
 
   const imageUrls = tender.files_verbose?.map(formatImageUrl).filter(Boolean) || [];
+  
+  // Get first image for image processing
   const primaryImageUrl = imageUrls[0] || null;
+  
+  // Get first non-image file for tender document link (if any)
+  const documentUrl = imageUrls[1] || null;
 
   return {
     title: tender.title || 'Untitled Tender',
@@ -42,16 +48,16 @@ export const formatTenderData = (tender: TenderData, detailData: any) => {
     type: tender.type || null,
     region: tender.region_verbose?.name || null,
     withdrawal_address: tender.cc_address || null,
-    link: tender.files_verbose?.[0] || null,
-    image_url: primaryImageUrl,
+    link: documentUrl, // Document URL (if any)
+    image_url: null, // Will be set after watermark processing
+    original_image_url: primaryImageUrl, // Original image URL
     tender_number: detailData.tender_number || null,
     qualification_required: detailData.qualification_required || null,
     qualification_details: detailData.qualification_details || null,
     project_description: detailData.description || null,
     organization_name: detailData.organization?.name || null,
     organization_address: detailData.organization?.address || null,
-    tender_status: detailData.status || null,
-    original_image_url: tender.files_verbose?.[0] || null
+    tender_status: detailData.status || null
   };
 };
 
