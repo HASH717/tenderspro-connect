@@ -43,7 +43,7 @@ serve(async (req) => {
 
     const processImage = async () => {
       try {
-        // Download the image
+        // Step 1: Download the image
         console.log(`Fetching image from URL: ${imageUrl}`);
         const imageResponse = await fetch(imageUrl);
         if (!imageResponse.ok) {
@@ -52,15 +52,11 @@ serve(async (req) => {
 
         const imageArrayBuffer = await imageResponse.arrayBuffer();
         
-        // Create FormData with the image buffer
+        // Step 2: Remove watermark using imggen.ai API
+        console.log('Removing watermark with imggen.ai API...');
         const formData = new FormData();
-        const fileName = `${tenderId}-temp.gif`;
-        const imageBlob = new Blob([imageArrayBuffer]);
-        formData.append('image', imageBlob, fileName);
+        formData.append('image', new Blob([imageArrayBuffer]), `${tenderId}-original.gif`);
 
-        console.log('Sending request to imggen.ai API...');
-
-        // Call imggen.ai API
         const removeWatermarkResponse = await fetch('https://app.imggen.ai/v1/remove-watermark', {
           method: 'POST',
           headers: {
@@ -96,8 +92,46 @@ serve(async (req) => {
           throw new Error('Failed to process image with imggen.ai');
         }
 
-        // Convert base64 to buffer
-        const processedImageBuffer = Uint8Array.from(atob(result.images[0]), c => c.charCodeAt(0));
+        // Step 3: Add custom watermark using imggen.ai
+        console.log('Adding custom watermark...');
+        const watermarkFormData = new FormData();
+        watermarkFormData.append('image', new Blob([Buffer.from(result.images[0], 'base64')]), `${tenderId}-cleaned.jpg`);
+        watermarkFormData.append('text', 'TENDERSPRO.CO');
+        watermarkFormData.append('fontSize', '48');
+        watermarkFormData.append('opacity', '0.5');
+        watermarkFormData.append('color', '#000000');
+        watermarkFormData.append('position', 'center');
+
+        const addWatermarkResponse = await fetch('https://app.imggen.ai/v1/add-watermark', {
+          method: 'POST',
+          headers: {
+            'X-IMGGEN-KEY': Deno.env.get('IMGGEN_API_KEY') ?? '',
+            'Accept': 'application/json',
+          },
+          body: watermarkFormData,
+        });
+
+        const watermarkResponseText = await addWatermarkResponse.text();
+        console.log('Raw watermark API response:', watermarkResponseText);
+
+        if (!addWatermarkResponse.ok) {
+          throw new Error(`Failed to add watermark: ${addWatermarkResponse.statusText}`);
+        }
+
+        let watermarkResult;
+        try {
+          watermarkResult = JSON.parse(watermarkResponseText);
+        } catch (error) {
+          console.error('Failed to parse watermark response:', error);
+          throw new Error('Invalid response from watermark API');
+        }
+
+        if (!watermarkResult.success || !watermarkResult.images?.[0]) {
+          throw new Error('Failed to add watermark');
+        }
+
+        // Convert base64 to buffer for final image
+        const processedImageBuffer = Uint8Array.from(atob(watermarkResult.images[0]), c => c.charCodeAt(0));
 
         // Generate a unique filename
         const filename = `${tenderId}-processed-${Date.now()}.jpg`;
