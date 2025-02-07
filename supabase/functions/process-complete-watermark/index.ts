@@ -1,3 +1,4 @@
+
 import { createClient } from 'npm:@supabase/supabase-js@2.38.4'
 import Jimp from 'npm:jimp@0.22.10'
 import { Buffer } from "node:buffer"
@@ -75,7 +76,7 @@ Deno.serve(async (req) => {
         const targetUrl = imageUrl;
         
         console.log(`Fetching image through proxy from URL: ${targetUrl}`);
-        const imageResponse = await fetch(proxyUrl + targetUrl);
+        const imageResponse = await fetch(proxyUrl + encodeURIComponent(targetUrl));
 
         if (!imageResponse.ok) {
           throw new Error(`Failed to fetch image: ${imageResponse.statusText} (${imageResponse.status})`);
@@ -168,11 +169,17 @@ Deno.serve(async (req) => {
       }
     };
 
-    // Start the processing
+    // Create a promise that we can handle
     const processingPromise = processImage();
     
-    // Use EdgeRuntime.waitUntil to ensure completion
-    EdgeRuntime.waitUntil(processingPromise);
+    // Handle the background task
+    const backgroundPromise = processingPromise.catch(error => {
+      console.error('Background task error:', error);
+      return null;
+    });
+
+    // Use waitUntil to ensure the background task completes
+    EdgeRuntime.waitUntil(backgroundPromise);
 
     // Wait for initial processing result
     const processedUrl = await processingPromise;
