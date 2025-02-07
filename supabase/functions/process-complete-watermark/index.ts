@@ -72,24 +72,19 @@ Deno.serve(async (req) => {
     }
 
     try {
-      // Use codetabs proxy for the image URL and fetch the image data
-      const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(imageUrl)}`;
-      console.log('Fetching image from proxied URL:', proxyUrl);
-      
-      const imageResponse = await fetch(proxyUrl);
+      // Fetch the image directly
+      console.log('Fetching image from URL:', imageUrl);
+      const imageResponse = await fetch(imageUrl);
       if (!imageResponse.ok) {
         throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
       }
       
       const imageBlob = await imageResponse.blob();
-      
-      // Prepare form data for imggen.ai API
       const formData = new FormData();
-      formData.append('image[]', imageBlob, 'image.jpg');
+      formData.append('image[]', imageBlob);
 
-      // Remove existing watermark using imggen.ai API
       console.log('Removing existing watermark...');
-      const response = await fetch('https://app.imggen.ai/v1/remove-watermark', {
+      const removeWatermarkResponse = await fetch('https://app.imggen.ai/v1/remove-watermark', {
         method: 'POST',
         headers: {
           'X-IMGGEN-KEY': Deno.env.get('IMGGEN_API_KEY') ?? '',
@@ -97,11 +92,15 @@ Deno.serve(async (req) => {
         body: formData
       });
 
-      if (!response.ok) {
-        throw new Error(`Failed to remove watermark: ${response.statusText}`);
+      if (!removeWatermarkResponse.ok) {
+        const errorText = await removeWatermarkResponse.text();
+        console.error('Watermark removal error response:', errorText);
+        throw new Error(`Failed to remove watermark: ${removeWatermarkResponse.statusText}`);
       }
 
-      const result = await response.json();
+      const result = await removeWatermarkResponse.json();
+      console.log('Watermark removal API response:', result);
+
       if (!result.success || !result.images || result.images.length === 0) {
         throw new Error('No processed image received from watermark removal service');
       }
@@ -223,3 +222,4 @@ Deno.serve(async (req) => {
     }
   }
 });
+
