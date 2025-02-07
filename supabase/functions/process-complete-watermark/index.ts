@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
       
       const imageBlob = await imageResponse.blob();
       const formData = new FormData();
-      formData.append('image[]', imageBlob);
+      formData.append('image', imageBlob);  // Changed from 'image[]' to 'image'
 
       console.log('Removing existing watermark...');
       const removeWatermarkResponse = await fetch('https://app.imggen.ai/v1/remove-watermark', {
