@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
       const x = (image.getWidth() - textWidth) / 2;
       const y = (image.getHeight() - 64) / 2;
 
-      image.opacity(0.3); // Set opacity to 30%
+      image.opacity(0.15); // Set opacity to 15% instead of 30%
       image.print(
         font,
         x,
