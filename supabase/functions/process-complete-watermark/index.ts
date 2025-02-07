@@ -1,4 +1,3 @@
-
 import { createClient } from 'npm:@supabase/supabase-js@2.38.4'
 import Jimp from 'npm:jimp@0.22.10'
 import { Buffer } from "node:buffer"
@@ -91,8 +90,8 @@ Deno.serve(async (req) => {
       // Read image with lower quality to reduce memory usage
       image = await Jimp.default.read(Buffer.from(imageArrayBuffer));
       
-      // Scale down large images to reduce memory usage
-      const MAX_SIZE = 2048;
+      // Scale down large images to reduce memory usage - UPDATED to 1024px max
+      const MAX_SIZE = 1024; // Changed from 2048 to 1024
       if (image.getWidth() > MAX_SIZE || image.getHeight() > MAX_SIZE) {
         image.scaleToFit(MAX_SIZE, MAX_SIZE);
         console.log(`Scaled image to fit within ${MAX_SIZE}x${MAX_SIZE}`);
@@ -217,4 +216,3 @@ Deno.serve(async (req) => {
     }
   }
 });
-
