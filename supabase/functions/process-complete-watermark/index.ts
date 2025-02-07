@@ -1,4 +1,3 @@
-
 import { createClient } from 'npm:@supabase/supabase-js@2.38.4'
 import Jimp from 'npm:jimp@0.22.10'
 import { Buffer } from "node:buffer"
@@ -79,7 +78,8 @@ Deno.serve(async (req) => {
             'Accept': 'image/gif,image/jpeg,image/png,*/*',
             'Accept-Language': 'en-US,en;q=0.9',
             'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
+            'Pragma': 'no-cache',
+            'Referer': 'https://old.dztenders.com/'
           }
         });
 
@@ -120,18 +120,24 @@ Deno.serve(async (req) => {
         );
         image.opacity(1);
 
-        // Convert to buffer
-        const processedImageBuffer = await image.getBufferAsync(Jimp.default.MIME_PNG); // Changed to PNG for better quality
+        // Keep original format by checking the URL extension
+        const fileExtension = imageUrl.split('.').pop()?.toLowerCase() || 'jpg';
+        const mimeType = fileExtension === 'gif' ? Jimp.default.MIME_GIF :
+                        fileExtension === 'png' ? Jimp.default.MIME_PNG :
+                        Jimp.default.MIME_JPEG;
 
-        // Generate a unique filename
-        const filename = `${tenderId}-processed-${Date.now()}.png`; // Changed to .png extension
+        // Convert to buffer maintaining original format
+        const processedImageBuffer = await image.getBufferAsync(mimeType);
+
+        // Generate a unique filename with original extension
+        const filename = `${tenderId}-processed-${Date.now()}.${fileExtension}`;
         
         // Upload the processed image to Supabase Storage
         const { data: uploadData, error: uploadError } = await supabaseClient
           .storage
           .from('tender-documents')
           .upload(filename, processedImageBuffer, {
-            contentType: 'image/png', // Updated content type
+            contentType: `image/${fileExtension}`,
             cacheControl: '3600'
           });
 
