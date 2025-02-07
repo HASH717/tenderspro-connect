@@ -20,43 +20,38 @@ async function fetchImageInChunks(url: string) {
   if (!response.ok) {
     throw new Error(`Failed to fetch image: ${response.statusText}`);
   }
-  
-  const contentLength = Number(response.headers.get('content-length'));
-  console.log(`Total image size: ${contentLength} bytes`);
-  
-  if (!contentLength) {
-    // If content-length is not available, fall back to regular fetch
-    console.log('Content-length not available, fetching entire image at once');
-    return new Uint8Array(await response.arrayBuffer());
-  }
 
+  // Create a buffer to store the image data
   const chunks: Uint8Array[] = [];
-  const reader = response.body!.getReader();
-  let receivedLength = 0;
+  let totalSize = 0;
 
-  while(true) {
-    const {done, value} = await reader.read();
+  // Use the ReadableStream API to read the response body
+  const reader = response.body!.getReader();
+
+  while (true) {
+    const { done, value } = await reader.read();
     
     if (done) {
-      console.log('Finished reading image data');
+      console.log('Finished reading image data, total size:', totalSize);
       break;
     }
-    
+
     chunks.push(value);
-    receivedLength += value.length;
-    console.log(`Received ${receivedLength} of ${contentLength} bytes`);
+    totalSize += value.length;
+    console.log(`Received chunk of ${value.length} bytes, total: ${totalSize}`);
   }
 
-  // Concatenate chunks
-  const allChunks = new Uint8Array(receivedLength);
-  let position = 0;
-  for(const chunk of chunks) {
-    allChunks.set(chunk, position);
-    position += chunk.length;
-  }
+  // Combine chunks into final buffer
+  const finalBuffer = new Uint8Array(totalSize);
+  let offset = 0;
   
-  console.log(`Successfully assembled ${chunks.length} chunks`);
-  return allChunks;
+  for (const chunk of chunks) {
+    finalBuffer.set(chunk, offset);
+    offset += chunk.length;
+  }
+
+  console.log(`Successfully assembled ${chunks.length} chunks into ${totalSize} bytes`);
+  return finalBuffer;
 }
 
 Deno.serve(async (req) => {
@@ -120,7 +115,6 @@ Deno.serve(async (req) => {
         .eq('id', tenderId);
     }
 
-    // 2. Fetch and process image with chunking
     try {
       // Use proxy for CORS issues
       const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=';
@@ -130,6 +124,8 @@ Deno.serve(async (req) => {
       if (!imageData || imageData.length === 0) {
         throw new Error('Received empty image data');
       }
+
+      console.log(`Successfully fetched image data: ${imageData.length} bytes`);
 
       const fileExtension = imageUrl.split('.').pop()?.toLowerCase() || 'jpg';
       console.log(`File extension detected: ${fileExtension}`);
@@ -162,14 +158,13 @@ Deno.serve(async (req) => {
       );
       image.opacity(1);
 
-      // Set correct mime type based on original format
+      // Maintain original format
       const mimeType = fileExtension === 'gif' ? Jimp.default.MIME_GIF :
                       fileExtension === 'png' ? Jimp.default.MIME_PNG :
                       Jimp.default.MIME_JPEG;
 
       console.log(`Processing with mime type: ${mimeType}`);
       
-      // Process image buffer in chunks
       const processedImageBuffer = await new Promise<Buffer>((resolve, reject) => {
         image.getBuffer(mimeType, (err, buffer) => {
           if (err) reject(err);
@@ -180,59 +175,42 @@ Deno.serve(async (req) => {
       const filename = `${tenderId}-${Date.now()}.${fileExtension}`;
       console.log(`Uploading processed image as ${filename} (${processedImageBuffer.length} bytes)`);
 
-      // Upload in chunks if the processed image is large
+      // Upload processed image in chunks if large
       if (processedImageBuffer.length > CHUNK_SIZE) {
+        console.log(`File is large (${processedImageBuffer.length} bytes), uploading in chunks`);
         const chunks = Math.ceil(processedImageBuffer.length / CHUNK_SIZE);
-        console.log(`Splitting upload into ${chunks} chunks`);
-
-        const uploadPromises = [];
+        
         for (let i = 0; i < chunks; i++) {
           const start = i * CHUNK_SIZE;
           const end = Math.min(start + CHUNK_SIZE, processedImageBuffer.length);
           const chunk = processedImageBuffer.slice(start, end);
           
-          uploadPromises.push(
-            supabaseClient.storage
-              .from('tender-documents')
-              .upload(`${filename}.part${i}`, chunk, {
-                contentType: `image/${fileExtension}`,
-                cacheControl: '3600'
-              })
-          );
-        }
+          const { error: chunkError } = await supabaseClient.storage
+            .from('tender-documents')
+            .upload(`${filename}.part${i}`, chunk, {
+              contentType: `image/${fileExtension}`,
+              cacheControl: '3600'
+            });
 
-        const results = await Promise.all(uploadPromises);
-        const errors = results.filter(r => r.error);
-        if (errors.length > 0) {
-          throw new Error(`Failed to upload some chunks: ${errors.map(e => e.error?.message).join(', ')}`);
+          if (chunkError) {
+            throw new Error(`Failed to upload chunk ${i}: ${chunkError.message}`);
+          }
+          
+          console.log(`Successfully uploaded chunk ${i + 1}/${chunks}`);
         }
+      }
 
-        // Combine chunks (this step depends on your storage setup)
-        // For now, we'll upload the complete file as well
-        const { error: uploadError } = await supabaseClient
-          .storage
-          .from('tender-documents')
-          .upload(filename, processedImageBuffer, {
-            contentType: `image/${fileExtension}`,
-            cacheControl: '3600'
-          });
+      // Upload complete file
+      const { error: uploadError } = await supabaseClient
+        .storage
+        .from('tender-documents')
+        .upload(filename, processedImageBuffer, {
+          contentType: `image/${fileExtension}`,
+          cacheControl: '3600'
+        });
 
-        if (uploadError) {
-          throw new Error(`Failed to upload processed image: ${uploadError.message}`);
-        }
-      } else {
-        // Small file, upload directly
-        const { error: uploadError } = await supabaseClient
-          .storage
-          .from('tender-documents')
-          .upload(filename, processedImageBuffer, {
-            contentType: `image/${fileExtension}`,
-            cacheControl: '3600'
-          });
-
-        if (uploadError) {
-          throw new Error(`Failed to upload processed image: ${uploadError.message}`);
-        }
+      if (uploadError) {
+        throw new Error(`Failed to upload processed image: ${uploadError.message}`);
       }
 
       const { data: { publicUrl } } = supabaseClient
@@ -292,14 +270,10 @@ Deno.serve(async (req) => {
   } finally {
     // Aggressive cleanup
     if (image) {
-      if (image.bitmap && image.bitmap.data) {
-        image.bitmap.data = null;
-      }
+      image.bitmap?.data && (image.bitmap.data = null);
       image = null;
     }
-    if (imageData) {
-      imageData = null;
-    }
+    imageData = null;
     
     if (tenderId) {
       activeProcessing.delete(tenderId);
@@ -307,8 +281,11 @@ Deno.serve(async (req) => {
     }
 
     // Force garbage collection if available
-    if (typeof global.gc === 'function') {
-      global.gc();
+    try {
+      // @ts-ignore: Deno.core is available in edge runtime
+      Deno.core.gc();
+    } catch {
+      // Ignore if gc is not available
     }
   }
 });
