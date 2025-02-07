@@ -16,12 +16,11 @@ export const useScraper = () => {
       // First, let's check raw tenders
       const { data: allTenders, error: allTendersError } = await supabase
         .from('tenders')
-        .select('id, image_url, png_image_url');
+        .select('id, image_url, watermarked_image_url');
 
       console.log('All tenders:', allTenders?.map(t => ({
         id: t.id,
         image_url: t.image_url,
-        png_url: t.png_image_url,
         originalFormat: t.image_url?.split('.')?.pop()?.toLowerCase()
       })));
       
@@ -30,10 +29,10 @@ export const useScraper = () => {
         throw allTendersError;
       }
 
-      // Let's check ONE tender with an image, ignoring PNG status
+      // Let's check ONE tender with an image
       const { data: tenders, error } = await supabase
         .from('tenders')
-        .select('id, image_url, png_image_url')
+        .select('id, image_url, watermarked_image_url')
         .not('image_url', 'is', null)
         .limit(1); // Just one tender for testing
 
@@ -55,26 +54,26 @@ export const useScraper = () => {
       let processed = 0;
       for (const tender of tenders) {
         try {
-          console.log('Converting tender:', {
+          console.log('Processing tender:', {
             id: tender.id,
             imageUrl: tender.image_url,
             fileExtension: tender.image_url?.split('.')?.pop()?.toLowerCase(),
-            hasPngVersion: !!tender.png_image_url
+            hasWatermark: !!tender.watermarked_image_url
           });
           
-          const { data, error } = await supabase.functions.invoke('convert-to-png', {
+          const { data, error } = await supabase.functions.invoke('process-watermark', {
             body: { imageUrl: tender.image_url, tenderId: tender.id }
           });
 
-          console.log('Conversion response:', data, error);
+          console.log('Processing response:', data, error);
           
           if (error) throw error;
           
           processed++;
           setProgress((processed / tenders.length) * 100);
         } catch (err) {
-          console.error(`Failed to convert image for tender ${tender.id}:`, err);
-          toast.error(`Failed to convert tender ${tender.id}`);
+          console.error(`Failed to process image for tender ${tender.id}:`, err);
+          toast.error(`Failed to process tender ${tender.id}`);
           // Continue with next image even if one fails
         }
       }
@@ -93,19 +92,19 @@ export const useScraper = () => {
       setIsLoading(true);
       setProgress(0);
 
-      // Test with our specific converted PNG
+      // Test with a specific converted image
       const testTenderId = '359bd092-0465-4827-97d8-2ae2eca45d0a';
       const { data: publicUrlData } = supabase
         .storage
         .from('tender-documents')
-        .getPublicUrl('359bd092-0465-4827-97d8-2ae2eca45d0a-1738883592862.png');
+        .getPublicUrl(`${testTenderId}-1738883592862.png`);
 
       if (!publicUrlData.publicUrl) {
         toast.error('Could not find test image');
         return;
       }
 
-      console.log('Testing watermark processing with specific PNG:', publicUrlData.publicUrl);
+      console.log('Testing watermark processing with image:', publicUrlData.publicUrl);
       
       const { data, error } = await supabase.functions.invoke('process-watermark', {
         body: { 
