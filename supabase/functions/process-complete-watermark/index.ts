@@ -72,32 +72,46 @@ Deno.serve(async (req) => {
     }
 
     try {
-      // Use codetabs proxy for the image URL
+      // Use codetabs proxy for the image URL and fetch the image data
       const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(imageUrl)}`;
-      console.log('Using proxied URL for watermark removal:', proxyUrl);
+      console.log('Fetching image from proxied URL:', proxyUrl);
+      
+      const imageResponse = await fetch(proxyUrl);
+      if (!imageResponse.ok) {
+        throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
+      }
+      
+      const imageBlob = await imageResponse.blob();
+      
+      // Prepare form data for imggen.ai API
+      const formData = new FormData();
+      formData.append('image[]', imageBlob, 'image.jpg');
 
-      // First, remove the existing watermark using imggen.ai API
+      // Remove existing watermark using imggen.ai API
       console.log('Removing existing watermark...');
-      const response = await fetch('https://api.imggen.ai/remove-watermark', {
+      const response = await fetch('https://app.imggen.ai/v1/remove-watermark', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${Deno.env.get('IMGGEN_API_KEY')}`,
-          'Content-Type': 'application/json',
+          'X-IMGGEN-KEY': Deno.env.get('IMGGEN_API_KEY') ?? '',
         },
-        body: JSON.stringify({
-          image_url: proxyUrl
-        })
+        body: formData
       });
 
       if (!response.ok) {
         throw new Error(`Failed to remove watermark: ${response.statusText}`);
       }
 
-      const watermarkRemoved = await response.arrayBuffer();
+      const result = await response.json();
+      if (!result.success || !result.images || result.images.length === 0) {
+        throw new Error('No processed image received from watermark removal service');
+      }
+
+      // Convert base64 to buffer
+      const watermarkRemoved = Buffer.from(result.images[0], 'base64');
       
       // Process with Jimp
       console.log('Processing cleaned image with Jimp...');
-      image = await Jimp.default.read(Buffer.from(watermarkRemoved));
+      image = await Jimp.default.read(watermarkRemoved);
       
       // Add watermark text
       const font = await Jimp.default.loadFont(Jimp.default.FONT_SANS_64_BLACK);
