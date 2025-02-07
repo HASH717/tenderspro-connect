@@ -70,6 +70,7 @@ Deno.serve(async (req) => {
     }
 
     const processImage = async () => {
+      let imageArrayBuffer;
       try {
         // Use codetabs.com proxy to bypass CORS
         const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=';
@@ -82,12 +83,15 @@ Deno.serve(async (req) => {
           throw new Error(`Failed to fetch image: ${imageResponse.statusText} (${imageResponse.status})`);
         }
 
-        const imageArrayBuffer = await imageResponse.arrayBuffer();
+        imageArrayBuffer = await imageResponse.arrayBuffer();
         
         // Step 2: Process with Jimp
         console.log('Processing image with Jimp...');
         const image = await Jimp.default.read(Buffer.from(imageArrayBuffer));
         
+        // Release original array buffer
+        imageArrayBuffer = null;
+
         // Add watermark text
         const FONT_SIZE = Math.min(image.getWidth(), image.getHeight()) / 20;
         const font = await Jimp.default.loadFont(Jimp.default.FONT_SANS_64_BLACK);
@@ -164,30 +168,27 @@ Deno.serve(async (req) => {
         console.error(`Error in image processing for tender ${tenderId}:`, error);
         throw error;
       } finally {
+        // Clean up raw image data
+        imageArrayBuffer = null;
         // Remove from active processing
         activeProcessing.delete(tenderId);
       }
     };
 
-    // Create a promise that we can handle
-    const processingPromise = processImage();
-    
-    // Handle the background task
-    const backgroundPromise = processingPromise.catch(error => {
-      console.error('Background task error:', error);
-      return null;
+    // Start the processing in background
+    const processingPromise = processImage().catch(error => {
+      console.error('Processing error:', error);
+      throw error; // Re-throw to be caught by the main try-catch
     });
 
-    // Use waitUntil to ensure the background task completes
-    EdgeRuntime.waitUntil(backgroundPromise);
+    // Use waitUntil to ensure background task completes
+    EdgeRuntime.waitUntil(processingPromise);
 
-    // Wait for initial processing result
-    const processedUrl = await processingPromise;
-
+    // Return early with success response
     return new Response(
       JSON.stringify({ 
         success: true, 
-        processedUrl 
+        message: 'Processing started'
       }),
       { 
         headers: { 
@@ -199,6 +200,10 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Error in process-complete-watermark function:', error);
+    // Ensure we clean up in case of error
+    if (tenderId) {
+      activeProcessing.delete(tenderId);
+    }
     return new Response(
       JSON.stringify({ 
         success: false, 
