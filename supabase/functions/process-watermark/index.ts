@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
+import Jimp from 'https://esm.sh/jimp@0.22.10'
 
 // Define Buffer for Node.js compatibility
 const Buffer = {
@@ -67,51 +68,39 @@ serve(async (req) => {
 
         const imageArrayBuffer = await imageResponse.arrayBuffer();
         
-        // Step 2: Add custom watermark using imggen.ai
-        console.log('Adding custom watermark...');
-        console.log('API Key available:', !!Deno.env.get('IMGGEN_API_KEY'));
+        // Step 2: Process with Jimp
+        console.log('Processing image with Jimp...');
+        const image = await Jimp.read(Buffer.from(new Uint8Array(imageArrayBuffer)));
         
-        const watermarkFormData = new FormData();
-        watermarkFormData.append('image', new Blob([imageArrayBuffer]), `${tenderId}-original.jpg`);
-        watermarkFormData.append('text', 'TENDERSPRO.CO');
-        watermarkFormData.append('fontSize', '48');
-        watermarkFormData.append('opacity', '0.3');
-        watermarkFormData.append('color', '#000000');
-        watermarkFormData.append('position', 'center');
-
-        // Updated endpoint to use the watermark endpoint instead of add-watermark
-        const addWatermarkResponse = await fetch('https://api.imggen.ai/v1/watermark', {
-          method: 'POST',
-          headers: {
-            'X-IMGGEN-KEY': Deno.env.get('IMGGEN_API_KEY') ?? '',
-            'Accept': 'application/json',
+        // Add watermark text
+        const FONT_SIZE = Math.min(image.getWidth(), image.getHeight()) / 20; // Adjust size based on image dimensions
+        const font = await Jimp.loadFont(Jimp.FONT_SANS_64_BLACK); // Using default Jimp font
+        
+        const watermarkText = 'TENDERSPRO.CO';
+        const maxWidth = image.getWidth() * 0.8; // 80% of image width
+        
+        // Calculate text position (center)
+        const textWidth = Jimp.measureText(font, watermarkText);
+        const x = (image.getWidth() - textWidth) / 2;
+        const y = (image.getHeight() - 64) / 2; // 64 is the font height
+        
+        // Add semi-transparent watermark
+        image.opacity(0.3);
+        image.print(
+          font,
+          x,
+          y,
+          {
+            text: watermarkText,
+            alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
+            alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE
           },
-          body: watermarkFormData,
-        });
+          maxWidth
+        );
+        image.opacity(1);
 
-        const watermarkResponseText = await addWatermarkResponse.text();
-        console.log('Raw watermark API response:', watermarkResponseText);
-        console.log('Response status:', addWatermarkResponse.status);
-        console.log('Response headers:', Object.fromEntries(addWatermarkResponse.headers.entries()));
-
-        if (!addWatermarkResponse.ok) {
-          throw new Error(`Failed to add watermark: ${addWatermarkResponse.statusText} (${addWatermarkResponse.status}). Response: ${watermarkResponseText}`);
-        }
-
-        let watermarkResult;
-        try {
-          watermarkResult = JSON.parse(watermarkResponseText);
-        } catch (error) {
-          console.error('Failed to parse watermark response:', error);
-          throw new Error('Invalid response from watermark API');
-        }
-
-        if (!watermarkResult.success || !watermarkResult.images?.[0]) {
-          throw new Error('Failed to add watermark - API response indicates failure');
-        }
-
-        // Convert base64 to buffer for final image
-        const processedImageBuffer = Buffer.from(watermarkResult.images[0], 'base64');
+        // Convert to buffer
+        const processedImageBuffer = await image.getBufferAsync(Jimp.MIME_JPEG);
 
         // Generate a unique filename
         const filename = `${tenderId}-processed-${Date.now()}.jpg`;
