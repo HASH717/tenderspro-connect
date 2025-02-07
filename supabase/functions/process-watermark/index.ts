@@ -49,56 +49,15 @@ serve(async (req) => {
         if (!imageResponse.ok) {
           throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
         }
-
         const imageArrayBuffer = await imageResponse.arrayBuffer();
-        
-        // Step 2: Remove watermark using imggen.ai API
-        console.log('Removing watermark with imggen.ai API...');
-        const formData = new FormData();
-        formData.append('image', new Blob([imageArrayBuffer]), `${tenderId}-original.gif`);
 
-        const removeWatermarkResponse = await fetch('https://app.imggen.ai/v1/remove-watermark', {
-          method: 'POST',
-          headers: {
-            'X-IMGGEN-KEY': Deno.env.get('IMGGEN_API_KEY') ?? '',
-            'Accept': 'application/json',
-          },
-          body: formData,
-        });
-
-        const responseText = await removeWatermarkResponse.text();
-        console.log('Raw imggen.ai API response:', responseText);
-
-        if (!removeWatermarkResponse.ok) {
-          console.error('Imggen.ai API error response:', {
-            status: removeWatermarkResponse.status,
-            statusText: removeWatermarkResponse.statusText,
-            response: responseText
-          });
-          throw new Error(`Failed to remove watermark: ${removeWatermarkResponse.statusText}`);
-        }
-
-        let result;
-        try {
-          result = JSON.parse(responseText);
-        } catch (error) {
-          console.error('Failed to parse imggen.ai response:', error);
-          throw new Error('Invalid response from imggen.ai');
-        }
-
-        console.log('Parsed imggen.ai API response:', result);
-        
-        if (!result.success || !result.images?.[0]) {
-          throw new Error('Failed to process image with imggen.ai');
-        }
-
-        // Step 3: Add custom watermark using imggen.ai
+        // Step 2: Add custom watermark using imggen.ai
         console.log('Adding custom watermark...');
         const watermarkFormData = new FormData();
-        watermarkFormData.append('image', new Blob([Buffer.from(result.images[0], 'base64')]), `${tenderId}-cleaned.jpg`);
+        watermarkFormData.append('image', new Blob([imageArrayBuffer]), `${tenderId}-original.jpg`);
         watermarkFormData.append('text', 'TENDERSPRO.CO');
         watermarkFormData.append('fontSize', '48');
-        watermarkFormData.append('opacity', '0.3'); // Changed from 0.5 to 0.3 (30%)
+        watermarkFormData.append('opacity', '0.3');
         watermarkFormData.append('color', '#000000');
         watermarkFormData.append('position', 'center');
 
