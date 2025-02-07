@@ -70,17 +70,12 @@ Deno.serve(async (req) => {
 
     const processImage = async () => {
       try {
-        // Use cors-anywhere proxy to bypass CORS
-        const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+        // Use codetabs.com proxy to bypass CORS
+        const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=';
         const targetUrl = imageUrl;
         
         console.log(`Fetching image through proxy from URL: ${targetUrl}`);
-        const imageResponse = await fetch(proxyUrl + targetUrl, {
-          headers: {
-            'Origin': 'https://old.dztenders.com',
-            'X-Requested-With': 'XMLHttpRequest'
-          }
-        });
+        const imageResponse = await fetch(proxyUrl + targetUrl);
 
         if (!imageResponse.ok) {
           throw new Error(`Failed to fetch image: ${imageResponse.statusText} (${imageResponse.status})`);
