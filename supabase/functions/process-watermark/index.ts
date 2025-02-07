@@ -50,12 +50,23 @@ serve(async (req) => {
           throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
         }
 
-        // Get the image buffer
+        // Get the image buffer and content type
         const imageBuffer = await imageResponse.arrayBuffer();
+        const contentType = imageResponse.headers.get('content-type') || 'image/png';
         
-        // Create FormData with raw image buffer as PNG
+        // Validate content type
+        const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+        if (!validTypes.includes(contentType.toLowerCase())) {
+          console.error('Invalid content type:', contentType);
+          throw new Error(`Invalid image type: ${contentType}. Must be one of: ${validTypes.join(', ')}`);
+        }
+
+        console.log('Image content type:', contentType);
+        console.log('Image size:', imageBuffer.byteLength, 'bytes');
+
+        // Create FormData with proper content type
         const formData = new FormData();
-        formData.append('image', new Blob([imageBuffer], { type: 'image/png' }), `${tenderId}.png`);
+        formData.append('image', new Blob([imageBuffer], { type: contentType }), `${tenderId}.png`);
 
         console.log('Sending request to imggen.ai...');
 
