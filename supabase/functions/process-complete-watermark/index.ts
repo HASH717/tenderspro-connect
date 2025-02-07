@@ -158,7 +158,10 @@ Deno.serve(async (req) => {
       );
       image.opacity(1);
 
-      // Maintain original format
+      // Set quality to 70%
+      image.quality(70);
+
+      // Maintain original format but with reduced quality
       const mimeType = fileExtension === 'gif' ? Jimp.default.MIME_GIF :
                       fileExtension === 'png' ? Jimp.default.MIME_PNG :
                       Jimp.default.MIME_JPEG;
