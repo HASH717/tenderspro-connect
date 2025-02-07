@@ -72,20 +72,28 @@ Deno.serve(async (req) => {
     }
 
     try {
-      // Use codetabs proxy for image download
-      const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(imageUrl)}`;
-      console.log(`Fetching image through proxy: ${proxyUrl}`);
-      
-      const imageResponse = await fetch(proxyUrl);
-      if (!imageResponse.ok) {
-        throw new Error(`Failed to fetch image through proxy: ${imageResponse.statusText}`);
+      // First, remove the existing watermark using imggen.ai API
+      console.log('Removing existing watermark...');
+      const response = await fetch('https://api.imggen.ai/remove-watermark', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${Deno.env.get('IMGGEN_API_KEY')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image_url: imageUrl
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to remove watermark: ${response.statusText}`);
       }
 
-      const imageArrayBuffer = await imageResponse.arrayBuffer();
+      const watermarkRemoved = await response.arrayBuffer();
       
       // Process with Jimp
-      console.log('Processing image with Jimp...');
-      image = await Jimp.default.read(Buffer.from(imageArrayBuffer));
+      console.log('Processing cleaned image with Jimp...');
+      image = await Jimp.default.read(Buffer.from(watermarkRemoved));
       
       // Add watermark text
       const font = await Jimp.default.loadFont(Jimp.default.FONT_SANS_64_BLACK);
@@ -97,7 +105,7 @@ Deno.serve(async (req) => {
       const x = (image.getWidth() - textWidth) / 2;
       const y = (image.getHeight() - 64) / 2;
 
-      image.opacity(0.3);
+      image.opacity(0.3); // Set opacity to 30%
       image.print(
         font,
         x,
