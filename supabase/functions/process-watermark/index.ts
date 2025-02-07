@@ -49,21 +49,60 @@ serve(async (req) => {
         if (!imageResponse.ok) {
           throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
         }
-        const imageArrayBuffer = await imageResponse.arrayBuffer();
 
-        // Step 2: Add custom watermark using imggen.ai
-        console.log('Adding custom watermark...');
-        console.log('API Key available:', !!Deno.env.get('IMGGEN_API_KEY'));
+        const imageArrayBuffer = await imageResponse.arrayBuffer();
         
+        // Step 2: Remove watermark using imggen.ai API
+        console.log('Removing watermark with imggen.ai API...');
+        const formData = new FormData();
+        formData.append('image', new Blob([imageArrayBuffer]), `${tenderId}-original.gif`);
+
+        const removeWatermarkResponse = await fetch('https://app.imggen.ai/v1/remove-watermark', {
+          method: 'POST',
+          headers: {
+            'X-IMGGEN-KEY': Deno.env.get('IMGGEN_API_KEY') ?? '',
+            'Accept': 'application/json',
+          },
+          body: formData,
+        });
+
+        const responseText = await removeWatermarkResponse.text();
+        console.log('Raw imggen.ai API response:', responseText);
+
+        if (!removeWatermarkResponse.ok) {
+          console.error('Imggen.ai API error response:', {
+            status: removeWatermarkResponse.status,
+            statusText: removeWatermarkResponse.statusText,
+            response: responseText
+          });
+          throw new Error(`Failed to remove watermark: ${removeWatermarkResponse.statusText}`);
+        }
+
+        let result;
+        try {
+          result = JSON.parse(responseText);
+        } catch (error) {
+          console.error('Failed to parse imggen.ai response:', error);
+          throw new Error('Invalid response from imggen.ai');
+        }
+
+        console.log('Parsed imggen.ai API response:', result);
+        
+        if (!result.success || !result.images?.[0]) {
+          throw new Error('Failed to process image with imggen.ai');
+        }
+
+        // Step 3: Add custom watermark using imggen.ai
+        console.log('Adding custom watermark...');
         const watermarkFormData = new FormData();
-        watermarkFormData.append('image', new Blob([imageArrayBuffer]), `${tenderId}-original.jpg`);
+        watermarkFormData.append('image', new Blob([Buffer.from(result.images[0], 'base64')]), `${tenderId}-cleaned.jpg`);
         watermarkFormData.append('text', 'TENDERSPRO.CO');
         watermarkFormData.append('fontSize', '48');
-        watermarkFormData.append('opacity', '0.3');
+        watermarkFormData.append('opacity', '0.3'); // Changed from 0.5 to 0.3 (30%)
         watermarkFormData.append('color', '#000000');
         watermarkFormData.append('position', 'center');
 
-        const addWatermarkResponse = await fetch('https://api.imggen.ai/v1/add-watermark', {
+        const addWatermarkResponse = await fetch('https://app.imggen.ai/v1/add-watermark', {
           method: 'POST',
           headers: {
             'X-IMGGEN-KEY': Deno.env.get('IMGGEN_API_KEY') ?? '',
@@ -74,11 +113,9 @@ serve(async (req) => {
 
         const watermarkResponseText = await addWatermarkResponse.text();
         console.log('Raw watermark API response:', watermarkResponseText);
-        console.log('Response status:', addWatermarkResponse.status);
-        console.log('Response headers:', Object.fromEntries(addWatermarkResponse.headers.entries()));
 
         if (!addWatermarkResponse.ok) {
-          throw new Error(`Failed to add watermark: ${addWatermarkResponse.statusText} (${addWatermarkResponse.status})`);
+          throw new Error(`Failed to add watermark: ${addWatermarkResponse.statusText}`);
         }
 
         let watermarkResult;
@@ -90,7 +127,7 @@ serve(async (req) => {
         }
 
         if (!watermarkResult.success || !watermarkResult.images?.[0]) {
-          throw new Error('Failed to add watermark - API response indicates failure');
+          throw new Error('Failed to add watermark');
         }
 
         // Convert base64 to buffer for final image
