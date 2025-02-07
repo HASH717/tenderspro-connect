@@ -90,16 +90,12 @@ Deno.serve(async (req) => {
       // Read image with lower quality to reduce memory usage
       image = await Jimp.default.read(Buffer.from(imageArrayBuffer));
       
-      // Scale down large images to reduce memory usage - UPDATED to 1024px max
-      const MAX_SIZE = 1024; // Changed from 2048 to 1024
+      // Scale down large images
+      const MAX_SIZE = 1024;
       if (image.getWidth() > MAX_SIZE || image.getHeight() > MAX_SIZE) {
         image.scaleToFit(MAX_SIZE, MAX_SIZE);
         console.log(`Scaled image to fit within ${MAX_SIZE}x${MAX_SIZE}`);
       }
-
-      // Optimize image quality
-      const QUALITY = 85; // Good balance between quality and size
-      image.quality(QUALITY);
 
       // Add watermark text
       const FONT_SIZE = Math.min(image.getWidth(), image.getHeight()) / 20;
@@ -132,7 +128,7 @@ Deno.serve(async (req) => {
                       fileExtension === 'png' ? Jimp.default.MIME_PNG :
                       Jimp.default.MIME_JPEG;
 
-      console.log(`Converting image to ${mimeType} format...`);
+      // Get buffer in original format
       const processedImageBuffer = await image.getBufferAsync(mimeType);
       const filename = `${tenderId}-processed-${Date.now()}.${fileExtension}`;
 
