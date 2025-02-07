@@ -72,11 +72,13 @@ Deno.serve(async (req) => {
     }
 
     try {
-      // Download the image
-      console.log(`Fetching image from URL: ${imageUrl}`);
-      const imageResponse = await fetch(imageUrl);
+      // Use codetabs proxy for image download
+      const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(imageUrl)}`;
+      console.log(`Fetching image through proxy: ${proxyUrl}`);
+      
+      const imageResponse = await fetch(proxyUrl);
       if (!imageResponse.ok) {
-        throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
+        throw new Error(`Failed to fetch image through proxy: ${imageResponse.statusText}`);
       }
 
       const imageArrayBuffer = await imageResponse.arrayBuffer();
@@ -86,7 +88,6 @@ Deno.serve(async (req) => {
       image = await Jimp.default.read(Buffer.from(imageArrayBuffer));
       
       // Add watermark text
-      const FONT_SIZE = Math.min(image.getWidth(), image.getHeight()) / 20;
       const font = await Jimp.default.loadFont(Jimp.default.FONT_SANS_64_BLACK);
       
       const watermarkText = 'TENDERSPRO.CO';
