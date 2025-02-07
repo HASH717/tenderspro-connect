@@ -1,4 +1,3 @@
-
 import { createClient } from 'npm:@supabase/supabase-js@2.38.4'
 import Jimp from 'npm:jimp@0.22.10'
 import { Buffer } from "node:buffer"
@@ -71,24 +70,16 @@ Deno.serve(async (req) => {
 
     const processImage = async () => {
       try {
-        // Step 1: Download the image with comprehensive headers
-        console.log(`Fetching image from URL: ${imageUrl}`);
-        const imageResponse = await fetch(imageUrl, {
+        // Use cors-anywhere proxy to bypass CORS
+        const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+        const targetUrl = imageUrl;
+        
+        console.log(`Fetching image through proxy from URL: ${targetUrl}`);
+        const imageResponse = await fetch(proxyUrl + targetUrl, {
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Accept': 'image/*',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache',
-            'Referer': 'https://old.dztenders.com/',
             'Origin': 'https://old.dztenders.com',
-            'Connection': 'keep-alive',
-            'Sec-Fetch-Dest': 'image',
-            'Sec-Fetch-Mode': 'no-cors',
-            'Sec-Fetch-Site': 'same-origin'
-          },
-          redirect: 'follow',
-          mode: 'no-cors'
+            'X-Requested-With': 'XMLHttpRequest'
+          }
         });
 
         if (!imageResponse.ok) {
