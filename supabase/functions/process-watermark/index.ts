@@ -5,16 +5,20 @@ import Jimp from 'https://esm.sh/jimp@0.22.10'
 
 // Define Buffer for Node.js compatibility
 const Buffer = {
-  from: (str: string, encoding?: string) => {
-    if (encoding === 'base64') {
-      const binary = atob(str);
+  from: (input: Uint8Array | ArrayBuffer | string, encoding?: string) => {
+    if (input instanceof Uint8Array) {
+      return input;
+    } else if (input instanceof ArrayBuffer) {
+      return new Uint8Array(input);
+    } else if (typeof input === 'string' && encoding === 'base64') {
+      const binary = atob(input);
       const bytes = new Uint8Array(binary.length);
       for (let i = 0; i < binary.length; i++) {
         bytes[i] = binary.charCodeAt(i);
       }
       return bytes;
     }
-    throw new Error(`Unsupported encoding: ${encoding}`);
+    throw new Error(`Unsupported input type or encoding`);
   }
 };
 
@@ -70,7 +74,7 @@ serve(async (req) => {
         
         // Step 2: Process with Jimp
         console.log('Processing image with Jimp...');
-        const image = await Jimp.read(Buffer.from(new Uint8Array(imageArrayBuffer)));
+        const image = await Jimp.read(new Uint8Array(imageArrayBuffer));
         
         // Add watermark text
         const FONT_SIZE = Math.min(image.getWidth(), image.getHeight()) / 20; // Adjust size based on image dimensions
