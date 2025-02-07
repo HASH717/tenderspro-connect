@@ -1,7 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
-import Jimp from 'https://esm.sh/jimp@0.22.10'
+import jimp from 'https://esm.sh/jimp@0.22.10?dts'
 
 // Define Buffer for Node.js compatibility
 const Buffer = {
@@ -74,17 +74,17 @@ serve(async (req) => {
         
         // Step 2: Process with Jimp
         console.log('Processing image with Jimp...');
-        const image = await Jimp.read(Buffer.from(imageArrayBuffer));
+        const image = await jimp.read(Buffer.from(imageArrayBuffer));
         
         // Add watermark text
         const FONT_SIZE = Math.min(image.getWidth(), image.getHeight()) / 20; // Adjust size based on image dimensions
-        const font = await Jimp.loadFont(Jimp.FONT_SANS_64_BLACK); // Using default Jimp font
+        const font = await jimp.loadFont(jimp.FONT_SANS_64_BLACK); // Using default Jimp font
         
         const watermarkText = 'TENDERSPRO.CO';
         const maxWidth = image.getWidth() * 0.8; // 80% of image width
         
         // Calculate text position (center)
-        const textWidth = Jimp.measureText(font, watermarkText);
+        const textWidth = jimp.measureText(font, watermarkText);
         const x = (image.getWidth() - textWidth) / 2;
         const y = (image.getHeight() - 64) / 2; // 64 is the font height
         
@@ -96,15 +96,15 @@ serve(async (req) => {
           y,
           {
             text: watermarkText,
-            alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
-            alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE
+            alignmentX: jimp.HORIZONTAL_ALIGN_CENTER,
+            alignmentY: jimp.VERTICAL_ALIGN_MIDDLE
           },
           maxWidth
         );
         image.opacity(1);
 
         // Convert to buffer
-        const processedImageBuffer = await image.getBufferAsync(Jimp.MIME_JPEG);
+        const processedImageBuffer = await image.getBufferAsync(jimp.MIME_JPEG);
 
         // Generate a unique filename
         const filename = `${tenderId}-processed-${Date.now()}.jpg`;
