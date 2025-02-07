@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
+import { Canvas } from "https://deno.land/x/canvas@v1.4.1/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -43,43 +44,22 @@ serve(async (req) => {
 
     const processImage = async () => {
       try {
-        // Create an off-screen canvas
-        const canvas = new OffscreenCanvas(800, 600);
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          throw new Error('Failed to get canvas context');
-        }
-
-        // Load and draw the image onto the canvas
-        console.log(`Loading image from URL: ${imageUrl}`);
+        // Download the image
+        console.log(`Fetching image from URL: ${imageUrl}`);
         const imageResponse = await fetch(imageUrl);
         if (!imageResponse.ok) {
           throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
         }
 
-        const imageBlob = await imageResponse.blob();
-        const imageBitmap = await createImageBitmap(imageBlob);
+        const imageArrayBuffer = await imageResponse.arrayBuffer();
         
-        // Adjust canvas size to match image
-        canvas.width = imageBitmap.width;
-        canvas.height = imageBitmap.height;
-        
-        // Draw image to canvas
-        ctx.drawImage(imageBitmap, 0, 0);
-        
-        // Convert to JPEG blob
-        const jpegBlob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.95 });
-        console.log('Successfully converted image to JPEG:', {
-          size: jpegBlob.size,
-          type: jpegBlob.type
-        });
-
-        // Create FormData with converted JPEG
+        // Create FormData with the image buffer
         const formData = new FormData();
         const fileName = `${tenderId}-temp.jpg`;
-        formData.append('image', jpegBlob, fileName);
+        const imageBlob = new Blob([imageArrayBuffer], { type: 'image/jpeg' });
+        formData.append('image', imageBlob, fileName);
 
-        console.log('Sending request to imggen.ai with converted JPEG...');
+        console.log('Sending request to imggen.ai API...');
 
         // Call imggen.ai API
         const removeWatermarkResponse = await fetch('https://app.imggen.ai/v1/remove-watermark', {
