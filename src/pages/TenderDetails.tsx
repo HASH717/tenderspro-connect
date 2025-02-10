@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, MapPin, Building, Info, CreditCard, MapPinned } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -162,7 +161,7 @@ const TenderDetails = () => {
                       {tender.specifications_price && (
                         <div className="flex items-center text-gray-600">
                           <CreditCard className="w-4 h-4 mr-2" />
-                          <span>Specification Price: {tender.specifications_price}</span>
+                          <span>Specification Price: {tender.specifications_price} DZD</span>
                         </div>
                       )}
                       {tender.withdrawal_address && (
@@ -237,4 +236,3 @@ const TenderDetails = () => {
 };
 
 export default TenderDetails;
-
