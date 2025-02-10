@@ -19,7 +19,7 @@ const TenderDetails = () => {
   const { t } = useTranslation();
   const [imageError, setImageError] = useState(false);
 
-  const { data: tender, isLoading } = useQuery({
+  const { data: tender, isLoading, error } = useQuery({
     queryKey: ['tender', id],
     queryFn: async () => {
       if (!id) {
@@ -36,9 +36,7 @@ const TenderDetails = () => {
 
       if (error) {
         console.error('Error fetching tender:', error);
-        toast.error('Failed to load tender details');
-        navigate('/');
-        return null;
+        throw error;
       }
 
       if (!data) {
@@ -46,11 +44,6 @@ const TenderDetails = () => {
         navigate('/');
         return null;
       }
-
-      // Log the tender data
-      console.log('Tender data:', data);
-      const url = getImageUrl(data);
-      console.log('Image URL to display:', url);
 
       return data;
     }
@@ -68,8 +61,14 @@ const TenderDetails = () => {
     );
   }
 
+  if (error) {
+    toast.error('Failed to load tender details');
+    navigate('/');
+    return null;
+  }
+
   if (!tender) {
-    return null; // Navigation is handled in the query
+    return null;
   }
 
   const formatDate = (dateString?: string | null) => {
@@ -78,13 +77,19 @@ const TenderDetails = () => {
   };
 
   const getImageUrl = (tender: any) => {
-    // Prefer watermarked version if available
-    if (tender?.watermarked_image_url) return tender.watermarked_image_url;
+    if (tender.watermarked_image_url) {
+      return tender.watermarked_image_url;
+    }
     
-    // Fall back to original image
-    if (!tender?.image_url && !tender?.link) return null;
-    const url = tender?.image_url || tender?.link;
-    return url.startsWith('http') ? url : `https://old.dztenders.com/${url}`;
+    if (tender.image_url) {
+      return tender.image_url;
+    }
+
+    if (tender.link && !tender.link.startsWith('http')) {
+      return `https://old.dztenders.com/${tender.link}`;
+    }
+
+    return tender.link;
   };
 
   return (
@@ -175,9 +180,9 @@ const TenderDetails = () => {
                   <img 
                     src={getImageUrl(tender)}
                     alt="Tender Document"
-                    className="w-full h-auto object-fill"
-                    onError={(e) => {
-                      console.error("Image load error:", e);
+                    className="w-full h-auto object-contain"
+                    onError={() => {
+                      console.error("Image failed to load:", getImageUrl(tender));
                       setImageError(true);
                     }}
                   />
@@ -201,3 +206,4 @@ const TenderDetails = () => {
 };
 
 export default TenderDetails;
+
