@@ -31,6 +31,8 @@ export const DesktopNav = ({
   onLanguageChange,
   logoSrc 
 }: DesktopNavProps) => {
+  const currentLanguageLabel = languages.find(lang => lang.code === currentLanguage)?.label || currentLanguage;
+
   return (
     <nav className="fixed top-0 left-0 right-0 bg-background border-b border-border px-6 py-4 z-50">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
@@ -60,7 +62,7 @@ export const DesktopNav = ({
             <DropdownMenuTrigger className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-accent hover:text-white">
               <Globe className="w-5 h-5" />
               <span className="text-sm font-medium">
-                {languages.find(lang => lang.code === currentLanguage)?.label}
+                {currentLanguageLabel}
               </span>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
