@@ -1,6 +1,6 @@
 
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, MapPin, Building, Info } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Building, Info, CreditCard, MapPinned } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -159,6 +159,18 @@ const TenderDetails = () => {
                         <Calendar className="w-4 h-4 mr-2" />
                         <span>Deadline: {formatDate(tender.deadline)}</span>
                       </div>
+                      {tender.specifications_price && (
+                        <div className="flex items-center text-gray-600">
+                          <CreditCard className="w-4 h-4 mr-2" />
+                          <span>Specification Price: {tender.specifications_price}</span>
+                        </div>
+                      )}
+                      {tender.withdrawal_address && (
+                        <div className="flex items-center text-gray-600">
+                          <MapPinned className="w-4 h-4 mr-2" />
+                          <span>Withdrawal Address: {tender.withdrawal_address}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
