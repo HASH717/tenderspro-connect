@@ -11,37 +11,19 @@ const corsHeaders = {
 // Track active processing
 const activeProcessing = new Set();
 
-Deno.serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  let tenderId = null;
+async function processSingleTender(supabaseClient: any, tenderId: string) {
+  console.log(`Starting watermark processing for tender ${tenderId}`);
   let image = null;
   
   try {
-    const { tenderId: id } = await req.json();
-    tenderId = id;
-    
-    if (!tenderId) {
-      throw new Error('No tender ID provided');
-    }
-
-    console.log(`Starting watermark processing for tender ${tenderId}`);
-    
-    // Prevent concurrent processing of the same tender
+    // Check if tender is already being processed
     if (activeProcessing.has(tenderId)) {
-      throw new Error('This tender is already being processed');
+      console.log(`Tender ${tenderId} is already being processed, skipping`);
+      return { success: false, message: 'Already being processed' };
     }
     activeProcessing.add(tenderId);
 
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    // 1. Get tender details
+    // Get tender details
     const { data: tender, error: tenderError } = await supabaseClient
       .from('tenders')
       .select('*')
@@ -54,6 +36,12 @@ Deno.serve(async (req) => {
 
     if (!tender) {
       throw new Error('Tender not found');
+    }
+
+    // Skip if already processed
+    if (tender.watermarked_image_url) {
+      console.log(`Tender ${tenderId} already has watermark, skipping`);
+      return { success: true, message: 'Already processed', skipped: true };
     }
 
     const imageUrl = tender.image_url;
@@ -71,115 +59,160 @@ Deno.serve(async (req) => {
         .eq('id', tenderId);
     }
 
-    try {
-      // Use codetabs proxy for the image URL
-      const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(imageUrl)}`;
-      console.log('Fetching image from proxied URL:', proxyUrl);
-      
-      const imageResponse = await fetch(proxyUrl);
-      if (!imageResponse.ok) {
-        throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
-      }
-      
-      const imageBlob = await imageResponse.blob();
-      const formData = new FormData();
-      formData.append('image', imageBlob);  // Changed from 'image[]' to 'image'
+    // Use codetabs proxy for the image URL
+    const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(imageUrl)}`;
+    console.log('Fetching image from proxied URL:', proxyUrl);
+    
+    const imageResponse = await fetch(proxyUrl);
+    if (!imageResponse.ok) {
+      throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
+    }
+    
+    const imageBlob = await imageResponse.blob();
+    const formData = new FormData();
+    formData.append('image', imageBlob);
 
-      console.log('Removing existing watermark...');
-      const removeWatermarkResponse = await fetch('https://app.imggen.ai/v1/remove-watermark', {
-        method: 'POST',
-        headers: {
-          'X-IMGGEN-KEY': Deno.env.get('IMGGEN_API_KEY') ?? '',
-        },
-        body: formData
+    console.log('Removing existing watermark...');
+    const removeWatermarkResponse = await fetch('https://app.imggen.ai/v1/remove-watermark', {
+      method: 'POST',
+      headers: {
+        'X-IMGGEN-KEY': Deno.env.get('IMGGEN_API_KEY') ?? '',
+      },
+      body: formData
+    });
+
+    if (!removeWatermarkResponse.ok) {
+      const errorText = await removeWatermarkResponse.text();
+      console.error('Watermark removal error response:', errorText);
+      throw new Error(`Failed to remove watermark: ${removeWatermarkResponse.statusText}`);
+    }
+
+    const result = await removeWatermarkResponse.json();
+    console.log('Watermark removal API response:', result);
+
+    if (!result.success || !result.images || result.images.length === 0) {
+      throw new Error('No processed image received from watermark removal service');
+    }
+
+    // Convert base64 to buffer
+    const watermarkRemoved = Buffer.from(result.images[0], 'base64');
+    
+    // Process with Jimp
+    console.log('Processing cleaned image with Jimp...');
+    image = await Jimp.default.read(watermarkRemoved);
+    
+    // Add watermark text
+    const font = await Jimp.default.loadFont(Jimp.default.FONT_SANS_64_BLACK);
+    
+    const watermarkText = 'TENDERSPRO.CO';
+    const maxWidth = image.getWidth() * 0.8;
+    
+    const textWidth = Jimp.default.measureText(font, watermarkText);
+    const x = (image.getWidth() - textWidth) / 2;
+    const y = (image.getHeight() - 64) / 2;
+
+    image.opacity(0.15);
+    image.print(
+      font,
+      x,
+      y,
+      {
+        text: watermarkText,
+        alignmentX: Jimp.default.HORIZONTAL_ALIGN_CENTER,
+        alignmentY: Jimp.default.VERTICAL_ALIGN_MIDDLE
+      },
+      maxWidth
+    );
+    image.opacity(1);
+
+    // Set quality and get buffer
+    image.quality(70);
+    const processedImageBuffer = await image.getBufferAsync(Jimp.default.MIME_JPEG);
+
+    // Generate filename and upload
+    const filename = `${tenderId}-${Date.now()}.jpg`;
+    
+    const { error: uploadError } = await supabaseClient
+      .storage
+      .from('tender-documents')
+      .upload(filename, processedImageBuffer, {
+        contentType: 'image/jpeg',
+        cacheControl: '3600'
       });
 
-      if (!removeWatermarkResponse.ok) {
-        const errorText = await removeWatermarkResponse.text();
-        console.error('Watermark removal error response:', errorText);
-        throw new Error(`Failed to remove watermark: ${removeWatermarkResponse.statusText}`);
-      }
+    if (uploadError) {
+      throw new Error(`Failed to upload processed image: ${uploadError.message}`);
+    }
 
-      const result = await removeWatermarkResponse.json();
-      console.log('Watermark removal API response:', result);
+    const { data: { publicUrl } } = supabaseClient
+      .storage
+      .from('tender-documents')
+      .getPublicUrl(filename);
 
-      if (!result.success || !result.images || result.images.length === 0) {
-        throw new Error('No processed image received from watermark removal service');
-      }
+    console.log(`Updating tender record with new image URL: ${publicUrl}`);
+    const { error: updateError } = await supabaseClient
+      .from('tenders')
+      .update({ 
+        watermarked_image_url: publicUrl,
+        processed_at: new Date().toISOString()
+      })
+      .eq('id', tenderId);
 
-      // Convert base64 to buffer
-      const watermarkRemoved = Buffer.from(result.images[0], 'base64');
-      
-      // Process with Jimp
-      console.log('Processing cleaned image with Jimp...');
-      image = await Jimp.default.read(watermarkRemoved);
-      
-      // Add watermark text
-      const font = await Jimp.default.loadFont(Jimp.default.FONT_SANS_64_BLACK);
-      
-      const watermarkText = 'TENDERSPRO.CO';
-      const maxWidth = image.getWidth() * 0.8;
-      
-      const textWidth = Jimp.default.measureText(font, watermarkText);
-      const x = (image.getWidth() - textWidth) / 2;
-      const y = (image.getHeight() - 64) / 2;
+    if (updateError) {
+      throw new Error(`Failed to update tender record: ${updateError.message}`);
+    }
 
-      image.opacity(0.15); // Set opacity to 15% instead of 30%
-      image.print(
-        font,
-        x,
-        y,
-        {
-          text: watermarkText,
-          alignmentX: Jimp.default.HORIZONTAL_ALIGN_CENTER,
-          alignmentY: Jimp.default.VERTICAL_ALIGN_MIDDLE
-        },
-        maxWidth
-      );
-      image.opacity(1);
+    return { success: true, message: 'Processing completed', url: publicUrl };
 
-      // Set quality and get buffer
-      image.quality(70);
-      const processedImageBuffer = await image.getBufferAsync(Jimp.default.MIME_JPEG);
+  } catch (error) {
+    console.error(`Error processing tender ${tenderId}:`, error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      tenderId 
+    };
+  } finally {
+    // Cleanup
+    if (image) {
+      image.bitmap?.data && (image.bitmap.data = null);
+      image = null;
+    }
+    activeProcessing.delete(tenderId);
+    console.log(`Removed tender ${tenderId} from active processing`);
+  }
+}
 
-      // Generate filename and upload
-      const filename = `${tenderId}-${Date.now()}.jpg`;
-      
-      const { error: uploadError } = await supabaseClient
-        .storage
-        .from('tender-documents')
-        .upload(filename, processedImageBuffer, {
-          contentType: 'image/jpeg',
-          cacheControl: '3600'
-        });
+Deno.serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
 
-      if (uploadError) {
-        throw new Error(`Failed to upload processed image: ${uploadError.message}`);
-      }
+  try {
+    // Initialize Supabase client
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
 
-      const { data: { publicUrl } } = supabaseClient
-        .storage
-        .from('tender-documents')
-        .getPublicUrl(filename);
+    // Get all unprocessed tenders with images
+    const { data: tenders, error: fetchError } = await supabaseClient
+      .from('tenders')
+      .select('id')
+      .is('watermarked_image_url', null)
+      .not('image_url', 'is', null);
 
-      console.log(`Updating tender record with new image URL: ${publicUrl}`);
-      const { error: updateError } = await supabaseClient
-        .from('tenders')
-        .update({ 
-          watermarked_image_url: publicUrl,
-          processed_at: new Date().toISOString()
-        })
-        .eq('id', tenderId);
+    if (fetchError) {
+      throw new Error(`Failed to fetch tenders: ${fetchError.message}`);
+    }
 
-      if (updateError) {
-        throw new Error(`Failed to update tender record: ${updateError.message}`);
-      }
+    console.log(`Found ${tenders?.length || 0} unprocessed tenders`);
 
+    if (!tenders?.length) {
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: 'Processing completed',
-          url: publicUrl
+          message: 'No unprocessed tenders found' 
         }),
         { 
           headers: { 
@@ -188,11 +221,43 @@ Deno.serve(async (req) => {
           } 
         }
       );
-
-    } catch (processingError) {
-      console.error(`Error processing image for tender ${tenderId}:`, processingError);
-      throw processingError;
     }
+
+    // Process the first tender if specific ID is provided
+    const { tenderId } = await req.json().catch(() => ({ tenderId: null }));
+    if (tenderId) {
+      const result = await processSingleTender(supabaseClient, tenderId);
+      return new Response(
+        JSON.stringify(result),
+        { 
+          headers: { 
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          } 
+        }
+      );
+    }
+
+    // Process all unprocessed tenders
+    const results = [];
+    for (const tender of tenders) {
+      const result = await processSingleTender(supabaseClient, tender.id);
+      results.push(result);
+    }
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: `Processed ${results.length} tenders`,
+        results 
+      }),
+      { 
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        } 
+      }
+    );
 
   } catch (error) {
     console.error('Error in process-complete-watermark function:', error);
@@ -211,17 +276,5 @@ Deno.serve(async (req) => {
         }
       }
     );
-  } finally {
-    // Cleanup
-    if (image) {
-      image.bitmap?.data && (image.bitmap.data = null);
-      image = null;
-    }
-    
-    if (tenderId) {
-      activeProcessing.delete(tenderId);
-      console.log(`Removed tender ${tenderId} from active processing`);
-    }
   }
 });
-
