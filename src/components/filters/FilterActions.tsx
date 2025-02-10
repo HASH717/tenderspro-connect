@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 
 interface FilterActionsProps {
@@ -10,7 +11,7 @@ export const FilterActions = ({ onClear }: FilterActionsProps) => {
       <Button 
         variant="outline"
         onClick={onClear}
-        className="w-full sm:w-auto bg-white/80 backdrop-blur-sm hover:bg-white/90"
+        className="w-full sm:w-auto bg-white/80 backdrop-blur-sm hover:bg-white/90 hover:text-foreground"
       >
         Clear Filters
       </Button>
