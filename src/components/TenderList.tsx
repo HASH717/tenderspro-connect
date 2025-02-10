@@ -1,3 +1,4 @@
+
 import { TenderCard } from "@/components/TenderCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -45,16 +46,27 @@ export const TenderList = ({ tenders, isLoading }: TenderListProps) => {
 
     try {
       const isFavorite = favorites.includes(tenderId);
-      const { error } = await supabase
-        .from('favorites')
-        [isFavorite ? 'delete' : 'insert']({
-          user_id: session.user.id,
-          tender_id: tenderId
-        })
-        [isFavorite ? 'eq' : '']('user_id', session.user.id)
-        [isFavorite ? 'eq' : '']('tender_id', tenderId);
+      
+      if (isFavorite) {
+        // Delete favorite
+        const { error } = await supabase
+          .from('favorites')
+          .delete()
+          .eq('user_id', session.user.id)
+          .eq('tender_id', tenderId);
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        // Insert favorite
+        const { error } = await supabase
+          .from('favorites')
+          .insert({
+            user_id: session.user.id,
+            tender_id: tenderId
+          });
+
+        if (error) throw error;
+      }
       
       toast.success(isFavorite ? 'Removed from favorites' : 'Added to favorites');
       await queryClient.invalidateQueries({ queryKey: ['favorites'] });
