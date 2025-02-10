@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import Footer from "@/components/Footer";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const TenderDetails = () => {
   const { id } = useParams();
@@ -18,6 +19,7 @@ const TenderDetails = () => {
   const isMobile = useIsMobile();
   const { t } = useTranslation();
   const [imageError, setImageError] = useState(false);
+  const { session } = useAuth();
 
   const { data: tender, isLoading, error } = useQuery({
     queryKey: ['tender', id],
@@ -28,25 +30,42 @@ const TenderDetails = () => {
         return null;
       }
 
-      const { data, error } = await supabase
-        .from('tenders')
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching tender:', error);
-        throw error;
-      }
-
-      if (!data) {
-        toast.error('Tender not found or has been removed');
-        navigate('/');
+      // Check if user is authenticated
+      if (!session?.user) {
+        toast.error('Please sign in to view tender details');
+        navigate('/auth', { state: { returnTo: `/tenders/${id}` } });
         return null;
       }
 
-      return data;
-    }
+      try {
+        const { data, error } = await supabase
+          .from('tenders')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+
+        if (error) {
+          throw error;
+        }
+
+        if (!data) {
+          toast.error('Tender not found or has been removed');
+          navigate('/');
+          return null;
+        }
+
+        return data;
+      } catch (error: any) {
+        console.error('Error fetching tender:', error);
+        if (error.message?.includes('Invalid Refresh Token')) {
+          toast.error('Your session has expired. Please sign in again.');
+          navigate('/auth', { state: { returnTo: `/tenders/${id}` } });
+          return null;
+        }
+        throw error;
+      }
+    },
+    retry: false
   });
 
   if (isLoading) {
