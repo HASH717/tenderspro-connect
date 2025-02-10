@@ -77,7 +77,7 @@ export const useTenders = (filters: TenderFilters) => {
 
       // Apply wilaya (region) filter
       if (filters.wilaya?.trim()) {
-        query = query.or(`wilaya.ilike.%${filters.wilaya.trim()}%`);
+        query = query.ilike('wilaya', `%${filters.wilaya.trim()}%`);
       }
 
       // Apply tender type filter
