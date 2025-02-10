@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 import { Globe } from "lucide-react";
 import {
@@ -34,7 +35,9 @@ export const DesktopNav = ({
     <nav className="fixed top-0 left-0 right-0 bg-background border-b border-border px-6 py-4 z-50">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         <div className="flex items-center">
-          <img src={logoSrc} alt="TendersPro Logo" className="h-8" />
+          <Link to="/">
+            <img src={logoSrc} alt="TendersPro Logo" className="h-8" />
+          </Link>
         </div>
         <div className="flex items-center space-x-6">
           {navItems.map(({ icon: Icon, path, label }) => (
