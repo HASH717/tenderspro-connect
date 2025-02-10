@@ -1,3 +1,4 @@
+
 import { useTranslation } from "react-i18next";
 import {
   Select,
@@ -15,27 +16,33 @@ interface WilayaSelectProps {
 export const WilayaSelect = ({ value, onChange }: WilayaSelectProps) => {
   const { t } = useTranslation();
 
+  const wilayas = [
+    "Adrar", "Chlef", "Laghouat", "Oum El Bouaghi", "Batna", "Béjaïa", "Biskra",
+    "Béchar", "Blida", "Bouira", "Tamanrasset", "Tébessa", "Tlemcen", "Tiaret",
+    "Tizi Ouzou", "Alger", "Djelfa", "Jijel", "Sétif", "Saïda", "Skikda",
+    "Sidi Bel Abbès", "Annaba", "Guelma", "Constantine", "Médéa", "Mostaganem",
+    "M'Sila", "Mascara", "Ouargla", "Oran", "El Bayadh", "Illizi", "Bordj Bou Arréridj",
+    "Boumerdès", "El Tarf", "Tindouf", "Tissemsilt", "El Oued", "Khenchela",
+    "Souk Ahras", "Tipaza", "Mila", "Aïn Defla", "Naâma", "Aïn Témouchent",
+    "Ghardaïa", "Relizane", "El M'Ghair", "El Meniaa", "Ouled Djellal",
+    "Bordj Badi Mokhtar", "Béni Abbès", "Timimoun", "Touggourt", "Djanet",
+    "In Salah", "In Guezzam"
+  ];
+
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger className="bg-white/80 backdrop-blur-sm border-muted/50">
         <SelectValue placeholder={t("filters.wilaya")} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="adrar">{t("tender.locations.adrar")}</SelectItem>
-        <SelectItem value="alger">{t("tender.locations.alger")}</SelectItem>
-        <SelectItem value="annaba">{t("tender.locations.annaba")}</SelectItem>
-        <SelectItem value="batna">{t("tender.locations.batna")}</SelectItem>
-        <SelectItem value="biskra">{t("tender.locations.biskra")}</SelectItem>
-        <SelectItem value="blida">{t("tender.locations.blida")}</SelectItem>
-        <SelectItem value="bouira">{t("tender.locations.bouira")}</SelectItem>
-        <SelectItem value="tlemcen">{t("tender.locations.tlemcen")}</SelectItem>
-        <SelectItem value="tizi_ouzou">{t("tender.locations.tizi_ouzou")}</SelectItem>
-        <SelectItem value="djelfa">{t("tender.locations.djelfa")}</SelectItem>
-        <SelectItem value="setif">{t("tender.locations.setif")}</SelectItem>
-        <SelectItem value="saida">{t("tender.locations.saida")}</SelectItem>
-        <SelectItem value="skikda">{t("tender.locations.skikda")}</SelectItem>
-        <SelectItem value="constantine">{t("tender.locations.constantine")}</SelectItem>
-        <SelectItem value="oran">{t("tender.locations.oran")}</SelectItem>
+        {wilayas.map((wilaya) => (
+          <SelectItem 
+            key={wilaya.toLowerCase()} 
+            value={wilaya.toLowerCase()}
+          >
+            {wilaya}
+          </SelectItem>
+        ))}
       </SelectContent>
     </Select>
   );

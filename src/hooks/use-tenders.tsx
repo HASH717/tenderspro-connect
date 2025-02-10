@@ -70,24 +70,27 @@ export const useTenders = (filters: TenderFilters) => {
         .select('*')
         .order('publication_date', { ascending: false });
 
-      // Apply basic filters
-      if (filters.search) {
-        query = query.ilike('title', `%${filters.search}%`);
+      // Apply search filter
+      if (filters.search?.trim()) {
+        query = query.ilike('title', `%${filters.search.trim()}%`);
       }
 
       // Apply wilaya (region) filter
-      if (filters.wilaya && filters.wilaya !== '') {
-        query = query.eq('wilaya', filters.wilaya);
+      if (filters.wilaya?.trim()) {
+        // Make first letter uppercase and rest lowercase for consistent matching
+        const formattedWilaya = filters.wilaya.charAt(0).toUpperCase() + 
+                               filters.wilaya.slice(1).toLowerCase();
+        query = query.ilike('wilaya', formattedWilaya);
       }
 
       // Apply tender type filter
-      if (filters.tenderType && filters.tenderType !== '') {
-        query = query.eq('type', filters.tenderType);
+      if (filters.tenderType?.trim()) {
+        query = query.ilike('type', filters.tenderType.trim());
       }
 
       // Apply category filter
-      if (filters.category && filters.category !== '') {
-        query = query.eq('category', filters.category);
+      if (filters.category?.trim()) {
+        query = query.ilike('category', filters.category.trim());
       }
 
       const { data: tenders, error } = await query;
