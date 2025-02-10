@@ -32,6 +32,25 @@ export const AdminScraper = () => {
     }
   };
 
+  const processAllTenders = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('process-complete-watermark', {
+        body: {} // No tenderId means process all
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast.success(`Successfully processed ${data.results?.length || 0} tenders`);
+      } else {
+        toast.error('Failed to process tenders');
+      }
+    } catch (error) {
+      console.error('Error processing tenders:', error);
+      toast.error('Error processing tenders');
+    }
+  };
+
   return (
     <Card className="p-4">
       <div className="space-y-4">
@@ -68,6 +87,15 @@ export const AdminScraper = () => {
           className="w-full"
         >
           {isLoading ? "Processing..." : "Process Specific Tender"}
+        </Button>
+
+        <Button 
+          onClick={processAllTenders} 
+          disabled={isLoading}
+          variant="outline"
+          className="w-full"
+        >
+          {isLoading ? "Processing..." : "Process All Unprocessed Tenders"}
         </Button>
         
         <ScraperProgress progress={progress} isLoading={isLoading} />
