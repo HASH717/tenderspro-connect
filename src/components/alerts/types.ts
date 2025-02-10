@@ -8,11 +8,14 @@ export interface Alert {
 }
 
 export const mapFiltersToDb = (filters: Partial<Alert>, userId: string) => {
+  // Extract wilaya names from the format "number - name"
+  const wilayaNames = filters.wilaya?.map(w => w.split(' - ')[1]).filter(Boolean) || [];
+
   return {
     ...(filters.id && { id: filters.id }),
     user_id: userId,
     name: filters.name,
-    wilaya: filters.wilaya && filters.wilaya.length > 0 ? filters.wilaya.join(",") : null,
+    wilaya: wilayaNames.length > 0 ? wilayaNames.join(",") : null,
     tender_type: filters.tenderType && filters.tenderType.length > 0 ? filters.tenderType.join(",") : null,
     category: filters.category && filters.category.length > 0 ? filters.category.join("|||") : null,
   };
@@ -31,3 +34,4 @@ export const mapDbToFilters = (dbAlert: any): Alert => {
     category,
   };
 };
+
