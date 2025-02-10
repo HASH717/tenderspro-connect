@@ -77,7 +77,11 @@ export const useTenders = (filters: TenderFilters) => {
 
       // Apply wilaya (region) filter
       if (filters.wilaya) {
-        query = query.eq('wilaya', filters.wilaya);
+        // Extract wilaya name from the format "number - name"
+        const wilayaName = filters.wilaya.split(' - ')[1];
+        if (wilayaName) {
+          query = query.eq('wilaya', wilayaName);
+        }
       }
 
       // Apply tender type filter
