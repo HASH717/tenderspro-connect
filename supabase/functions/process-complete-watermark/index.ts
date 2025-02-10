@@ -84,6 +84,16 @@ async function processSingleTender(supabaseClient: any, tenderId: string) {
     if (!removeWatermarkResponse.ok) {
       const errorText = await removeWatermarkResponse.text();
       console.error('Watermark removal error response:', errorText);
+      
+      // Check for credit limit error
+      if (errorText.includes('Credit limit exceeded')) {
+        return {
+          success: false,
+          error: 'Credit limit exceeded',
+          stopProcessing: true // Signal to stop processing further images
+        };
+      }
+      
       throw new Error(`Failed to remove watermark: ${removeWatermarkResponse.statusText}`);
     }
 
@@ -243,12 +253,24 @@ Deno.serve(async (req) => {
     for (const tender of tenders) {
       const result = await processSingleTender(supabaseClient, tender.id);
       results.push(result);
+      
+      // Check if we hit the credit limit
+      if (result.stopProcessing) {
+        console.log('Credit limit reached, stopping further processing');
+        break;
+      }
     }
+
+    // Calculate successful and skipped counts
+    const processedCount = results.filter(r => r.success && !r.skipped).length;
+    const skippedCount = results.filter(r => r.success && r.skipped).length;
+    const errorCount = results.filter(r => !r.success).length;
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Processed ${results.length} tenders`,
+        message: `Processed ${processedCount} tenders, skipped ${skippedCount}, errors: ${errorCount}`,
+        creditLimitReached: results.some(r => r.stopProcessing),
         results 
       }),
       { 

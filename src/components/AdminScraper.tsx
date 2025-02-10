@@ -41,7 +41,10 @@ export const AdminScraper = () => {
       if (error) throw error;
 
       if (data.success) {
-        toast.success(`Successfully processed ${data.results?.length || 0} tenders`);
+        if (data.creditLimitReached) {
+          toast.warning('Credit limit reached. Processing stopped.');
+        }
+        toast.success(data.message);
       } else {
         toast.error('Failed to process tenders');
       }
