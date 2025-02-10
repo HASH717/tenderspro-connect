@@ -41,8 +41,8 @@ export const WilayaSelect = ({ value, onChange }: WilayaSelectProps) => {
       <SelectContent>
         {wilayas.map((wilaya) => (
           <SelectItem 
-            key={wilaya.toLowerCase()} 
-            value={wilaya.toLowerCase()}
+            key={wilaya} 
+            value={wilaya}
           >
             {wilaya}
           </SelectItem>

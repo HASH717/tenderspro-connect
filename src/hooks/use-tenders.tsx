@@ -77,10 +77,9 @@ export const useTenders = (filters: TenderFilters) => {
 
       // Apply wilaya (region) filter
       if (filters.wilaya?.trim()) {
-        // Make first letter uppercase and rest lowercase for consistent matching
-        const formattedWilaya = filters.wilaya.charAt(0).toUpperCase() + 
-                               filters.wilaya.slice(1).toLowerCase();
-        query = query.ilike('wilaya', formattedWilaya);
+        const wilayaNumber = filters.wilaya.split(' - ')[0];
+        const wilayaName = filters.wilaya.split(' - ')[1];
+        query = query.or(`wilaya.ilike.%${wilayaNumber}%,wilaya.ilike.%${wilayaName}%`);
       }
 
       // Apply tender type filter
