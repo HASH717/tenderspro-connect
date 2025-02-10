@@ -117,11 +117,13 @@ async function processSingleTender(supabaseClient: any, tenderId: string) {
     const watermarkText = 'TENDERSPRO.CO';
     const maxWidth = image.getWidth() * 0.8;
     
+    // Calculate position - now placing at 85% of the height instead of center
     const textWidth = Jimp.default.measureText(font, watermarkText);
     const x = (image.getWidth() - textWidth) / 2;
-    const y = (image.getHeight() - 64) / 2;
+    const y = Math.floor(image.getHeight() * 0.85); // Position at 85% of height
 
-    image.opacity(0.15);
+    // Reduced opacity to 8% (0.08) from 15%
+    image.opacity(0.08);
     image.print(
       font,
       x,
