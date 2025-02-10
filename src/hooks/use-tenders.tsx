@@ -68,22 +68,25 @@ export const useTenders = (filters: TenderFilters) => {
       let query = supabase
         .from('tenders')
         .select('*')
-        .order('publication_date', { ascending: false }); // Add ordering here
+        .order('publication_date', { ascending: false });
 
       // Apply basic filters
       if (filters.search) {
         query = query.ilike('title', `%${filters.search}%`);
       }
 
-      if (filters.wilaya) {
+      // Apply wilaya (region) filter
+      if (filters.wilaya && filters.wilaya !== '') {
         query = query.eq('wilaya', filters.wilaya);
       }
 
-      if (filters.tenderType) {
+      // Apply tender type filter
+      if (filters.tenderType && filters.tenderType !== '') {
         query = query.eq('type', filters.tenderType);
       }
 
-      if (filters.category) {
+      // Apply category filter
+      if (filters.category && filters.category !== '') {
         query = query.eq('category', filters.category);
       }
 
