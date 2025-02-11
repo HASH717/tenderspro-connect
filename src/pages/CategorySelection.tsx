@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,10 +14,6 @@ const CategorySelection = () => {
   const { session } = useAuth();
   const location = useLocation();
   
-  const searchParams = new URLSearchParams(location.search);
-  const success = searchParams.get('success');
-  const plan = searchParams.get('plan');
-
   const { data: subscription, isLoading, error } = useQuery({
     queryKey: ['latest-subscription', session?.user?.id],
     enabled: !!session?.user?.id,
@@ -64,11 +61,6 @@ const CategorySelection = () => {
       return;
     }
 
-    if (!subscription && success === 'true') {
-      console.log('Payment successful but no subscription found, retrying...');
-      return; // Let the query retry
-    }
-
     if (!subscription) {
       console.log('No subscription found, redirecting to subscriptions');
       navigate('/subscriptions');
@@ -82,7 +74,7 @@ const CategorySelection = () => {
     }
 
     console.log('Current subscription:', subscription);
-  }, [session, success, subscription, navigate, isLoading, error, location]);
+  }, [session, subscription, navigate, isLoading, error, location]);
 
   if (!session || isLoading || !subscription) {
     return null;
