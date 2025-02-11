@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, MapPin, Building, Info, CreditCard, MapPinned } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -121,7 +122,7 @@ const TenderDetails = () => {
             className="mb-6"
             onClick={() => navigate(-1)}
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
+            <ArrowLeft className="mr-2 h-5 w-5" />
             Back
           </Button>
 
@@ -135,38 +136,38 @@ const TenderDetails = () => {
                 <div className="space-y-6">
                   <div>
                     <h2 className="text-lg font-semibold mb-4">Tender Information</h2>
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {tender.tender_number && (
                         <div className="flex items-center text-gray-600">
-                          <Info className="w-4 h-4 mr-2" />
+                          <Info className="w-5 h-5 mr-3 flex-shrink-0" />
                           <span>Tender Number: {tender.tender_number}</span>
                         </div>
                       )}
                       <div className="flex items-center text-gray-600">
-                        <Building className="w-4 h-4 mr-2" />
+                        <Building className="w-5 h-5 mr-3 flex-shrink-0" />
                         <span>Category: {tender.category || 'Not specified'}</span>
                       </div>
                       <div className="flex items-center text-gray-600">
-                        <MapPin className="w-4 h-4 mr-2" />
+                        <MapPin className="w-5 h-5 mr-3 flex-shrink-0" />
                         <span>Region: {tender.region || tender.wilaya || 'Not specified'}</span>
                       </div>
                       <div className="flex items-center text-gray-600">
-                        <Calendar className="w-4 h-4 mr-2" />
+                        <Calendar className="w-5 h-5 mr-3 flex-shrink-0" />
                         <span>Publication Date: {formatDate(tender.publication_date)}</span>
                       </div>
                       <div className="flex items-center text-gray-600">
-                        <Calendar className="w-4 h-4 mr-2" />
+                        <Calendar className="w-5 h-5 mr-3 flex-shrink-0" />
                         <span>Deadline: {formatDate(tender.deadline)}</span>
                       </div>
                       {tender.specifications_price && (
                         <div className="flex items-center text-gray-600">
-                          <CreditCard className="w-4 h-4 mr-2" />
+                          <CreditCard className="w-5 h-5 mr-3 flex-shrink-0" />
                           <span>Specification Price: {tender.specifications_price} DZD</span>
                         </div>
                       )}
                       {tender.withdrawal_address && (
                         <div className="flex items-center text-gray-600">
-                          <MapPinned className="w-4 h-4 mr-2" />
+                          <MapPinned className="w-5 h-5 mr-3 flex-shrink-0" />
                           <span>Withdrawal Address: {tender.withdrawal_address}</span>
                         </div>
                       )}
