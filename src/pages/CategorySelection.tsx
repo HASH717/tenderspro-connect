@@ -18,6 +18,7 @@ const CategorySelection = () => {
     queryKey: ['latest-subscription', session?.user?.id],
     enabled: !!session?.user?.id,
     queryFn: async () => {
+      console.log('Fetching subscription for user:', session?.user?.id);
       const { data, error } = await supabase
         .from('subscriptions')
         .select('*')
@@ -32,6 +33,7 @@ const CategorySelection = () => {
         toast.error('Failed to load subscription data');
         throw error;
       }
+      console.log('Fetched subscription:', data);
       return data;
     },
     staleTime: 0,

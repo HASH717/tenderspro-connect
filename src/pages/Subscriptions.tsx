@@ -79,7 +79,11 @@ const Subscriptions = () => {
         
         try {
           await refetchSubscription();
-          const { data: latestSubscription } = await supabase
+          
+          // Add a small delay to ensure the subscription is fully processed
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          const { data: latestSubscription, error } = await supabase
             .from('subscriptions')
             .select('*')
             .eq('user_id', session.user.id)
@@ -88,9 +92,12 @@ const Subscriptions = () => {
             .limit(1)
             .maybeSingle();
 
+          if (error) throw error;
+
           if (latestSubscription) {
             console.log('Latest subscription found:', latestSubscription);
-            navigate('/categories', { replace: true });
+            // Navigate to CategorySelection page
+            navigate('/categories');
           } else {
             console.error('No active subscription found after payment');
             toast({
