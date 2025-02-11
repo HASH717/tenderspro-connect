@@ -1,7 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { SMTPClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -40,20 +39,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    console.log('Creating SMTP client...');
-    const client = new SMTPClient({
-      connection: {
-        hostname: "email-smtp.us-east-1.amazonaws.com",
-        port: 587,
-        tls: true,
-        auth: {
-          username: awsUsername,
-          password: awsPassword,
-        },
-      },
-    });
-    console.log('SMTP client created successfully');
-
     const payload: EmailPayload = await req.json();
     const { to, subject, html, alertId, tenderId, userId } = payload;
 
@@ -88,16 +73,39 @@ serve(async (req) => {
       });
     }
 
-    // Send email
-    console.log('Attempting to send email...');
-    const sendResult = await client.send({
-      from: "abdou@trycartback.com",
-      to: to,
-      subject: subject,
-      content: html,
-    });
+    // Send email using AWS SES SMTP
+    const emailMessage = [
+      "Content-Type: text/html; charset=utf-8",
+      "MIME-Version: 1.0",
+      `To: ${to}`,
+      `From: abdou@trycartback.com`,
+      `Subject: ${subject}`,
+      "",
+      html
+    ].join("\r\n");
 
-    console.log('Email sent successfully:', sendResult);
+    const conn = await Deno.connect({ hostname: "email-smtp.us-east-1.amazonaws.com", port: 587 });
+    const encoder = new TextEncoder();
+
+    // Start TLS connection
+    await conn.write(encoder.encode("EHLO localhost\r\n"));
+    await conn.write(encoder.encode("STARTTLS\r\n"));
+    
+    // Authenticate
+    await conn.write(encoder.encode(`AUTH LOGIN\r\n`));
+    await conn.write(encoder.encode(`${btoa(awsUsername)}\r\n`));
+    await conn.write(encoder.encode(`${btoa(awsPassword)}\r\n`));
+
+    // Send email
+    await conn.write(encoder.encode(`MAIL FROM:<abdou@trycartback.com>\r\n`));
+    await conn.write(encoder.encode(`RCPT TO:<${to}>\r\n`));
+    await conn.write(encoder.encode("DATA\r\n"));
+    await conn.write(encoder.encode(emailMessage + "\r\n.\r\n"));
+    await conn.write(encoder.encode("QUIT\r\n"));
+
+    conn.close();
+
+    console.log('Email sent successfully');
 
     // Log the email notification
     console.log('Logging email notification to database...');
