@@ -1,7 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { SignatureV4 } from "https://deno.land/x/aws_sign_v4@1.0.3/mod.ts";
+import { SESv2Client, SendEmailCommand } from "npm:@aws-sdk/client-sesv2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -74,59 +74,40 @@ serve(async (req) => {
       });
     }
 
-    // Prepare AWS SES API request
-    const date = new Date();
-    const region = "us-east-1";
-    const service = "ses";
-    
-    const signer = new SignatureV4({
-      service,
-      region,
+    // Initialize AWS SES client
+    const sesClient = new SESv2Client({
+      region: "us-east-1",
       credentials: {
         accessKeyId,
         secretAccessKey,
       },
-      datetime: date.toISOString().replace(/[:-]|\.\d{3}/g, ''),
-      signableHeaders: ['host', 'content-type'],
-      body: JSON.stringify({
-        Source: "abdou@trycartback.com",
-        Destination: {
-          ToAddresses: [to]
-        },
-        Message: {
+    });
+
+    // Create send email command
+    const sendEmailCommand = new SendEmailCommand({
+      FromEmailAddress: "abdou@trycartback.com",
+      Destination: {
+        ToAddresses: [to],
+      },
+      Content: {
+        Simple: {
           Subject: {
             Data: subject,
-            Charset: "UTF-8"
+            Charset: "UTF-8",
           },
           Body: {
             Html: {
               Data: html,
-              Charset: "UTF-8"
-            }
-          }
-        }
-      }),
+              Charset: "UTF-8",
+            },
+          },
+        },
+      },
     });
 
-    const url = `https://email.${region}.amazonaws.com/v2/email/outbound-emails`;
-    const request = await signer.sign(
-      new Request(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Host': `email.${region}.amazonaws.com`,
-        },
-      })
-    );
-
-    const response = await fetch(request);
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('AWS SES API error:', errorText);
-      throw new Error(`Failed to send email: ${errorText}`);
-    }
-
-    console.log('Email sent successfully');
+    // Send email
+    const response = await sesClient.send(sendEmailCommand);
+    console.log('Email sent successfully:', response);
 
     // Log the email notification
     console.log('Logging email notification to database...');
