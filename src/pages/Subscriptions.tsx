@@ -4,9 +4,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { SubscriptionStatus } from "@/components/subscriptions/SubscriptionStatus";
 import { SubscriptionPlans } from "@/components/subscriptions/SubscriptionPlans";
 import { TestModeAlert } from "@/components/subscriptions/TestModeAlert";
@@ -18,7 +18,8 @@ const Subscriptions = () => {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const { session } = useAuth();
-  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -72,32 +73,35 @@ const Subscriptions = () => {
   });
 
   useEffect(() => {
-    const checkSuccessAndRedirect = async () => {
-      if (location.pathname === '/subscriptions/success' && session?.user?.id) {
+    const success = searchParams.get('success');
+    const plan = searchParams.get('plan');
+    const checkoutId = searchParams.get('checkout_id');
+    
+    const handleSuccessfulPayment = async () => {
+      if (success === 'true' && plan && checkoutId) {
         setIsRefreshing(true);
         console.log('Payment successful, refreshing subscription data...');
         
         try {
           await refetchSubscription();
-          
-          // Add a small delay to ensure the subscription is fully processed
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          const { data: latestSubscription, error } = await supabase
+          const { data: latestSubscription } = await supabase
             .from('subscriptions')
             .select('*')
-            .eq('user_id', session.user.id)
+            .eq('user_id', session?.user?.id)
             .eq('status', 'active')
             .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle();
 
-          if (error) throw error;
-
           if (latestSubscription) {
             console.log('Latest subscription found:', latestSubscription);
-            // Navigate to CategorySelection page
-            navigate('/categories');
+            navigate('/subscriptions/categories', {
+              replace: true,
+              state: {
+                subscriptionId: latestSubscription.id,
+                plan: latestSubscription.plan
+              }
+            });
           } else {
             console.error('No active subscription found after payment');
             toast({
@@ -105,24 +109,24 @@ const Subscriptions = () => {
               title: "Error",
               description: "Subscription not found. Please contact support."
             });
-            navigate('/subscriptions');
           }
-        } catch (error: any) {
+        } catch (error) {
           console.error('Error handling successful payment:', error);
           toast({
             variant: "destructive",
             title: "Error",
             description: "Failed to process subscription. Please contact support."
           });
-          navigate('/subscriptions');
         } finally {
           setIsRefreshing(false);
         }
       }
     };
 
-    checkSuccessAndRedirect();
-  }, [location.pathname, session?.user?.id, navigate, refetchSubscription, toast]);
+    if (session?.user?.id) {
+      handleSuccessfulPayment();
+    }
+  }, [searchParams, session?.user?.id, navigate, refetchSubscription, toast]);
 
   const handleSubscribe = async (plan: any) => {
     try {
@@ -150,7 +154,7 @@ const Subscriptions = () => {
           plan: plan.name,
           priceId: plan.priceId,
           userId: session.user.id,
-          backUrl: window.location.origin,
+          backUrl: `${window.location.origin}/subscriptions?success=true&plan=${plan.name}`,
           categories: profile.preferred_categories,
           billingInterval: plan.billingInterval
         }

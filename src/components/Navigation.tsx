@@ -11,13 +11,6 @@ import { toast } from "sonner";
 import { MobileNav } from "./navigation/MobileNav";
 import { DesktopNav } from "./navigation/DesktopNav";
 
-interface NavItem {
-  icon: any;
-  path: string;
-  label: string;
-  onClick?: () => void;
-}
-
 const Navigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -61,7 +54,7 @@ const Navigation = () => {
     }
   };
 
-  const navItems: NavItem[] = [
+  const navItems = [
     { icon: Home, path: "/", label: t("navigation.home") },
     { icon: Heart, path: "/favorites", label: t("navigation.favorites") },
     { icon: Bell, path: "/alerts", label: t("navigation.alerts") },
