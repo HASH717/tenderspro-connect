@@ -19,7 +19,12 @@ export const NotificationManager = () => {
   }, []);
 
   useEffect(() => {
-    if (!session?.user?.id) return;
+    if (!session?.user?.id) {
+      console.log('No user session found, skipping notification setup');
+      return;
+    }
+
+    console.log('Setting up real-time notifications for user:', session.user.id);
 
     const channel = supabase
       .channel('schema-db-changes')
@@ -35,27 +40,51 @@ export const NotificationManager = () => {
           console.log('New notification received:', payload);
           
           // Fetch the tender details
-          const { data: tender } = await supabase
+          const { data: tender, error: tenderError } = await supabase
             .from('tenders')
             .select('*')
             .eq('id', payload.new.tender_id)
             .single();
 
-          if (!tender) return;
+          if (tenderError) {
+            console.error('Error fetching tender:', tenderError);
+            return;
+          }
+
+          if (!tender) {
+            console.log('No tender found for id:', payload.new.tender_id);
+            return;
+          }
+
+          console.log('Tender found:', tender);
 
           // Fetch the alert details to check email preferences
-          const { data: alert } = await supabase
+          const { data: alert, error: alertError } = await supabase
             .from('alerts')
             .select('*')
             .eq('id', payload.new.alert_id)
             .single();
 
-          if (!alert) return;
+          if (alertError) {
+            console.error('Error fetching alert:', alertError);
+            return;
+          }
+
+          if (!alert) {
+            console.log('No alert found for id:', payload.new.alert_id);
+            return;
+          }
+
+          console.log('Alert found:', alert);
+          console.log('Alert notification preferences:', alert.notification_preferences);
 
           const preferences = alert.notification_preferences as Alert['notification_preferences'];
           const emailEnabled = preferences?.email ?? false;
 
+          console.log('Email notifications enabled:', emailEnabled);
+
           if (emailEnabled) {
+            console.log('Attempting to send email notification');
             try {
               const { data, error } = await supabase.functions.invoke('send-alert-email', {
                 body: {
@@ -83,6 +112,8 @@ export const NotificationManager = () => {
                   description: "There was an error sending the email notification.",
                   variant: "destructive",
                 });
+              } else {
+                console.log('Email notification sent successfully:', data);
               }
             } catch (error) {
               console.error('Error invoking send-alert-email function:', error);
@@ -110,7 +141,10 @@ export const NotificationManager = () => {
       )
       .subscribe();
 
+    console.log('Real-time channel subscribed');
+
     return () => {
+      console.log('Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
   }, [session?.user?.id, notificationsPermission, toast]);
