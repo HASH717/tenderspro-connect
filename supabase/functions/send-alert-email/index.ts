@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SignatureV4 } from "https://deno.land/x/aws_sign_v4@1.0.2/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,15 +25,15 @@ serve(async (req) => {
 
   try {
     // Validate AWS credentials
-    const awsUsername = Deno.env.get("AWS_SMTP_USERNAME");
-    const awsPassword = Deno.env.get("AWS_SMTP_PASSWORD");
+    const accessKeyId = Deno.env.get("AWS_ACCESS_KEY_ID");
+    const secretAccessKey = Deno.env.get("AWS_SECRET_ACCESS_KEY");
 
-    if (!awsUsername || !awsPassword) {
-      console.error('Missing AWS SMTP credentials');
-      throw new Error('AWS SMTP credentials are not configured');
+    if (!accessKeyId || !secretAccessKey) {
+      console.error('Missing AWS credentials');
+      throw new Error('AWS credentials are not configured');
     }
 
-    console.log('AWS SMTP credentials validated');
+    console.log('AWS credentials validated');
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -73,37 +74,57 @@ serve(async (req) => {
       });
     }
 
-    // Send email using AWS SES SMTP
-    const emailMessage = [
-      "Content-Type: text/html; charset=utf-8",
-      "MIME-Version: 1.0",
-      `To: ${to}`,
-      `From: abdou@trycartback.com`,
-      `Subject: ${subject}`,
-      "",
-      html
-    ].join("\r\n");
-
-    const conn = await Deno.connect({ hostname: "email-smtp.us-east-1.amazonaws.com", port: 587 });
-    const encoder = new TextEncoder();
-
-    // Start TLS connection
-    await conn.write(encoder.encode("EHLO localhost\r\n"));
-    await conn.write(encoder.encode("STARTTLS\r\n"));
+    // Prepare AWS SES API request
+    const date = new Date();
+    const region = "us-east-1";
+    const service = "ses";
     
-    // Authenticate
-    await conn.write(encoder.encode(`AUTH LOGIN\r\n`));
-    await conn.write(encoder.encode(`${btoa(awsUsername)}\r\n`));
-    await conn.write(encoder.encode(`${btoa(awsPassword)}\r\n`));
+    const signer = new SignatureV4({
+      service,
+      region,
+      credentials: {
+        accessKeyId,
+        secretAccessKey,
+      },
+      datetime: date.toISOString().replace(/[:-]|\.\d{3}/g, ''),
+      signableHeaders: ['host', 'content-type'],
+      body: JSON.stringify({
+        Source: "abdou@trycartback.com",
+        Destination: {
+          ToAddresses: [to]
+        },
+        Message: {
+          Subject: {
+            Data: subject,
+            Charset: "UTF-8"
+          },
+          Body: {
+            Html: {
+              Data: html,
+              Charset: "UTF-8"
+            }
+          }
+        }
+      }),
+    });
 
-    // Send email
-    await conn.write(encoder.encode(`MAIL FROM:<abdou@trycartback.com>\r\n`));
-    await conn.write(encoder.encode(`RCPT TO:<${to}>\r\n`));
-    await conn.write(encoder.encode("DATA\r\n"));
-    await conn.write(encoder.encode(emailMessage + "\r\n.\r\n"));
-    await conn.write(encoder.encode("QUIT\r\n"));
+    const url = `https://email.${region}.amazonaws.com/v2/email/outbound-emails`;
+    const request = await signer.sign(
+      new Request(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Host': `email.${region}.amazonaws.com`,
+        },
+      })
+    );
 
-    conn.close();
+    const response = await fetch(request);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('AWS SES API error:', errorText);
+      throw new Error(`Failed to send email: ${errorText}`);
+    }
 
     console.log('Email sent successfully');
 
