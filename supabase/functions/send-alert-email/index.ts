@@ -1,7 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { SignatureV4 } from "https://deno.land/x/aws_sign_v4@1.0.2/src/mod.ts";
+import { SignatureV4 } from "https://deno.land/x/aws_sign_v4@1.0.3/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
