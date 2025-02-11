@@ -19,6 +19,5 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  // Add base URL configuration for Capacitor
-  base: './',
+  base: "/",
 }));
