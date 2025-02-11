@@ -1,4 +1,3 @@
-
 export interface Alert {
   id: string;
   name: string;
@@ -12,14 +11,14 @@ export interface Alert {
 }
 
 export const mapFiltersToDb = (filters: Partial<Alert>, userId: string) => {
-  // Extract wilaya names from the format "number - name"
-  const wilayaNames = filters.wilaya?.map(w => w.split(' - ')[1]).filter(Boolean) || [];
+  // Store the full Wilaya strings (e.g. "1 - Adrar")
+  const wilayaValues = filters.wilaya || [];
 
   return {
     ...(filters.id && { id: filters.id }),
     user_id: userId,
     name: filters.name,
-    wilaya: wilayaNames.length > 0 ? wilayaNames.join(",") : null,
+    wilaya: wilayaValues.length > 0 ? wilayaValues.join(",") : null,
     tender_type: filters.tenderType && filters.tenderType.length > 0 ? filters.tenderType.join(",") : null,
     category: filters.category && filters.category.length > 0 ? filters.category.join("|||") : null,
     notification_preferences: filters.notification_preferences || { email: false, in_app: true }
@@ -27,6 +26,7 @@ export const mapFiltersToDb = (filters: Partial<Alert>, userId: string) => {
 };
 
 export const mapDbToFilters = (dbAlert: any): Alert => {
+  // Split the wilaya string but keep the full format
   const wilaya = dbAlert.wilaya ? dbAlert.wilaya.split(",") : [];
   const tenderType = dbAlert.tender_type ? dbAlert.tender_type.split(",") : [];
   const category = dbAlert.category ? dbAlert.category.split("|||") : [];
