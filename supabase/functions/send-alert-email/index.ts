@@ -33,7 +33,7 @@ serve(async (req) => {
       throw new Error('AWS SMTP credentials are not configured');
     }
 
-    console.log('AWS SMTP credentials found');
+    console.log('AWS SMTP credentials validated');
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -67,6 +67,27 @@ serve(async (req) => {
       userId
     });
 
+    // Check if email was already sent for this alert-tender combination
+    const { data: existingNotification } = await supabaseClient
+      .from('alert_email_notifications')
+      .select('*')
+      .eq('alert_id', alertId)
+      .eq('tender_id', tenderId)
+      .eq('user_id', userId)
+      .single();
+
+    if (existingNotification) {
+      console.log('Email notification already sent:', existingNotification);
+      return new Response(JSON.stringify({ 
+        success: false, 
+        message: 'Email notification already sent',
+        details: existingNotification
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
     // Send email
     console.log('Attempting to send email...');
     const sendResult = await client.send({
@@ -96,6 +117,21 @@ serve(async (req) => {
     }
 
     console.log('Email notification logged successfully');
+
+    // Update the tender notification as processed
+    const { error: updateError } = await supabaseClient
+      .from('tender_notifications')
+      .update({ processed_at: new Date().toISOString() })
+      .eq('alert_id', alertId)
+      .eq('tender_id', tenderId)
+      .eq('user_id', userId);
+
+    if (updateError) {
+      console.error('Error updating tender notification:', updateError);
+      throw updateError;
+    }
+
+    console.log('Tender notification marked as processed');
 
     return new Response(JSON.stringify({ 
       success: true, 
