@@ -5,6 +5,10 @@ export interface Alert {
   wilaya: string[];
   tenderType: string[];
   category: string[];
+  notification_preferences?: {
+    email: boolean;
+    in_app: boolean;
+  };
 }
 
 export const mapFiltersToDb = (filters: Partial<Alert>, userId: string) => {
@@ -18,6 +22,7 @@ export const mapFiltersToDb = (filters: Partial<Alert>, userId: string) => {
     wilaya: wilayaNames.length > 0 ? wilayaNames.join(",") : null,
     tender_type: filters.tenderType && filters.tenderType.length > 0 ? filters.tenderType.join(",") : null,
     category: filters.category && filters.category.length > 0 ? filters.category.join("|||") : null,
+    notification_preferences: filters.notification_preferences || { email: false, in_app: true }
   };
 };
 
@@ -32,6 +37,6 @@ export const mapDbToFilters = (dbAlert: any): Alert => {
     wilaya,
     tenderType,
     category,
+    notification_preferences: dbAlert.notification_preferences
   };
 };
-

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MultiSelect } from "@/components/ui/multi-select";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
@@ -27,6 +28,9 @@ export const AlertForm = ({ onClose, onSave, editingAlert }: AlertFormProps) => 
   const [selectedWilayas, setSelectedWilayas] = useState<string[]>(editingAlert?.wilaya || []);
   const [selectedTenderTypes, setSelectedTenderTypes] = useState<string[]>(editingAlert?.tenderType || []);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(editingAlert?.category || []);
+  const [emailNotifications, setEmailNotifications] = useState(
+    editingAlert?.notification_preferences?.email || false
+  );
 
   const { data: categoryOptions = [] } = useQuery({
     queryKey: ['all-tender-categories'],
@@ -85,6 +89,10 @@ export const AlertForm = ({ onClose, onSave, editingAlert }: AlertFormProps) => 
       wilaya: selectedWilayas,
       tenderType: selectedTenderTypes,
       category: selectedCategories,
+      notification_preferences: {
+        email: emailNotifications,
+        in_app: true
+      }
     };
 
     const dbData = mapFiltersToDb(alertData, session.user.id);
@@ -159,6 +167,15 @@ export const AlertForm = ({ onClose, onSave, editingAlert }: AlertFormProps) => 
           onChange={setSelectedCategories}
           className="bg-muted/50 p-4 rounded-lg"
         />
+
+        <div className="flex items-center space-x-2 bg-muted/50 p-4 rounded-lg">
+          <Switch
+            id="email-notifications"
+            checked={emailNotifications}
+            onCheckedChange={setEmailNotifications}
+          />
+          <Label htmlFor="email-notifications">Receive email notifications</Label>
+        </div>
       </div>
 
       <div className="flex justify-end pt-4">
