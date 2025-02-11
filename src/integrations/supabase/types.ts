@@ -9,6 +9,48 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      alert_email_notifications: {
+        Row: {
+          alert_id: string | null
+          email_status: string | null
+          id: string
+          sent_at: string | null
+          tender_id: string | null
+          user_id: string
+        }
+        Insert: {
+          alert_id?: string | null
+          email_status?: string | null
+          id?: string
+          sent_at?: string | null
+          tender_id?: string | null
+          user_id: string
+        }
+        Update: {
+          alert_id?: string | null
+          email_status?: string | null
+          id?: string
+          sent_at?: string | null
+          tender_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alert_email_notifications_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "alerts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alert_email_notifications_tender_id_fkey"
+            columns: ["tender_id"]
+            isOneToOne: false
+            referencedRelation: "tenders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       alerts: {
         Row: {
           announcement_type: string | null
@@ -18,6 +60,7 @@ export type Database = {
           id: string
           micro_enterprises: boolean | null
           name: string
+          notification_preferences: Json | null
           price_range: string | null
           search: string | null
           tender_type: string | null
@@ -32,6 +75,7 @@ export type Database = {
           id?: string
           micro_enterprises?: boolean | null
           name: string
+          notification_preferences?: Json | null
           price_range?: string | null
           search?: string | null
           tender_type?: string | null
@@ -46,6 +90,7 @@ export type Database = {
           id?: string
           micro_enterprises?: boolean | null
           name?: string
+          notification_preferences?: Json | null
           price_range?: string | null
           search?: string | null
           tender_type?: string | null
