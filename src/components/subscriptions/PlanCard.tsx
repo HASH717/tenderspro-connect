@@ -9,6 +9,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Subscription } from "@/types/subscription";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface PlanProps {
   name: string;
@@ -31,6 +33,17 @@ export const PlanCard = ({
   onSubscribe,
   billingInterval = 'monthly',
 }: PlanProps) => {
+  const navigate = useNavigate();
+  const { session } = useAuth();
+
+  const handleSubscribe = () => {
+    if (!session) {
+      navigate('/auth', { state: { returnTo: '/subscriptions' } });
+      return;
+    }
+    onSubscribe({ name, priceInDZD, billingInterval });
+  };
+
   return (
     <Card className="flex flex-col hover:shadow-lg transition-shadow duration-200">
       <CardHeader>
@@ -61,7 +74,7 @@ export const PlanCard = ({
       <CardFooter>
         <Button
           className="w-full"
-          onClick={() => onSubscribe({ name, priceInDZD, billingInterval })}
+          onClick={handleSubscribe}
           disabled={subscription?.status === 'active' && subscription?.plan === name}
         >
           {subscription?.status === 'active' && subscription?.plan === name
