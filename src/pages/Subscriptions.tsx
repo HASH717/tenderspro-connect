@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { SubscriptionStatus } from "@/components/subscriptions/SubscriptionStatus";
 import { SubscriptionPlans } from "@/components/subscriptions/SubscriptionPlans";
 import { TestModeAlert } from "@/components/subscriptions/TestModeAlert";
@@ -18,7 +18,7 @@ const Subscriptions = () => {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const { session } = useAuth();
-  const [searchParams] = useSearchParams();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -73,15 +73,12 @@ const Subscriptions = () => {
   });
 
   useEffect(() => {
-    const success = searchParams.get('success');
-    const plan = searchParams.get('plan');
-    const checkoutId = searchParams.get('checkout_id');
-    
-    const handleSuccessfulPayment = async () => {
-      if (success === 'true' && plan && checkoutId) {
-        setIsRefreshing(true);
-        console.log('Payment successful, refreshing subscription data...');
-        
+    // Check if we're on the success route
+    if (location.pathname === '/subscriptions/success' && session?.user?.id) {
+      setIsRefreshing(true);
+      console.log('Payment successful, refreshing subscription data...');
+      
+      const checkSubscription = async () => {
         try {
           await refetchSubscription();
           const { data: latestSubscription } = await supabase
@@ -109,24 +106,24 @@ const Subscriptions = () => {
               title: "Error",
               description: "Subscription not found. Please contact support."
             });
+            navigate('/subscriptions');
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error handling successful payment:', error);
           toast({
             variant: "destructive",
             title: "Error",
             description: "Failed to process subscription. Please contact support."
           });
+          navigate('/subscriptions');
         } finally {
           setIsRefreshing(false);
         }
-      }
-    };
+      };
 
-    if (session?.user?.id) {
-      handleSuccessfulPayment();
+      checkSubscription();
     }
-  }, [searchParams, session?.user?.id, navigate, refetchSubscription, toast]);
+  }, [location.pathname, session?.user?.id, navigate, refetchSubscription, toast]);
 
   const handleSubscribe = async (plan: any) => {
     try {
@@ -154,7 +151,7 @@ const Subscriptions = () => {
           plan: plan.name,
           priceId: plan.priceId,
           userId: session.user.id,
-          backUrl: `${window.location.origin}/subscriptions?success=true&plan=${plan.name}`,
+          backUrl: window.location.origin,
           categories: profile.preferred_categories,
           billingInterval: plan.billingInterval
         }

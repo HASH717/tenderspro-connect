@@ -36,9 +36,8 @@ serve(async (req) => {
     const webhookUrl = `https://achevndenwxikpbabzop.functions.supabase.co/payment-webhook`
     console.log('Webhook URL:', webhookUrl)
 
-    // Format success URL correctly by removing the plan parameter from backUrl
-    const baseUrl = backUrl.split('?')[0]
-    const successUrl = `${baseUrl}?success=true&plan=${plan}`
+    // Simplify the success URL structure
+    const successUrl = `${new URL(backUrl).origin}/subscriptions/success`
 
     // Calculate amount based on billing interval
     const amount = billingInterval === 'annual' 
