@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
+import { Alert } from "./types";
 
 export const NotificationManager = () => {
   const { toast } = useToast();
@@ -52,8 +52,8 @@ export const NotificationManager = () => {
 
           if (!alert) return;
 
-          // Check if email notifications are enabled for this alert
-          const emailEnabled = alert.notification_preferences?.email;
+          const preferences = alert.notification_preferences as Alert['notification_preferences'];
+          const emailEnabled = preferences?.email ?? false;
 
           if (emailEnabled) {
             try {
@@ -158,3 +158,4 @@ export const NotificationManager = () => {
     </Button>
   );
 };
+
