@@ -26,7 +26,11 @@ enabled = true
 [realtime]
 enabled = true
 
-[[functions]]
 [functions.scrape-tenders]
 verify_jwt = false
 
+[functions.create-subscription]
+verify_jwt = false
+
+[functions.payment-webhook]
+verify_jwt = false
