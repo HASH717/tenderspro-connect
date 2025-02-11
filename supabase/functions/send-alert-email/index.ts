@@ -44,13 +44,18 @@ serve(async (req) => {
     const payload: EmailPayload = await req.json();
     const { to, subject, html, alertId, tenderId, userId } = payload;
 
+    console.log('Sending email to:', to);
+    console.log('Subject:', subject);
+
     // Send email
-    await client.send({
+    const sendResult = await client.send({
       from: "abdou@trycartback.com",
       to: to,
       subject: subject,
       content: html,
     });
+
+    console.log('Email sent successfully:', sendResult);
 
     // Log the email notification
     const { error: logError } = await supabaseClient
@@ -64,16 +69,22 @@ serve(async (req) => {
 
     if (logError) {
       console.error('Error logging email notification:', logError);
+      throw logError;
     }
 
-    return new Response(JSON.stringify({ success: true }), {
+    console.log('Email notification logged successfully');
+
+    return new Response(JSON.stringify({ success: true, message: 'Email sent and logged successfully' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error('Error in send-alert-email function:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: 'Failed to send or log email notification'
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
