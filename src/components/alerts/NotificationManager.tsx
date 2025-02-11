@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 export const NotificationManager = () => {
   const { toast } = useToast();
@@ -33,6 +34,7 @@ export const NotificationManager = () => {
         async (payload) => {
           console.log('New notification received:', payload);
           
+          // Fetch the tender details
           const { data: tender } = await supabase
             .from('tenders')
             .select('*')
@@ -41,6 +43,53 @@ export const NotificationManager = () => {
 
           if (!tender) return;
 
+          // Fetch the alert details to check email preferences
+          const { data: alert } = await supabase
+            .from('alerts')
+            .select('*')
+            .eq('id', payload.new.alert_id)
+            .single();
+
+          if (!alert) return;
+
+          // Check if email notifications are enabled for this alert
+          const emailEnabled = alert.notification_preferences?.email;
+
+          if (emailEnabled) {
+            try {
+              const { data, error } = await supabase.functions.invoke('send-alert-email', {
+                body: {
+                  to: session.user.email,
+                  subject: `New Tender Match: ${tender.title}`,
+                  html: `
+                    <h1>New Tender Match</h1>
+                    <p>A new tender matching your alert "${alert.name}" has been found:</p>
+                    <h2>${tender.title}</h2>
+                    <p><strong>Category:</strong> ${tender.category}</p>
+                    <p><strong>Region:</strong> ${tender.wilaya}</p>
+                    <p><strong>Deadline:</strong> ${new Date(tender.deadline).toLocaleDateString()}</p>
+                    <a href="${window.location.origin}/tenders/${tender.id}">View Tender Details</a>
+                  `,
+                  alertId: alert.id,
+                  tenderId: tender.id,
+                  userId: session.user.id
+                }
+              });
+
+              if (error) {
+                console.error('Error sending email notification:', error);
+                toast({
+                  title: "Failed to Send Email",
+                  description: "There was an error sending the email notification.",
+                  variant: "destructive",
+                });
+              }
+            } catch (error) {
+              console.error('Error invoking send-alert-email function:', error);
+            }
+          }
+
+          // Show browser notification if enabled
           if (notificationsPermission === "granted") {
             const notification = new Notification("New Tender Match!", {
               body: `A new tender matching your alert: ${tender.title}`,
@@ -52,6 +101,7 @@ export const NotificationManager = () => {
             };
           }
 
+          // Show toast notification
           toast({
             title: "New Tender Match!",
             description: `A new tender matching your alert: ${tender.title}`,
