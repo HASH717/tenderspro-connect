@@ -12,6 +12,7 @@ interface NavItem {
   icon: any;
   path: string;
   label: string;
+  onClick?: () => void;
 }
 
 interface DesktopNavProps {
@@ -42,10 +43,11 @@ export const DesktopNav = ({
           </Link>
         </div>
         <div className="flex items-center space-x-6">
-          {navItems.map(({ icon: Icon, path, label }) => (
+          {navItems.map(({ icon: Icon, path, label, onClick }) => (
             <Link
               key={path}
               to={path}
+              onClick={onClick}
               className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
                 path === '/subscriptions'
                   ? 'bg-green-500 hover:bg-green-600 text-white'

@@ -1,5 +1,6 @@
+
 import { Home, Heart, Bell, User, Globe, CreditCard } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslation } from "react-i18next";
@@ -12,6 +13,7 @@ import { DesktopNav } from "./navigation/DesktopNav";
 
 const Navigation = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { t } = useTranslation();
   const { currentLanguage, changeLanguage } = useLanguage();
@@ -44,6 +46,14 @@ const Navigation = () => {
   const isActive = (path: string) => location.pathname === path;
   const shouldShowUpgrade = !isMobile && (!subscription || subscription?.status === 'trial');
 
+  const handleUpgradeClick = () => {
+    if (!session) {
+      navigate('/auth', { state: { returnTo: '/subscriptions' } });
+    } else {
+      navigate('/subscriptions');
+    }
+  };
+
   const navItems = [
     { icon: Home, path: "/", label: t("navigation.home") },
     { icon: Heart, path: "/favorites", label: t("navigation.favorites") },
@@ -54,7 +64,8 @@ const Navigation = () => {
   if (shouldShowUpgrade) {
     navItems.push({ 
       icon: CreditCard, 
-      path: "/subscriptions", 
+      onClick: handleUpgradeClick,
+      path: session ? "/subscriptions" : "/auth", 
       label: subscription?.status === 'trial' ? "Upgrade (Trial)" : "Get Started"
     });
   }
