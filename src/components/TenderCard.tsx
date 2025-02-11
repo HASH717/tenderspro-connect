@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { Building, Calendar, MapPin, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -44,7 +45,7 @@ export const TenderCard = ({
           .from('subscriptions')
           .select('*')
           .eq('user_id', session?.user?.id)
-          .eq('status', 'active')
+          .or('status.eq.active,status.eq.trial')
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -63,6 +64,7 @@ export const TenderCard = ({
     return new Date(dateString).toLocaleDateString();
   };
 
+  // Consider both active and trial subscriptions as valid
   const isSubscribed = subscription?.status === 'active' || subscription?.status === 'trial';
 
   return (
