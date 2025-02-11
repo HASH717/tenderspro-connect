@@ -11,6 +11,13 @@ import { toast } from "sonner";
 import { MobileNav } from "./navigation/MobileNav";
 import { DesktopNav } from "./navigation/DesktopNav";
 
+interface NavItem {
+  icon: any;
+  path: string;
+  label: string;
+  onClick?: (e: React.MouseEvent) => void;
+}
+
 const Navigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -53,7 +60,7 @@ const Navigation = () => {
   const isActive = (path: string) => location.pathname === path;
   const shouldShowUpgrade = !isMobile && (!subscription || subscription?.status === 'trial');
 
-  const navItems = [
+  const navItems: NavItem[] = [
     { icon: Home, path: "/", label: t("navigation.home") },
     { icon: Heart, path: "/favorites", label: t("navigation.favorites") },
     { icon: Bell, path: "/alerts", label: t("navigation.alerts") },
