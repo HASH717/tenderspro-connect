@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { SubscriptionStatus } from "@/components/subscriptions/SubscriptionStatus";
@@ -19,7 +19,6 @@ const Subscriptions = () => {
   const { toast } = useToast();
   const { session } = useAuth();
   const location = useLocation();
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -73,18 +72,17 @@ const Subscriptions = () => {
   });
 
   useEffect(() => {
-    // Check if we're on the success route
-    if (location.pathname === '/subscriptions/success' && session?.user?.id) {
-      setIsRefreshing(true);
-      console.log('Payment successful, refreshing subscription data...');
-      
-      const checkSubscription = async () => {
+    const checkSuccessAndRedirect = async () => {
+      if (location.pathname === '/subscriptions/success' && session?.user?.id) {
+        setIsRefreshing(true);
+        console.log('Payment successful, refreshing subscription data...');
+        
         try {
           await refetchSubscription();
           const { data: latestSubscription } = await supabase
             .from('subscriptions')
             .select('*')
-            .eq('user_id', session?.user?.id)
+            .eq('user_id', session.user.id)
             .eq('status', 'active')
             .order('created_at', { ascending: false })
             .limit(1)
@@ -92,13 +90,7 @@ const Subscriptions = () => {
 
           if (latestSubscription) {
             console.log('Latest subscription found:', latestSubscription);
-            navigate('/subscriptions/categories', {
-              replace: true,
-              state: {
-                subscriptionId: latestSubscription.id,
-                plan: latestSubscription.plan
-              }
-            });
+            navigate('/categories', { replace: true });
           } else {
             console.error('No active subscription found after payment');
             toast({
@@ -119,10 +111,10 @@ const Subscriptions = () => {
         } finally {
           setIsRefreshing(false);
         }
-      };
+      }
+    };
 
-      checkSubscription();
-    }
+    checkSuccessAndRedirect();
   }, [location.pathname, session?.user?.id, navigate, refetchSubscription, toast]);
 
   const handleSubscribe = async (plan: any) => {
