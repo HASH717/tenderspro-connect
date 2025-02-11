@@ -17,7 +17,7 @@ export const useTenders = (filters: TenderFilters) => {
           .from('subscriptions')
           .select('*')
           .eq('user_id', session.user.id)
-          .eq('status', 'active')
+          .or('status.eq.active,status.eq.trial')
           .maybeSingle();
 
         if (subscriptionError) {
@@ -32,7 +32,8 @@ export const useTenders = (filters: TenderFilters) => {
           return null;
         }
 
-        if (subscription.plan === 'Enterprise') {
+        // Trial users or Enterprise plan users get full access
+        if (subscription.status === 'trial' || subscription.plan === 'Enterprise') {
           return { subscription, categories: null }; // null means no restrictions
         }
 
@@ -102,7 +103,7 @@ export const useTenders = (filters: TenderFilters) => {
         return [];
       }
 
-      // If user is not logged in or has no active subscription, blur all tenders except first 3
+      // If user is not logged in or has no active/trial subscription, blur all tenders except first 3
       if (!session?.user?.id || !subscriptionData?.subscription) {
         return tenders.map((tender, index) => ({
           ...tender,
@@ -110,14 +111,21 @@ export const useTenders = (filters: TenderFilters) => {
         }));
       }
 
-      // If user is logged in and has a subscription
-      if (subscriptionData.subscription) {
-        if (subscriptionData.subscription.plan !== 'Enterprise' && subscriptionData.categories) {
-          return tenders.map(tender => ({
-            ...tender,
-            isBlurred: !subscriptionData.categories.includes(tender.category)
-          }));
-        }
+      // If user has a trial subscription or Enterprise plan, show all tenders
+      if (subscriptionData.subscription.status === 'trial' || 
+          subscriptionData.subscription.plan === 'Enterprise') {
+        return tenders.map(tender => ({
+          ...tender,
+          isBlurred: false
+        }));
+      }
+
+      // For other subscriptions, check category restrictions
+      if (subscriptionData.categories) {
+        return tenders.map(tender => ({
+          ...tender,
+          isBlurred: !subscriptionData.categories.includes(tender.category)
+        }));
       }
 
       return tenders || [];
