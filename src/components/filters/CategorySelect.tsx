@@ -1,3 +1,4 @@
+
 import { Lock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
@@ -13,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 
 interface CategorySelectProps {
   value: string;
@@ -140,6 +142,30 @@ export const CategorySelect = ({ value, onChange }: CategorySelectProps) => {
     onChange(category);
   };
 
+  // Split categories into accessible and locked
+  const categorizeItems = () => {
+    const accessible: string[] = [];
+    const locked: string[] = [];
+
+    allCategories.forEach(category => {
+      if (isCategoryAccessible(category)) {
+        accessible.push(category);
+      } else {
+        locked.push(category);
+      }
+    });
+
+    // Move selected category to the top if it exists
+    if (value && accessible.includes(value)) {
+      accessible.splice(accessible.indexOf(value), 1);
+      accessible.unshift(value);
+    }
+
+    return { accessible, locked };
+  };
+
+  const { accessible, locked } = categorizeItems();
+
   return (
     <Select value={value} onValueChange={handleCategorySelect}>
       <SelectTrigger className="bg-white/80 backdrop-blur-sm border-muted/50">
@@ -147,17 +173,32 @@ export const CategorySelect = ({ value, onChange }: CategorySelectProps) => {
       </SelectTrigger>
       <SelectContent>
         <ScrollArea className="h-[300px]">
-          {allCategories.map((category) => (
+          {/* Accessible Categories */}
+          {accessible.map((category) => (
             <SelectItem 
               key={category} 
               value={category}
               className="flex items-center justify-between"
-              disabled={!isCategoryAccessible(category)}
             >
               <span>{category}</span>
-              {!isCategoryAccessible(category) && (
-                <Lock className="h-4 w-4 ml-2 inline-block text-muted-foreground" />
-              )}
+            </SelectItem>
+          ))}
+
+          {/* Separator between accessible and locked categories */}
+          {locked.length > 0 && accessible.length > 0 && (
+            <Separator className="my-2" />
+          )}
+
+          {/* Locked Categories */}
+          {locked.map((category) => (
+            <SelectItem 
+              key={category} 
+              value={category}
+              className="flex items-center justify-between text-muted-foreground"
+              disabled
+            >
+              <span>{category}</span>
+              <Lock className="h-4 w-4 ml-2 inline-block" />
             </SelectItem>
           ))}
         </ScrollArea>
