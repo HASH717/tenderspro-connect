@@ -370,6 +370,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      get_tender_type_translation: {
+        Args: {
+          tender_type: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
