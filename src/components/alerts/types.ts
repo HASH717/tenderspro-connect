@@ -35,11 +35,14 @@ export const mapDbToFilters = (dbAlert: any): Alert => {
   // Split the wilaya string but keep the full format
   const wilayas = dbAlert.wilaya ? dbAlert.wilaya.split(",").map(wilaya => {
     if (!wilaya) return ''; // Handle null/undefined wilaya
+    // Convert wilaya name to lowercase for comparison
+    const wilayaLower = wilaya.toLowerCase().trim();
     // Find the matching full wilaya string from WilayaSelect options
-    const wilayaNumber = WILAYA_OPTIONS.find(opt => 
-      opt.split(' - ')[1]?.toLowerCase() === wilaya.toLowerCase()
-    )?.split(' - ')[0];
-    return wilayaNumber ? `${wilayaNumber} - ${wilaya}` : wilaya;
+    const matchingOption = WILAYA_OPTIONS.find(opt => {
+      const [num, name] = opt.split(' - ');
+      return name.toLowerCase() === wilayaLower;
+    });
+    return matchingOption || wilaya;
   }).filter(Boolean) : []; // Remove empty strings
 
   const tenderType = dbAlert.tender_type ? dbAlert.tender_type.split(",") : [];
