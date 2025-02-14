@@ -54,7 +54,7 @@ serve(async (req) => {
     });
 
     // Check if email was already sent for this alert-tender combination
-    const { data: existingNotification } = await supabaseClient
+    const { data: existingNotification, error: checkError } = await supabaseClient
       .from('alert_email_notifications')
       .select('*')
       .eq('alert_id', alertId)
@@ -62,12 +62,18 @@ serve(async (req) => {
       .eq('user_id', userId)
       .single();
 
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "not found" error
+      console.error('Error checking existing notification:', checkError);
+      throw checkError;
+    }
+
     if (existingNotification) {
       console.log('Email notification already sent:', existingNotification);
       return new Response(JSON.stringify({ 
-        success: false, 
+        success: true, 
         message: 'Email notification already sent',
-        details: existingNotification
+        details: existingNotification,
+        status: 'already_sent'
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
