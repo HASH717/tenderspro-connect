@@ -10,6 +10,7 @@ import {
   Section,
   Text,
   Button,
+  Img,
 } from 'npm:@react-email/components@0.0.22'
 import * as React from 'npm:react@18.3.1'
 
@@ -37,7 +38,16 @@ export const TenderMatchEmail = ({
       <Container style={container}>
         {/* Header Section */}
         <Section style={header}>
-          <Heading style={logo}>TenderAlert</Heading>
+          <Section style={logoContainer}>
+            <Img
+              src="/lovable-uploads/4f02ae1b-4b43-4d81-b9d7-5da7a3452bc2.png"
+              alt="TendersPro"
+              width={200}
+              height={80}
+              style={logoImage}
+            />
+            <Text style={tagline}>#1 Algerian Tenders</Text>
+          </Section>
           <Heading style={title}>New Tender Match</Heading>
         </Section>
 
@@ -67,9 +77,11 @@ export const TenderMatchEmail = ({
               </Section>
             </Section>
 
-            <Button pX={20} pY={12} style={button} href={tenderUrl}>
-              View Tender Details
-            </Button>
+            <Section style={buttonContainer}>
+              <Link style={buttonLink} href={tenderUrl}>
+                View Tender Details
+              </Link>
+            </Section>
           </Section>
         </Section>
 
@@ -104,12 +116,20 @@ const header = {
   borderBottom: '1px solid #e6ebf1',
 }
 
-const logo = {
-  color: '#4f46e5',
-  fontSize: '32px',
-  fontWeight: 'bold',
+const logoContainer = {
   textAlign: 'center' as const,
-  margin: '0',
+  marginBottom: '16px',
+}
+
+const logoImage = {
+  margin: '0 auto',
+}
+
+const tagline = {
+  color: '#4b5563',
+  fontSize: '16px',
+  margin: '8px 0 0',
+  textAlign: 'center' as const,
 }
 
 const title = {
@@ -158,16 +178,23 @@ const detailValue = {
   marginTop: '0',
 }
 
-const button = {
+const buttonContainer = {
+  textAlign: 'center' as const,
+  marginTop: '24px',
+}
+
+const buttonLink = {
   backgroundColor: '#4f46e5',
   borderRadius: '6px',
-  color: '#fff',
+  color: '#ffffff',
+  display: 'inline-block',
   fontSize: '16px',
   fontWeight: 'bold',
+  padding: '12px 32px',
   textDecoration: 'none',
   textAlign: 'center' as const,
-  display: 'block',
-  width: '100%',
+  transition: 'background-color 0.2s',
+  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
 }
 
 const footer = {
