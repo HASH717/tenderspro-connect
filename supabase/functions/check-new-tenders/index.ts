@@ -1,3 +1,4 @@
+
 import { corsHeaders } from '../_shared/cors.ts'
 import { handleError, fetchTendersPage, formatTenderData, checkTenderExists } from '../_shared/tender-scraper-utils.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
