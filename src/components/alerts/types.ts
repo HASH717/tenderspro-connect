@@ -1,4 +1,3 @@
-
 export interface Alert {
   id: string;
   name: string;
@@ -12,15 +11,13 @@ export interface Alert {
 }
 
 export const mapFiltersToDb = (filters: Partial<Alert>, userId: string) => {
-  // Store just the wilaya names in lowercase
+  // Store just the wilaya numbers
   const wilayaValues = filters.wilaya?.map(w => {
     if (!w) return ''; // Handle null/undefined wilaya
-    // Extract just the name part after the number
+    // Extract just the number part before the dash
     const parts = w.split(' - ');
-    // Make sure we have both parts before accessing the second one
-    const wilayaName = parts.length > 1 ? parts[1] : w;
-    // Return trimmed, lowercase wilaya name
-    return wilayaName.toLowerCase().trim();
+    // Return just the number
+    return parts[0].trim();
   }).filter(Boolean) || []; // Remove empty strings
 
   return {
@@ -36,16 +33,14 @@ export const mapFiltersToDb = (filters: Partial<Alert>, userId: string) => {
 
 export const mapDbToFilters = (dbAlert: any): Alert => {
   // Split the wilaya string and map to full format
-  const wilayas = dbAlert.wilaya ? dbAlert.wilaya.split(",").map(wilaya => {
-    if (!wilaya) return ''; // Handle null/undefined wilaya
-    // Convert wilaya name to lowercase for comparison
-    const wilayaLower = wilaya.toLowerCase().trim();
+  const wilayas = dbAlert.wilaya ? dbAlert.wilaya.split(",").map(wilayaNum => {
+    if (!wilayaNum) return ''; // Handle null/undefined wilaya
     // Find the matching full wilaya string from WilayaSelect options
     const matchingOption = WILAYA_OPTIONS.find(opt => {
-      const [num, name] = opt.split(' - ');
-      return name.toLowerCase().trim() === wilayaLower;
+      const [num] = opt.split(' - ');
+      return num.trim() === wilayaNum.trim();
     });
-    return matchingOption || wilaya; // Return full format if found, otherwise original value
+    return matchingOption || wilayaNum; // Return full format if found, otherwise original value
   }).filter(Boolean) : []; // Remove empty strings
 
   const tenderType = dbAlert.tender_type ? dbAlert.tender_type.split(",") : [];
