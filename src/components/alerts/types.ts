@@ -1,3 +1,4 @@
+
 export interface Alert {
   id: string;
   name: string;
@@ -11,11 +12,13 @@ export interface Alert {
 }
 
 export const mapFiltersToDb = (filters: Partial<Alert>, userId: string) => {
-  // Store just the wilaya names
+  // Store just the wilaya names with safe parsing
   const wilayaValues = filters.wilaya?.map(w => {
+    if (!w) return ''; // Handle null/undefined wilaya
     const parts = w.split(' - ');
-    return parts[1].toLowerCase(); // Convert to lowercase for consistent matching
-  }) || [];
+    // Make sure we have both parts before accessing the second one
+    return parts.length > 1 ? parts[1].toLowerCase() : w.toLowerCase();
+  }).filter(Boolean) || []; // Remove empty strings
 
   return {
     ...(filters.id && { id: filters.id }),
@@ -31,12 +34,13 @@ export const mapFiltersToDb = (filters: Partial<Alert>, userId: string) => {
 export const mapDbToFilters = (dbAlert: any): Alert => {
   // Split the wilaya string but keep the full format
   const wilayas = dbAlert.wilaya ? dbAlert.wilaya.split(",").map(wilaya => {
+    if (!wilaya) return ''; // Handle null/undefined wilaya
     // Find the matching full wilaya string from WilayaSelect options
     const wilayaNumber = WILAYA_OPTIONS.find(opt => 
-      opt.split(' - ')[1].toLowerCase() === wilaya.toLowerCase()
+      opt.split(' - ')[1]?.toLowerCase() === wilaya.toLowerCase()
     )?.split(' - ')[0];
     return wilayaNumber ? `${wilayaNumber} - ${wilaya}` : wilaya;
-  }) : [];
+  }).filter(Boolean) : []; // Remove empty strings
 
   const tenderType = dbAlert.tender_type ? dbAlert.tender_type.split(",") : [];
   const category = dbAlert.category ? dbAlert.category.split("|||") : [];
@@ -51,7 +55,6 @@ export const mapDbToFilters = (dbAlert: any): Alert => {
   };
 };
 
-// Add WILAYA_OPTIONS constant since we're using it in mapDbToFilters
 export const WILAYA_OPTIONS = [
   "1 - Adrar", "2 - Chlef", "3 - Laghouat", "4 - Oum El Bouaghi", "5 - Batna",
   "6 - Béjaïa", "7 - Biskra", "8 - Béchar", "9 - Blida", "10 - Bouira",
