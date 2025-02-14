@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,11 +26,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
         console.error("Error getting session:", error);
-        toast({
-          variant: "destructive",
-          title: "Authentication Error",
-          description: "Please sign in again",
-        });
+        setSession(null);
         navigate("/auth");
         return;
       }
@@ -40,12 +37,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (_event === 'TOKEN_REFRESHED') {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event);
+      
+      if (event === 'TOKEN_REFRESHED') {
         console.log('Token refreshed successfully');
       }
       
-      if (_event === 'SIGNED_OUT') {
+      if (event === 'SIGNED_OUT') {
+        setSession(null);
         navigate("/auth");
         toast({
           title: "Signed out",
@@ -53,11 +53,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         });
       }
 
+      // Handle session expired or invalid
+      if (event === 'USER_DELETED' || event === 'SIGNED_OUT') {
+        setSession(null);
+        navigate("/auth");
+      }
+
       setSession(session);
       setIsLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [navigate, toast]);
 
   return (
