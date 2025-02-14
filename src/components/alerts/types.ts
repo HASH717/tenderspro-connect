@@ -12,15 +12,15 @@ export interface Alert {
 }
 
 export const mapFiltersToDb = (filters: Partial<Alert>, userId: string) => {
-  // Store the wilaya names in lowercase for consistent comparison
+  // Store the wilaya names with proper casing for consistent comparison
   const wilayaValues = filters.wilaya?.map(w => {
     if (!w) return ''; // Handle null/undefined wilaya
     // Extract the name part after the dash
     const parts = w.split(' - ');
     // Make sure we have both parts and get the name
     const wilayaName = parts.length > 1 ? parts[1] : w;
-    // Return lowercase wilaya name for consistent comparison
-    return wilayaName.trim().toLowerCase();
+    // Store with proper casing to match tender data
+    return wilayaName.trim();
   }).filter(Boolean) || []; // Remove empty strings
 
   return {
@@ -41,7 +41,7 @@ export const mapDbToFilters = (dbAlert: any): Alert => {
     // Find the matching full wilaya string from WilayaSelect options
     const matchingOption = WILAYA_OPTIONS.find(opt => {
       const [, name] = opt.split(' - ');
-      return name.trim().toLowerCase() === wilayaName.trim().toLowerCase();
+      return name.trim() === wilayaName.trim();
     });
     return matchingOption || wilayaName; // Return full format if found, otherwise original value
   }).filter(Boolean) : []; // Remove empty strings
