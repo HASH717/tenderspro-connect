@@ -40,13 +40,12 @@ export const TenderMatchEmail = ({
         <Section style={header}>
           <Section style={logoContainer}>
             <Img
-              src="/lovable-uploads/4f02ae1b-4b43-4d81-b9d7-5da7a3452bc2.png"
+              src="https://tenders.pro/lovable-uploads/4f02ae1b-4b43-4d81-b9d7-5da7a3452bc2.png"
               alt="TendersPro"
               width={200}
               height={80}
               style={logoImage}
             />
-            <Text style={tagline}>#1 Algerian Tenders</Text>
           </Section>
           <Heading style={title}>New Tender Match</Heading>
         </Section>
@@ -123,13 +122,6 @@ const logoContainer = {
 
 const logoImage = {
   margin: '0 auto',
-}
-
-const tagline = {
-  color: '#4b5563',
-  fontSize: '16px',
-  margin: '8px 0 0',
-  textAlign: 'center' as const,
 }
 
 const title = {
