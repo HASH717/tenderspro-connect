@@ -1,3 +1,4 @@
+
 export interface Alert {
   id: string;
   name: string;
@@ -11,13 +12,15 @@ export interface Alert {
 }
 
 export const mapFiltersToDb = (filters: Partial<Alert>, userId: string) => {
-  // Store just the wilaya numbers
+  // Store the wilaya names in lowercase for consistent comparison
   const wilayaValues = filters.wilaya?.map(w => {
     if (!w) return ''; // Handle null/undefined wilaya
-    // Extract just the number part before the dash
+    // Extract the name part after the dash
     const parts = w.split(' - ');
-    // Return just the number
-    return parts[0].trim();
+    // Make sure we have both parts and get the name
+    const wilayaName = parts.length > 1 ? parts[1] : w;
+    // Return lowercase wilaya name for consistent comparison
+    return wilayaName.trim().toLowerCase();
   }).filter(Boolean) || []; // Remove empty strings
 
   return {
@@ -33,14 +36,14 @@ export const mapFiltersToDb = (filters: Partial<Alert>, userId: string) => {
 
 export const mapDbToFilters = (dbAlert: any): Alert => {
   // Split the wilaya string and map to full format
-  const wilayas = dbAlert.wilaya ? dbAlert.wilaya.split(",").map(wilayaNum => {
-    if (!wilayaNum) return ''; // Handle null/undefined wilaya
+  const wilayas = dbAlert.wilaya ? dbAlert.wilaya.split(",").map(wilayaName => {
+    if (!wilayaName) return ''; // Handle null/undefined wilaya
     // Find the matching full wilaya string from WilayaSelect options
     const matchingOption = WILAYA_OPTIONS.find(opt => {
-      const [num] = opt.split(' - ');
-      return num.trim() === wilayaNum.trim();
+      const [, name] = opt.split(' - ');
+      return name.trim().toLowerCase() === wilayaName.trim().toLowerCase();
     });
-    return matchingOption || wilayaNum; // Return full format if found, otherwise original value
+    return matchingOption || wilayaName; // Return full format if found, otherwise original value
   }).filter(Boolean) : []; // Remove empty strings
 
   const tenderType = dbAlert.tender_type ? dbAlert.tender_type.split(",") : [];
