@@ -12,12 +12,15 @@ export interface Alert {
 }
 
 export const mapFiltersToDb = (filters: Partial<Alert>, userId: string) => {
-  // Store just the wilaya names with safe parsing
+  // Store just the wilaya names in lowercase
   const wilayaValues = filters.wilaya?.map(w => {
     if (!w) return ''; // Handle null/undefined wilaya
+    // Extract just the name part after the number
     const parts = w.split(' - ');
     // Make sure we have both parts before accessing the second one
-    return parts.length > 1 ? parts[1].toLowerCase() : w.toLowerCase();
+    const wilayaName = parts.length > 1 ? parts[1] : w;
+    // Return trimmed, lowercase wilaya name
+    return wilayaName.toLowerCase().trim();
   }).filter(Boolean) || []; // Remove empty strings
 
   return {
@@ -32,7 +35,7 @@ export const mapFiltersToDb = (filters: Partial<Alert>, userId: string) => {
 };
 
 export const mapDbToFilters = (dbAlert: any): Alert => {
-  // Split the wilaya string but keep the full format
+  // Split the wilaya string and map to full format
   const wilayas = dbAlert.wilaya ? dbAlert.wilaya.split(",").map(wilaya => {
     if (!wilaya) return ''; // Handle null/undefined wilaya
     // Convert wilaya name to lowercase for comparison
@@ -40,9 +43,9 @@ export const mapDbToFilters = (dbAlert: any): Alert => {
     // Find the matching full wilaya string from WilayaSelect options
     const matchingOption = WILAYA_OPTIONS.find(opt => {
       const [num, name] = opt.split(' - ');
-      return name.toLowerCase() === wilayaLower;
+      return name.toLowerCase().trim() === wilayaLower;
     });
-    return matchingOption || wilaya;
+    return matchingOption || wilaya; // Return full format if found, otherwise original value
   }).filter(Boolean) : []; // Remove empty strings
 
   const tenderType = dbAlert.tender_type ? dbAlert.tender_type.split(",") : [];
