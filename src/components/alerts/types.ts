@@ -12,15 +12,13 @@ export interface Alert {
 }
 
 export const mapFiltersToDb = (filters: Partial<Alert>, userId: string) => {
-  // Store the wilaya names with proper casing for consistent comparison
+  // Store just the wilaya numbers for consistent comparison
   const wilayaValues = filters.wilaya?.map(w => {
     if (!w) return ''; // Handle null/undefined wilaya
-    // Extract the name part after the dash
+    // Extract the number part before the dash
     const parts = w.split(' - ');
-    // Make sure we have both parts and get the name
-    const wilayaName = parts.length > 1 ? parts[1] : w;
-    // Store with proper casing to match tender data
-    return wilayaName.trim();
+    // Return just the number part
+    return parts[0].trim();
   }).filter(Boolean) || []; // Remove empty strings
 
   return {
@@ -36,14 +34,14 @@ export const mapFiltersToDb = (filters: Partial<Alert>, userId: string) => {
 
 export const mapDbToFilters = (dbAlert: any): Alert => {
   // Split the wilaya string and map to full format
-  const wilayas = dbAlert.wilaya ? dbAlert.wilaya.split(",").map(wilayaName => {
-    if (!wilayaName) return ''; // Handle null/undefined wilaya
-    // Find the matching full wilaya string from WilayaSelect options
+  const wilayas = dbAlert.wilaya ? dbAlert.wilaya.split(",").map(wilayaNumber => {
+    if (!wilayaNumber) return ''; // Handle null/undefined wilaya
+    // Find the matching full wilaya string from WILAYA_OPTIONS
     const matchingOption = WILAYA_OPTIONS.find(opt => {
-      const [, name] = opt.split(' - ');
-      return name.trim() === wilayaName.trim();
+      const number = opt.split(' - ')[0];
+      return number.trim() === wilayaNumber.trim();
     });
-    return matchingOption || wilayaName; // Return full format if found, otherwise original value
+    return matchingOption || wilayaNumber; // Return full format if found, otherwise original value
   }).filter(Boolean) : []; // Remove empty strings
 
   const tenderType = dbAlert.tender_type ? dbAlert.tender_type.split(",") : [];

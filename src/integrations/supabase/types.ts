@@ -376,6 +376,12 @@ export type Database = {
         }
         Returns: string
       }
+      is_numeric: {
+        Args: {
+          "": string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
