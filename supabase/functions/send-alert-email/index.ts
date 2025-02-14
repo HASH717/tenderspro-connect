@@ -2,6 +2,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { SESv2Client, SendEmailCommand } from "npm:@aws-sdk/client-sesv2";
+import React from 'npm:react@18.3.1';
+import { renderAsync } from 'npm:@react-email/components@0.0.22';
+import { TenderMatchEmail } from './_templates/tender-match.tsx';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,20 +14,17 @@ const corsHeaders = {
 interface EmailPayload {
   to: string;
   subject: string;
-  html: string;
   alertId: string;
   tenderId: string;
   userId: string;
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Validate AWS credentials
     const accessKeyId = Deno.env.get("AWS_ACCESS_KEY_ID");
     const secretAccessKey = Deno.env.get("AWS_SECRET_ACCESS_KEY");
 
@@ -41,19 +41,35 @@ serve(async (req) => {
     );
 
     const payload: EmailPayload = await req.json();
-    const { to, subject, html, alertId, tenderId, userId } = payload;
+    const { to, subject, alertId, tenderId, userId } = payload;
+
+    // Fetch tender and alert details
+    const { data: tender, error: tenderError } = await supabaseClient
+      .from('tenders')
+      .select('*')
+      .eq('id', tenderId)
+      .single();
+
+    if (tenderError) throw tenderError;
+
+    const { data: alert, error: alertError } = await supabaseClient
+      .from('alerts')
+      .select('*')
+      .eq('id', alertId)
+      .single();
+
+    if (alertError) throw alertError;
 
     console.log('Email details:', {
       to,
       subject,
       fromEmail: "abdou@trycartback.com",
-      hasHtmlContent: !!html,
-      alertId,
       tenderId,
+      alertId,
       userId
     });
 
-    // Check if email was already sent for this alert-tender combination
+    // Check if email was already sent
     const { data: existingNotification, error: checkError } = await supabaseClient
       .from('alert_email_notifications')
       .select('*')
@@ -62,7 +78,7 @@ serve(async (req) => {
       .eq('user_id', userId)
       .single();
 
-    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "not found" error
+    if (checkError && checkError.code !== 'PGRST116') {
       console.error('Error checking existing notification:', checkError);
       throw checkError;
     }
@@ -80,6 +96,18 @@ serve(async (req) => {
       });
     }
 
+    // Generate email HTML using React Email
+    const html = await renderAsync(
+      React.createElement(TenderMatchEmail, {
+        tenderTitle: tender.title,
+        alertName: alert.name,
+        category: tender.category,
+        wilaya: tender.wilaya,
+        deadline: new Date(tender.deadline).toLocaleDateString(),
+        tenderUrl: `${req.headers.get('origin')}/tenders/${tender.id}`
+      })
+    );
+
     // Initialize AWS SES client
     const sesClient = new SESv2Client({
       region: "us-east-1",
@@ -89,7 +117,7 @@ serve(async (req) => {
       },
     });
 
-    // Create send email command
+    // Send email
     const sendEmailCommand = new SendEmailCommand({
       FromEmailAddress: "abdou@trycartback.com",
       Destination: {
@@ -111,12 +139,10 @@ serve(async (req) => {
       },
     });
 
-    // Send email
     const response = await sesClient.send(sendEmailCommand);
     console.log('Email sent successfully:', response);
 
     // Log the email notification
-    console.log('Logging email notification to database...');
     const { error: logError } = await supabaseClient
       .from('alert_email_notifications')
       .insert({
@@ -132,9 +158,7 @@ serve(async (req) => {
       throw logError;
     }
 
-    console.log('Email notification logged successfully');
-
-    // Update the tender notification as processed
+    // Update tender notification as processed
     const { error: updateError } = await supabaseClient
       .from('tender_notifications')
       .update({ processed_at: new Date().toISOString() })
@@ -146,8 +170,6 @@ serve(async (req) => {
       console.error('Error updating tender notification:', updateError);
       throw updateError;
     }
-
-    console.log('Tender notification marked as processed');
 
     return new Response(JSON.stringify({ 
       success: true, 
