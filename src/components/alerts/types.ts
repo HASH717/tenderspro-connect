@@ -1,3 +1,4 @@
+
 export interface Alert {
   id: string;
   name: string;
@@ -11,8 +12,11 @@ export interface Alert {
 }
 
 export const mapFiltersToDb = (filters: Partial<Alert>, userId: string) => {
-  // Store the full Wilaya strings (e.g. "1 - Adrar")
-  const wilayaValues = filters.wilaya || [];
+  // Store just the wilaya names (after the "-" if present)
+  const wilayaValues = filters.wilaya?.map(w => {
+    const parts = w.split(' - ');
+    return parts.length > 1 ? parts[1] : w;
+  }) || [];
 
   return {
     ...(filters.id && { id: filters.id }),
