@@ -80,8 +80,9 @@ export const NotificationManager = () => {
 
           const preferences = alert.notification_preferences as Alert['notification_preferences'];
           const emailEnabled = preferences?.email ?? false;
+          const inAppEnabled = preferences?.in_app ?? true;
 
-          console.log('Email notifications enabled:', emailEnabled);
+          console.log('Notification preferences - Email:', emailEnabled, 'In-app:', inAppEnabled);
 
           if (emailEnabled) {
             console.log('Attempting to send email notification');
@@ -122,21 +123,32 @@ export const NotificationManager = () => {
 
           // Show browser notification if enabled
           if (notificationsPermission === "granted") {
-            const notification = new Notification("New Tender Match!", {
-              body: `A new tender matching your alert: ${tender.title}`,
-              icon: "/favicon.ico",
-            });
+            console.log('Showing desktop notification');
+            try {
+              const notification = new Notification("New Tender Match!", {
+                body: `A new tender matching your alert "${alert.name}": ${tender.title}`,
+                icon: "/favicon.ico",
+              });
 
-            notification.onclick = () => {
-              window.focus();
-            };
+              notification.onclick = () => {
+                window.focus();
+                window.location.href = `/tenders/${tender.id}`;
+              };
+              
+              console.log('Desktop notification shown successfully');
+            } catch (error) {
+              console.error('Error showing desktop notification:', error);
+            }
           }
 
           // Show toast notification
-          toast({
-            title: "New Tender Match!",
-            description: `A new tender matching your alert: ${tender.title}`,
-          });
+          if (inAppEnabled) {
+            console.log('Showing in-app toast notification');
+            toast({
+              title: "New Tender Match!",
+              description: `A new tender matching your alert "${alert.name}": ${tender.title}`,
+            });
+          }
         }
       )
       .subscribe();
@@ -151,6 +163,7 @@ export const NotificationManager = () => {
 
   const requestNotificationPermission = async () => {
     if (!("Notification" in window)) {
+      console.log('Browser notifications not supported');
       toast({
         title: "Notifications Not Supported",
         description: "Your browser doesn't support desktop notifications",
@@ -160,9 +173,11 @@ export const NotificationManager = () => {
     }
 
     try {
+      console.log('Requesting notification permission');
       const permission = await Notification.requestPermission();
       setNotificationsPermission(permission);
       
+      console.log('Notification permission result:', permission);
       if (permission === "granted") {
         toast({
           title: "Notifications Enabled",
@@ -192,4 +207,3 @@ export const NotificationManager = () => {
     </Button>
   );
 };
-
