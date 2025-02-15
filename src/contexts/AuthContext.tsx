@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (error) {
         console.error("Error getting session:", error);
         setSession(null);
-        navigate("/auth");
+        navigate("/auth", { state: { returnTo: window.location.pathname } });
         return;
       }
       setSession(session);
@@ -42,25 +42,47 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (event === 'TOKEN_REFRESHED') {
         console.log('Token refreshed successfully');
-      }
-      
-      if (event === 'SIGNED_OUT') {
+        setSession(session);
+      } else if (event === 'SIGNED_OUT' || event === 'INITIAL_SESSION') {
+        console.log('Session ended:', event);
         setSession(null);
-        navigate("/auth");
-        toast({
-          title: "Signed out",
-          description: "You have been signed out successfully",
-        });
+        
+        // Save current path for redirect after login
+        const currentPath = window.location.pathname;
+        if (currentPath !== '/auth') {
+          navigate("/auth", { state: { returnTo: currentPath } });
+          
+          if (event === 'SIGNED_OUT') {
+            toast({
+              title: "Signed out",
+              description: "You have been signed out successfully",
+            });
+          }
+        }
       }
 
-      // Handle session expired or invalid events
-      if (event === 'INITIAL_SESSION' && !session) {
-        setSession(null);
-        navigate("/auth");
-      }
-
-      setSession(session);
       setIsLoading(false);
+    });
+
+    // Handle refresh token errors
+    window.addEventListener('unhandledrejection', (event) => {
+      const error = event.reason;
+      if (
+        error?.message?.includes('refresh_token_not_found') ||
+        error?.message?.includes('Invalid Refresh Token')
+      ) {
+        console.error('Refresh token error detected:', error);
+        setSession(null);
+        const currentPath = window.location.pathname;
+        if (currentPath !== '/auth') {
+          navigate("/auth", { state: { returnTo: currentPath } });
+          toast({
+            title: "Session expired",
+            description: "Please sign in again",
+            variant: "destructive",
+          });
+        }
+      }
     });
 
     return () => {
