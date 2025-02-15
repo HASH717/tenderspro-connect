@@ -165,7 +165,7 @@ export const AlertForm = ({ onClose, onSave, editingAlert }: AlertFormProps) => 
           options={categoryOptions}
           selectedValues={selectedCategories}
           onChange={setSelectedCategories}
-          className="bg-muted/50 p-4 rounded-lg"
+          className="bg-muted/50 p-4 rounded-lg [&_span:hover]:text-[#555555] [&_span]:transition-colors"
         />
 
         <div className="flex items-center space-x-2 bg-muted/50 p-4 rounded-lg">
