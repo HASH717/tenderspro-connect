@@ -1,3 +1,4 @@
+
 {
   "navigation": {
     "home": "Home",
@@ -102,16 +103,41 @@
     "new": "New Alert",
     "name": "Alert Name",
     "namePlaceholder": "Name your alert",
+    "regions": "Regions",
+    "marketType": "Market type",
+    "categories": "Categories",
+    "receiveEmailNotifications": "Receive email notifications",
+    "save": "Save",
     "created": "Alert Created",
     "createdDescription": "Your alert has been created successfully",
+    "updated": "Alert Updated",
+    "updatedDescription": "Your alert has been updated successfully",
     "deleted": "Alert Deleted",
     "deletedDescription": "Your alert has been deleted successfully",
     "createError": "Error Creating Alert",
+    "updateError": "Error Updating Alert",
     "deleteError": "Error Deleting Alert",
+    "error": "Error",
+    "failedToLoadCategories": "Failed to load categories",
     "nameRequired": "Alert Name Required",
     "enterName": "Please enter a name for your alert",
     "authError": "Authentication Error",
     "loginRequired": "You must be logged in to create alerts",
-    "fetchError": "Error Fetching Alerts"
+    "fetchError": "Error Fetching Alerts",
+    "notifications": {
+      "enable": "Enable Notifications",
+      "enabled": "Notifications Enabled",
+      "enabledDescription": "You will now receive desktop notifications for new tenders",
+      "disabled": "Notifications Disabled",
+      "disabledDescription": "You will not receive desktop notifications for new tenders",
+      "notSupported": "Notifications Not Supported",
+      "notSupportedDescription": "Your browser doesn't support desktop notifications",
+      "permissionError": "Permission Error",
+      "permissionErrorDescription": "Failed to request notification permission",
+      "newMatch": "New Tender Match!",
+      "newMatchDescription": "A new tender matching your alert \"{{alertName}}\": {{tenderTitle}}",
+      "emailFailed": "Email Notification Failed",
+      "emailFailedDescription": "There was an error sending the email notification."
+    }
   }
 }

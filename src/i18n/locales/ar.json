@@ -1,3 +1,4 @@
+
 {
   "navigation": {
     "home": "الرئيسية",
@@ -102,16 +103,41 @@
     "new": "تنبيه جديد",
     "name": "اسم التنبيه",
     "namePlaceholder": "اختر اسماً لتنبيهك",
+    "regions": "المناطق",
+    "marketType": "نوع السوق",
+    "categories": "الفئات",
+    "receiveEmailNotifications": "تلقي إشعارات البريد الإلكتروني",
+    "save": "حفظ",
     "created": "تم إنشاء التنبيه",
     "createdDescription": "تم إنشاء التنبيه بنجاح",
+    "updated": "تم تحديث التنبيه",
+    "updatedDescription": "تم تحديث التنبيه بنجاح",
     "deleted": "تم حذف التنبيه",
     "deletedDescription": "تم حذف التنبيه بنجاح",
     "createError": "خطأ في إنشاء التنبيه",
+    "updateError": "خطأ في تحديث التنبيه",
     "deleteError": "خطأ في حذف التنبيه",
+    "error": "خطأ",
+    "failedToLoadCategories": "فشل في تحميل الفئات",
     "nameRequired": "اسم التنبيه مطلوب",
     "enterName": "الرجاء إدخال اسم للتنبيه",
     "authError": "خطأ في المصادقة",
     "loginRequired": "يجب تسجيل الدخول لإنشاء التنبيهات",
-    "fetchError": "خطأ في جلب التنبيهات"
+    "fetchError": "خطأ في جلب التنبيهات",
+    "notifications": {
+      "enable": "تفعيل الإشعارات",
+      "enabled": "تم تفعيل الإشعارات",
+      "enabledDescription": "ستتلقى الآن إشعارات عن المناقصات الجديدة",
+      "disabled": "تم تعطيل الإشعارات",
+      "disabledDescription": "لن تتلقى إشعارات عن المناقصات الجديدة",
+      "notSupported": "الإشعارات غير مدعومة",
+      "notSupportedDescription": "متصفحك لا يدعم الإشعارات",
+      "permissionError": "خطأ في الأذونات",
+      "permissionErrorDescription": "فشل في طلب إذن الإشعارات",
+      "newMatch": "تطابق مناقصة جديدة!",
+      "newMatchDescription": "تم العثور على مناقصة جديدة تطابق تنبيهك \"{{alertName}}\": {{tenderTitle}}",
+      "emailFailed": "فشل في إرسال إشعار البريد الإلكتروني",
+      "emailFailedDescription": "حدث خطأ أثناء إرسال إشعار البريد الإلكتروني."
+    }
   }
 }

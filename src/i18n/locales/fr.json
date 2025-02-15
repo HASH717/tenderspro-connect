@@ -1,3 +1,4 @@
+
 {
   "navigation": {
     "home": "Accueil",
@@ -102,16 +103,41 @@
     "new": "Nouvelle alerte",
     "name": "Nom de l'alerte",
     "namePlaceholder": "Nommez votre alerte",
+    "regions": "Régions",
+    "marketType": "Type de marché",
+    "categories": "Catégories",
+    "receiveEmailNotifications": "Recevoir des notifications par email",
+    "save": "Enregistrer",
     "created": "Alerte créée",
     "createdDescription": "Votre alerte a été créée avec succès",
+    "updated": "Alerte mise à jour",
+    "updatedDescription": "Votre alerte a été mise à jour avec succès",
     "deleted": "Alerte supprimée",
     "deletedDescription": "Votre alerte a été supprimée avec succès",
     "createError": "Erreur lors de la création de l'alerte",
+    "updateError": "Erreur lors de la mise à jour de l'alerte",
     "deleteError": "Erreur lors de la suppression de l'alerte",
+    "error": "Erreur",
+    "failedToLoadCategories": "Échec du chargement des catégories",
     "nameRequired": "Nom d'alerte requis",
     "enterName": "Veuillez entrer un nom pour votre alerte",
     "authError": "Erreur d'authentification",
     "loginRequired": "Vous devez être connecté pour créer des alertes",
-    "fetchError": "Erreur lors de la récupération des alertes"
+    "fetchError": "Erreur lors de la récupération des alertes",
+    "notifications": {
+      "enable": "Activer les notifications",
+      "enabled": "Notifications activées",
+      "enabledDescription": "Vous recevrez désormais des notifications pour les nouveaux appels d'offres",
+      "disabled": "Notifications désactivées",
+      "disabledDescription": "Vous ne recevrez pas de notifications pour les nouveaux appels d'offres",
+      "notSupported": "Notifications non prises en charge",
+      "notSupportedDescription": "Votre navigateur ne prend pas en charge les notifications",
+      "permissionError": "Erreur de permission",
+      "permissionErrorDescription": "Impossible de demander la permission pour les notifications",
+      "newMatch": "Nouvelle correspondance d'appel d'offres !",
+      "newMatchDescription": "Un nouvel appel d'offres correspondant à votre alerte \"{{alertName}}\": {{tenderTitle}}",
+      "emailFailed": "Échec de la notification par email",
+      "emailFailedDescription": "Une erreur s'est produite lors de l'envoi de la notification par email."
+    }
   }
 }
