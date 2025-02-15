@@ -1,3 +1,4 @@
+
 import { useTranslation } from "react-i18next";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -95,8 +96,8 @@ export const PreferencesTab = ({ currentLanguage, onLanguageChange, preferredCat
         <div className="flex flex-wrap gap-2">
           {displayCategories.length > 0 ? (
             displayCategories.map((category) => (
-              <Badge key={category} variant="secondary">
-                {category}
+              <Badge key={typeof category === 'object' ? category.value : category} variant="secondary">
+                {typeof category === 'object' ? category.label : category}
               </Badge>
             ))
           ) : (
