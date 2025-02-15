@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (error) {
         console.error("Error getting session:", error);
         setSession(null);
-        navigate("/auth", { state: { returnTo: window.location.pathname } });
+        setIsLoading(false);
         return;
       }
       setSession(session);
@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     // Handle refresh token errors
-    window.addEventListener('unhandledrejection', (event) => {
+    const handleTokenError = (event: PromiseRejectionEvent) => {
       const error = event.reason;
       if (
         error?.message?.includes('refresh_token_not_found') ||
@@ -83,10 +83,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           });
         }
       }
-    });
+    };
+
+    window.addEventListener('unhandledrejection', handleTokenError);
 
     return () => {
       subscription.unsubscribe();
+      window.removeEventListener('unhandledrejection', handleTokenError);
     };
   }, [navigate, toast]);
 
