@@ -1,4 +1,4 @@
-
+importtypescript
 import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -98,7 +98,6 @@ export const NotificationManager = () => {
                 badge: "/favicon.ico",
                 requireInteraction: true, // Keep notification until user interacts with it
                 tag: `tender-${tender.id}`, // Unique tag to prevent duplicate notifications
-                vibrate: [200, 100, 200], // Vibration pattern for mobile devices
               });
 
               // Handle notification click
