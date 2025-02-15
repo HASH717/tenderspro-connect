@@ -33,7 +33,7 @@ export const CategorySelect = ({ value, onChange }: CategorySelectProps) => {
         .from('tenders')
         .select('category')
         .not('category', 'is', null)
-        .neq('category', '');
+        .not('category', 'eq', '');
 
       if (error) {
         console.error('Error fetching categories:', error);
@@ -42,7 +42,7 @@ export const CategorySelect = ({ value, onChange }: CategorySelectProps) => {
       }
 
       const uniqueCategories = Array.from(new Set(data.map(tender => tender.category)))
-        .filter(Boolean)
+        .filter(category => category)
         .sort();
 
       return uniqueCategories;

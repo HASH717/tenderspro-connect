@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (error) {
         console.error("Error getting session:", error);
         setSession(null);
-        setIsLoading(false);
+        navigate("/auth");
         return;
       }
       setSession(session);
@@ -42,54 +42,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (event === 'TOKEN_REFRESHED') {
         console.log('Token refreshed successfully');
-        setSession(session);
-      } else if (event === 'SIGNED_OUT' || event === 'INITIAL_SESSION') {
-        console.log('Session ended:', event);
+      }
+      
+      if (event === 'SIGNED_OUT') {
         setSession(null);
-        
-        // Save current path for redirect after login
-        const currentPath = window.location.pathname;
-        if (currentPath !== '/auth') {
-          navigate("/auth", { state: { returnTo: currentPath } });
-          
-          if (event === 'SIGNED_OUT') {
-            toast({
-              title: "Signed out",
-              description: "You have been signed out successfully",
-            });
-          }
-        }
+        navigate("/auth");
+        toast({
+          title: "Signed out",
+          description: "You have been signed out successfully",
+        });
       }
 
+      // Handle session expired or invalid events
+      if (event === 'INITIAL_SESSION' && !session) {
+        setSession(null);
+        navigate("/auth");
+      }
+
+      setSession(session);
       setIsLoading(false);
     });
 
-    // Handle refresh token errors
-    const handleTokenError = (event: PromiseRejectionEvent) => {
-      const error = event.reason;
-      if (
-        error?.message?.includes('refresh_token_not_found') ||
-        error?.message?.includes('Invalid Refresh Token')
-      ) {
-        console.error('Refresh token error detected:', error);
-        setSession(null);
-        const currentPath = window.location.pathname;
-        if (currentPath !== '/auth') {
-          navigate("/auth", { state: { returnTo: currentPath } });
-          toast({
-            title: "Session expired",
-            description: "Please sign in again",
-            variant: "destructive",
-          });
-        }
-      }
-    };
-
-    window.addEventListener('unhandledrejection', handleTokenError);
-
     return () => {
       subscription.unsubscribe();
-      window.removeEventListener('unhandledrejection', handleTokenError);
     };
   }, [navigate, toast]);
 
