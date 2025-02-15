@@ -1,4 +1,3 @@
-
 {
   "navigation": {
     "home": "الرئيسية",
@@ -50,6 +49,23 @@
     "deadline": "الموعد النهائي",
     "organization": "المنظمة",
     "location": "الموقع",
+    "information": "معلومات المناقصة",
+    "number": "رقم المناقصة",
+    "category": "الفئة",
+    "region": "المنطقة",
+    "notSpecified": "غير محدد",
+    "specificationsPrice": "سعر المواصفات",
+    "withdrawalAddress": "عنوان السحب",
+    "qualifications": "المؤهلات",
+    "required": "مطلوب",
+    "details": "التفاصيل",
+    "projectDescription": "وصف المشروع",
+    "document": "وثيقة المناقصة",
+    "documentAlt": "وثيقة المناقصة",
+    "imageError": "تعذر تحميل صورة وثيقة المناقصة. يرجى المحاولة مرة أخرى لاحقاً.",
+    "loading": "جاري تحميل تفاصيل المناقصة...",
+    "loadError": "فشل في تحميل تفاصيل المناقصة",
+    "notFound": "المناقصة غير موجودة أو تم حذفها",
     "categories": {
       "hydraulics": "الري وإمدادات المياه والصرف الصحي",
       "plastic": "صناعة البلاستيك والمطاط",
@@ -139,5 +155,8 @@
       "emailFailed": "فشل في إرسال إشعار البريد الإلكتروني",
       "emailFailedDescription": "حدث خطأ أثناء إرسال إشعار البريد الإلكتروني."
     }
+  },
+  "common": {
+    "back": "رجوع"
   }
 }

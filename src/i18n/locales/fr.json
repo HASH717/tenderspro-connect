@@ -1,4 +1,3 @@
-
 {
   "navigation": {
     "home": "Accueil",
@@ -50,6 +49,23 @@
     "deadline": "Date limite",
     "organization": "Organisation",
     "location": "Emplacement",
+    "information": "Informations sur l'appel d'offres",
+    "number": "Numéro d'appel d'offres",
+    "category": "Catégorie",
+    "region": "Région",
+    "notSpecified": "Non spécifié",
+    "specificationsPrice": "Prix des spécifications",
+    "withdrawalAddress": "Adresse de retrait",
+    "qualifications": "Qualifications",
+    "required": "Requis",
+    "details": "Détails",
+    "projectDescription": "Description du projet",
+    "document": "Document d'appel d'offres",
+    "documentAlt": "Document d'appel d'offres",
+    "imageError": "L'image du document d'appel d'offres n'a pas pu être chargée. Veuillez réessayer plus tard.",
+    "loading": "Chargement des détails de l'appel d'offres...",
+    "loadError": "Échec du chargement des détails de l'appel d'offres",
+    "notFound": "Appel d'offres introuvable ou supprimé",
     "categories": {
       "hydraulics": "Hydraulique, Alimentation en Eau et Assainissement",
       "plastic": "Industrie plastique et caoutchouc",
@@ -139,5 +155,8 @@
       "emailFailed": "Échec de la notification par email",
       "emailFailedDescription": "Une erreur s'est produite lors de l'envoi de la notification par email."
     }
+  },
+  "common": {
+    "back": "Retour"
   }
 }

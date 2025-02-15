@@ -1,4 +1,3 @@
-
 {
   "navigation": {
     "home": "Home",
@@ -50,6 +49,23 @@
     "deadline": "Deadline",
     "organization": "Organization",
     "location": "Location",
+    "information": "Tender Information",
+    "number": "Tender Number",
+    "category": "Category",
+    "region": "Region",
+    "notSpecified": "Not specified",
+    "specificationsPrice": "Specification Price",
+    "withdrawalAddress": "Withdrawal Address",
+    "qualifications": "Qualifications",
+    "required": "Required",
+    "details": "Details",
+    "projectDescription": "Project Description",
+    "document": "Tender Document",
+    "documentAlt": "Tender Document",
+    "imageError": "The tender document image could not be loaded. Please try again later.",
+    "loading": "Loading tender details...",
+    "loadError": "Failed to load tender details",
+    "notFound": "Tender not found or has been removed",
     "categories": {
       "hydraulics": "Hydraulics, Water Supply and Sanitation",
       "plastic": "Plastic and rubber industry",
@@ -139,5 +155,8 @@
       "emailFailed": "Email Notification Failed",
       "emailFailedDescription": "There was an error sending the email notification."
     }
+  },
+  "common": {
+    "back": "Back"
   }
 }
