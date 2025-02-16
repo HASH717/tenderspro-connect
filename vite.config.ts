@@ -5,6 +5,9 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => ({
+  define: {
+    __HMR_CONFIG_NAME__: JSON.stringify("vite"),
+  },
   server: {
     host: "::",
     port: 8080,
