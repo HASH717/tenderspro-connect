@@ -11,6 +11,23 @@ export const NotificationManager = () => {
   const { toast } = useToast();
   const { session } = useAuth();
   const [notificationsPermission, setNotificationsPermission] = useState<NotificationPermission>("default");
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
+
+  // Check if running on a mobile device
+  useEffect(() => {
+    const checkMobileDevice = () => {
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      setIsMobileDevice(isMobile);
+      return isMobile;
+    };
+
+    const isMobile = checkMobileDevice();
+    
+    // If on mobile device, request notification permission automatically
+    if (isMobile && "Notification" in window && Notification.permission === "default") {
+      requestNotificationPermission();
+    }
+  }, []);
 
   // Check notification permission on mount and when it changes
   useEffect(() => {
@@ -93,7 +110,7 @@ export const NotificationManager = () => {
             try {
               // Create notification with more visible content
               const notification = new Notification("New Tender Match!", {
-                body: `${tender.title}\nCategory: ${tender.category}\nRegion: ${tender.wilaya}`,
+                body: `${tender.title}\nCategory: ${tender.category}\nWilaya: ${tender.wilaya}`,
                 icon: "/favicon.ico",
                 badge: "/favicon.ico",
                 requireInteraction: true, // Keep notification until user interacts with it
@@ -134,7 +151,7 @@ export const NotificationManager = () => {
                     <p>A new tender matching your alert "${alert.name}" has been found:</p>
                     <h2>${tender.title}</h2>
                     <p><strong>Category:</strong> ${tender.category}</p>
-                    <p><strong>Region:</strong> ${tender.wilaya}</p>
+                    <p><strong>Wilaya:</strong> ${tender.wilaya}</p>
                     <p><strong>Deadline:</strong> ${new Date(tender.deadline).toLocaleDateString()}</p>
                     <a href="${window.location.origin}/tenders/${tender.id}">View Tender Details</a>
                   `,
@@ -225,8 +242,8 @@ export const NotificationManager = () => {
     }
   };
 
-  // Only show the enable button if permission is in default state
-  if (notificationsPermission !== "default") return null;
+  // Only show the enable button if not on mobile and permission is in default state
+  if (isMobileDevice || notificationsPermission !== "default") return null;
 
   return (
     <Button
