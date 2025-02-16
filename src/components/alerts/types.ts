@@ -38,8 +38,8 @@ export const mapDbToFilters = (dbAlert: any): Alert => {
     if (!wilayaNumber) return ''; // Handle null/undefined wilaya
     // Find the matching full wilaya string from WILAYA_OPTIONS
     const matchingOption = WILAYA_OPTIONS.find(opt => {
-      const number = opt.split(' - ')[0];
-      return number.trim() === wilayaNumber.trim();
+      const number = opt.split(' - ')[0].trim();
+      return number === wilayaNumber.trim();
     });
     return matchingOption || wilayaNumber; // Return full format if found, otherwise original value
   }).filter(Boolean) : []; // Remove empty strings
