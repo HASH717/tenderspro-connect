@@ -167,7 +167,10 @@ export const CategorySelect = ({ value, onChange }: CategorySelectProps) => {
   const { accessible, locked } = categorizeItems();
 
   return (
-    <Select value={value} onValueChange={handleCategorySelect}>
+    <Select 
+      value={value || undefined} 
+      onValueChange={handleCategorySelect}
+    >
       <SelectTrigger className="bg-white/80 backdrop-blur-sm border-muted/50">
         <SelectValue placeholder={t("filters.category")} />
       </SelectTrigger>
@@ -177,9 +180,10 @@ export const CategorySelect = ({ value, onChange }: CategorySelectProps) => {
             <SelectItem 
               key={category} 
               value={category}
-              className="flex items-center justify-between"
             >
-              {category}
+              <div className="flex items-center justify-between w-full">
+                <span>{category}</span>
+              </div>
             </SelectItem>
           ))}
 
@@ -191,11 +195,12 @@ export const CategorySelect = ({ value, onChange }: CategorySelectProps) => {
             <SelectItem 
               key={category} 
               value={category}
-              className="flex items-center justify-between text-muted-foreground"
               disabled
             >
-              <span>{category}</span>
-              <Lock className="h-4 w-4 ml-2 inline-block" />
+              <div className="flex items-center justify-between w-full text-muted-foreground">
+                <span>{category}</span>
+                <Lock className="h-4 w-4 ml-2" />
+              </div>
             </SelectItem>
           ))}
         </ScrollArea>
