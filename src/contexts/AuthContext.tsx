@@ -1,6 +1,5 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
-import { Session, AuthChangeEvent } from "@supabase/supabase-js";
+import { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -26,7 +25,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
         console.error("Error getting session:", error);
-        setSession(null);
+        toast({
+          variant: "destructive",
+          title: "Authentication Error",
+          description: "Please sign in again",
+        });
         navigate("/auth");
         return;
       }
@@ -37,15 +40,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session) => {
-      console.log('Auth state changed:', event);
-      
-      if (event === 'TOKEN_REFRESHED') {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (_event === 'TOKEN_REFRESHED') {
         console.log('Token refreshed successfully');
       }
       
-      if (event === 'SIGNED_OUT') {
-        setSession(null);
+      if (_event === 'SIGNED_OUT') {
         navigate("/auth");
         toast({
           title: "Signed out",
@@ -53,19 +53,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         });
       }
 
-      // Handle session expired or invalid events
-      if (event === 'INITIAL_SESSION' && !session) {
-        setSession(null);
-        navigate("/auth");
-      }
-
       setSession(session);
       setIsLoading(false);
     });
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, [navigate, toast]);
 
   return (

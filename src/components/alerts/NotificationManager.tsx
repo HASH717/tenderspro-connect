@@ -12,10 +12,8 @@ export const NotificationManager = () => {
   const { session } = useAuth();
   const [notificationsPermission, setNotificationsPermission] = useState<NotificationPermission>("default");
 
-  // Check notification permission on mount and when it changes
   useEffect(() => {
     if ("Notification" in window) {
-      console.log('Current notification permission:', Notification.permission);
       setNotificationsPermission(Notification.permission);
     }
   }, []);
@@ -27,7 +25,6 @@ export const NotificationManager = () => {
     }
 
     console.log('Setting up real-time notifications for user:', session.user.id);
-    console.log('Current notification permission state:', notificationsPermission);
 
     const channel = supabase
       .channel('schema-db-changes')
@@ -61,7 +58,7 @@ export const NotificationManager = () => {
 
           console.log('Tender found:', tender);
 
-          // Fetch the alert details
+          // Fetch the alert details to check email preferences
           const { data: alert, error: alertError } = await supabase
             .from('alerts')
             .select('*')
@@ -83,49 +80,13 @@ export const NotificationManager = () => {
 
           const preferences = alert.notification_preferences as Alert['notification_preferences'];
           const emailEnabled = preferences?.email ?? false;
-          const inAppEnabled = preferences?.in_app ?? true;
 
-          console.log('Notification preferences - Email:', emailEnabled, 'In-app:', inAppEnabled);
+          console.log('Email notifications enabled:', emailEnabled);
 
-          // Handle desktop notification
-          if (notificationsPermission === "granted") {
-            console.log('Attempting to show desktop notification');
-            try {
-              // Create notification with more visible content
-              const notification = new Notification("New Tender Match!", {
-                body: `${tender.title}\nCategory: ${tender.category}\nRegion: ${tender.wilaya}`,
-                icon: "/favicon.ico",
-                badge: "/favicon.ico",
-                requireInteraction: true, // Keep notification until user interacts with it
-                tag: `tender-${tender.id}`, // Unique tag to prevent duplicate notifications
-              });
-
-              // Handle notification click
-              notification.onclick = (event) => {
-                event.preventDefault(); // Prevent the default action
-                window.focus(); // Focus the window
-                window.location.href = `/tenders/${tender.id}`; // Navigate to tender details
-                notification.close(); // Close the notification
-              };
-
-              console.log('Desktop notification shown successfully');
-            } catch (error) {
-              console.error('Error showing desktop notification:', error);
-              // Fallback to toast if desktop notification fails
-              toast({
-                title: "New Tender Match!",
-                description: `A new tender matching your alert "${alert.name}": ${tender.title}`,
-              });
-            }
-          } else {
-            console.log('Desktop notifications not granted, permission state:', notificationsPermission);
-          }
-
-          // Handle email notification
           if (emailEnabled) {
             console.log('Attempting to send email notification');
             try {
-              const { error } = await supabase.functions.invoke('send-alert-email', {
+              const { data, error } = await supabase.functions.invoke('send-alert-email', {
                 body: {
                   to: session.user.email,
                   subject: `New Tender Match: ${tender.title}`,
@@ -144,31 +105,43 @@ export const NotificationManager = () => {
                 }
               });
 
-              if (error) throw error;
-              console.log('Email notification sent successfully');
+              if (error) {
+                console.error('Error sending email notification:', error);
+                toast({
+                  title: "Failed to Send Email",
+                  description: "There was an error sending the email notification.",
+                  variant: "destructive",
+                });
+              } else {
+                console.log('Email notification sent successfully:', data);
+              }
             } catch (error) {
-              console.error('Error sending email notification:', error);
-              toast({
-                title: "Email Notification Failed",
-                description: "There was an error sending the email notification.",
-                variant: "destructive",
-              });
+              console.error('Error invoking send-alert-email function:', error);
             }
           }
 
-          // Always show in-app toast notification as a fallback
-          if (inAppEnabled) {
-            console.log('Showing in-app toast notification');
-            toast({
-              title: "New Tender Match!",
-              description: `A new tender matching your alert "${alert.name}": ${tender.title}`,
+          // Show browser notification if enabled
+          if (notificationsPermission === "granted") {
+            const notification = new Notification("New Tender Match!", {
+              body: `A new tender matching your alert: ${tender.title}`,
+              icon: "/favicon.ico",
             });
+
+            notification.onclick = () => {
+              window.focus();
+            };
           }
+
+          // Show toast notification
+          toast({
+            title: "New Tender Match!",
+            description: `A new tender matching your alert: ${tender.title}`,
+          });
         }
       )
       .subscribe();
 
-    console.log('Real-time channel subscribed successfully');
+    console.log('Real-time channel subscribed');
 
     return () => {
       console.log('Cleaning up real-time subscription');
@@ -178,7 +151,6 @@ export const NotificationManager = () => {
 
   const requestNotificationPermission = async () => {
     if (!("Notification" in window)) {
-      console.log('Browser notifications not supported');
       toast({
         title: "Notifications Not Supported",
         description: "Your browser doesn't support desktop notifications",
@@ -188,31 +160,13 @@ export const NotificationManager = () => {
     }
 
     try {
-      console.log('Requesting notification permission');
       const permission = await Notification.requestPermission();
-      console.log('Permission request result:', permission);
-      
       setNotificationsPermission(permission);
       
       if (permission === "granted") {
-        // Send a test notification to verify permissions
-        const testNotification = new Notification("Notifications Enabled!", {
-          body: "You will now receive desktop notifications for new tenders",
-          icon: "/favicon.ico",
-        });
-        
-        console.log('Test notification sent successfully');
-        
         toast({
           title: "Notifications Enabled",
           description: "You will now receive desktop notifications for new tenders",
-        });
-      } else {
-        console.log('Notification permission not granted:', permission);
-        toast({
-          title: "Notifications Disabled",
-          description: "You will not receive desktop notifications for new tenders",
-          variant: "destructive",
         });
       }
     } catch (error) {
@@ -225,7 +179,6 @@ export const NotificationManager = () => {
     }
   };
 
-  // Only show the enable button if permission is in default state
   if (notificationsPermission !== "default") return null;
 
   return (
@@ -239,3 +192,4 @@ export const NotificationManager = () => {
     </Button>
   );
 };
+
