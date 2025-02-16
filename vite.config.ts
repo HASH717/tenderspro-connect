@@ -14,6 +14,16 @@ export default defineConfig({
   server: {
     host: "::",
     port: 8080,
-    hmr: true // Simplified HMR configuration
+    hmr: true, // Simplified HMR configuration
+    headers: {
+      'Access-Control-Allow-Origin': '*'
+    },
+    proxy: {
+      '/.lovable': {
+        target: 'https://74bd72ef-c253-4d7f-87d7-ab46b197b9e5.lovableproject.com',
+        changeOrigin: true,
+        secure: false
+      }
+    }
   }
 });
