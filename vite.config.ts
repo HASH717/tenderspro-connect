@@ -14,10 +14,6 @@ export default defineConfig({
   server: {
     host: "::",
     port: 8080,
-    hmr: {
-      clientPort: 443,
-      protocol: 'wss',
-      host: "74bd72ef-c253-4d7f-87d7-ab46b197b9e5.lovableproject.com"
-    }
+    hmr: true // Simplified HMR configuration
   }
 });
