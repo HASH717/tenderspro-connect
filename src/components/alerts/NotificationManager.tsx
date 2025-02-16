@@ -1,7 +1,5 @@
 
-import { useState, useEffect } from "react";
-import { Bell } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,48 +10,50 @@ import { Capacitor } from '@capacitor/core';
 export const NotificationManager = () => {
   const { toast } = useToast();
   const { session } = useAuth();
-  const [hasPermission, setHasPermission] = useState(false);
   const isNative = Capacitor.isNativePlatform();
 
-  // Initialize push notifications
-  const initializePushNotifications = async () => {
+  // Initialize push notifications automatically
+  useEffect(() => {
     if (!isNative) {
       console.log('Not a native platform, push notifications unavailable');
       return;
     }
 
-    try {
-      // Request permission
-      const permissionStatus = await PushNotifications.requestPermissions();
-      console.log('Permission status:', permissionStatus.receive);
-      
-      if (permissionStatus.receive === 'granted') {
-        // Register with FCM
-        await PushNotifications.register();
-        setHasPermission(true);
+    const initializePushNotifications = async () => {
+      try {
+        // Request permission
+        const permissionStatus = await PushNotifications.requestPermissions();
+        console.log('Permission status:', permissionStatus.receive);
         
-        // Show success message
+        if (permissionStatus.receive === 'granted') {
+          // Register with FCM
+          await PushNotifications.register();
+          
+          // Show success message
+          toast({
+            title: "Notifications Enabled",
+            description: "You will receive notifications for new tenders",
+          });
+        } else {
+          console.log('Push notification permission denied');
+          toast({
+            title: "Notifications Disabled",
+            description: "Please enable notifications in your device settings to receive tender updates",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error('Error initializing push notifications:', error);
         toast({
-          title: "Notifications Enabled",
-          description: "You will now receive notifications for new tenders",
-        });
-      } else {
-        console.log('Push notification permission denied');
-        toast({
-          title: "Notifications Disabled",
-          description: "Please enable notifications in your device settings to receive tender updates",
+          title: "Notification Error",
+          description: "Failed to initialize push notifications",
           variant: "destructive",
         });
       }
-    } catch (error) {
-      console.error('Error initializing push notifications:', error);
-      toast({
-        title: "Notification Error",
-        description: "Failed to initialize push notifications",
-        variant: "destructive",
-      });
-    }
-  };
+    };
+
+    initializePushNotifications();
+  }, [toast, isNative]);
 
   // Set up push notification handlers
   useEffect(() => {
@@ -93,7 +93,7 @@ export const NotificationManager = () => {
       // Clean up listeners
       PushNotifications.removeAllListeners();
     };
-  }, [toast]);
+  }, [toast, isNative]);
 
   // Set up realtime subscription for new tender notifications
   useEffect(() => {
@@ -160,18 +160,6 @@ export const NotificationManager = () => {
     };
   }, [session?.user?.id, toast]);
 
-  // Only show the button if we're on a native platform and don't have permission yet
-  if (!isNative || hasPermission) return null;
-
-  return (
-    <Button
-      onClick={initializePushNotifications}
-      variant="outline"
-      size="sm"
-      className="gap-2 whitespace-nowrap"
-    >
-      <Bell className="h-4 w-4" />
-      Enable Notifications
-    </Button>
-  );
+  // No visible UI
+  return null;
 };
