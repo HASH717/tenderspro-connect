@@ -18,7 +18,6 @@ export default defineConfig({
       clientPort: 443,
       protocol: 'wss',
       host: "74bd72ef-c253-4d7f-87d7-ab46b197b9e5.lovableproject.com"
-    },
-    allowedHosts: ["74bd72ef-c253-4d7f-87d7-ab46b197b9e5.lovableproject.com"]
+    }
   }
 });
