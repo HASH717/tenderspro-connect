@@ -19,12 +19,12 @@ export const CategorySelector = ({
   const { data: categories = [] } = useQuery({
     queryKey: ['all-tender-categories'],
     queryFn: async () => {
+      // Using a specific query to get unique categories
       const { data, error } = await supabase
         .from('tenders')
         .select('category')
         .not('category', 'is', null)
-        .not('category', 'eq', '')
-        .distinct();
+        .not('category', 'eq', '');
 
       if (error) {
         console.error('Error fetching categories:', error);
@@ -32,10 +32,16 @@ export const CategorySelector = ({
         return [];
       }
 
-      // Extract unique categories and sort them
-      const uniqueCategories = Array.from(new Set(data.map(tender => tender.category)))
-        .filter(Boolean)
-        .sort();
+      // Extract unique categories and sort them, with proper type assertions
+      const uniqueCategories = Array.from(
+        new Set(
+          data
+            .map(row => row.category)
+            .filter((category): category is string => 
+              typeof category === 'string' && category.length > 0
+            )
+        )
+      ).sort();
 
       return uniqueCategories;
     }
@@ -53,7 +59,7 @@ export const CategorySelector = ({
       </h3>
       <ScrollArea className="h-[400px] rounded-md border p-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {categories.map((category) => (
+          {categories.map((category: string) => (
             <div
               key={category}
               className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted/50"
