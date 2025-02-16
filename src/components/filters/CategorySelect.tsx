@@ -167,7 +167,7 @@ export const CategorySelect = ({ value, onChange }: CategorySelectProps) => {
   const { accessible, locked } = categorizeItems();
 
   return (
-    <Select value={value} onValueChange={handleCategorySelect}>
+    <Select value={value || ""} onValueChange={handleCategorySelect}>
       <SelectTrigger className="bg-white/80 backdrop-blur-sm border-muted/50">
         <SelectValue placeholder={t("filters.category")} />
       </SelectTrigger>
@@ -180,7 +180,7 @@ export const CategorySelect = ({ value, onChange }: CategorySelectProps) => {
               value={category}
               className="flex items-center justify-between"
             >
-              <span>{category}</span>
+              {category}
             </SelectItem>
           ))}
 
