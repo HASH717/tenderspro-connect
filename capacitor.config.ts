@@ -2,7 +2,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.74bd72efc2534d7f87d7ab46b197b9e5',
+  appId: 'com.lovable.tenderspro',
   appName: 'tenderspro-connect',
   webDir: 'dist',
   server: {
