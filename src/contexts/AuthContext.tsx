@@ -23,22 +23,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session: initialSession }, error }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
-        console.error("Error getting initial session:", error);
+        console.error("Error getting session:", error);
         setSession(null);
         navigate("/auth");
-      } else {
-        setSession(initialSession);
+        return;
       }
+      setSession(session);
       setIsLoading(false);
     });
 
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, currentSession) => {
-      console.log('Auth state changed:', event, 'Session:', currentSession ? 'exists' : 'null');
+    } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session) => {
+      console.log('Auth state changed:', event);
+      
+      if (event === 'TOKEN_REFRESHED') {
+        console.log('Token refreshed successfully');
+      }
       
       if (event === 'SIGNED_OUT') {
         setSession(null);
@@ -47,30 +51,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           title: "Signed out",
           description: "You have been signed out successfully",
         });
-      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        setSession(currentSession);
-        if (window.location.pathname === '/auth') {
-          navigate("/");
-        }
-      } else if (event === 'INITIAL_SESSION') {
-        // If no session on initial load, redirect to auth
-        if (!currentSession) {
-          setSession(null);
-          if (window.location.pathname !== '/auth') {
-            navigate("/auth");
-          }
-        } else {
-          setSession(currentSession);
-          if (window.location.pathname === '/auth') {
-            navigate("/");
-          }
-        }
       }
 
+      // Handle session expired or invalid events
+      if (event === 'INITIAL_SESSION' && !session) {
+        setSession(null);
+        navigate("/auth");
+      }
+
+      setSession(session);
       setIsLoading(false);
     });
 
-    // Cleanup subscription on unmount
     return () => {
       subscription.unsubscribe();
     };

@@ -167,40 +167,38 @@ export const CategorySelect = ({ value, onChange }: CategorySelectProps) => {
   const { accessible, locked } = categorizeItems();
 
   return (
-    <Select 
-      value={value || undefined} 
-      onValueChange={handleCategorySelect}
-    >
+    <Select value={value} onValueChange={handleCategorySelect}>
       <SelectTrigger className="bg-white/80 backdrop-blur-sm border-muted/50">
         <SelectValue placeholder={t("filters.category")} />
       </SelectTrigger>
       <SelectContent>
         <ScrollArea className="h-[300px]">
+          {/* Accessible Categories */}
           {accessible.map((category) => (
             <SelectItem 
               key={category} 
               value={category}
+              className="flex items-center justify-between"
             >
-              <div className="flex items-center justify-between w-full">
-                <span>{category}</span>
-              </div>
+              <span>{category}</span>
             </SelectItem>
           ))}
 
+          {/* Separator between accessible and locked categories */}
           {locked.length > 0 && accessible.length > 0 && (
             <Separator className="my-2" />
           )}
 
+          {/* Locked Categories */}
           {locked.map((category) => (
             <SelectItem 
               key={category} 
               value={category}
+              className="flex items-center justify-between text-muted-foreground"
               disabled
             >
-              <div className="flex items-center justify-between w-full text-muted-foreground">
-                <span>{category}</span>
-                <Lock className="h-4 w-4 ml-2" />
-              </div>
+              <span>{category}</span>
+              <Lock className="h-4 w-4 ml-2 inline-block" />
             </SelectItem>
           ))}
         </ScrollArea>

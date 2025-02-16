@@ -145,11 +145,11 @@ export const AlertForm = ({ onClose, onSave, editingAlert }: AlertFormProps) => 
 
       <div className="grid gap-6">
         <MultiSelect
-          label="Wilaya"
+          label="Regions"
           options={WILAYA_OPTIONS}
           selectedValues={selectedWilayas}
           onChange={setSelectedWilayas}
-          className="bg-muted/50 p-4 rounded-lg [&_button:hover_span]:text-[#333333] [&_button_span]:transition-colors"
+          className="bg-muted/50 p-4 rounded-lg"
         />
 
         <MultiSelect
@@ -157,7 +157,7 @@ export const AlertForm = ({ onClose, onSave, editingAlert }: AlertFormProps) => 
           options={TENDER_TYPE_OPTIONS}
           selectedValues={selectedTenderTypes}
           onChange={setSelectedTenderTypes}
-          className="bg-muted/50 p-4 rounded-lg [&_button:hover_span]:text-[#333333] [&_button_span]:transition-colors"
+          className="bg-muted/50 p-4 rounded-lg"
         />
 
         <MultiSelect

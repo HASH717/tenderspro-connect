@@ -48,6 +48,7 @@ export const TenderList = ({ tenders, isLoading }: TenderListProps) => {
       const isFavorite = favorites.includes(tenderId);
       
       if (isFavorite) {
+        // Delete favorite
         const { error } = await supabase
           .from('favorites')
           .delete()
@@ -56,6 +57,7 @@ export const TenderList = ({ tenders, isLoading }: TenderListProps) => {
 
         if (error) throw error;
       } else {
+        // Insert favorite
         const { error } = await supabase
           .from('favorites')
           .insert({
@@ -75,7 +77,7 @@ export const TenderList = ({ tenders, isLoading }: TenderListProps) => {
   };
 
   if (isLoading || isLoadingFavorites) return <LoadingState />;
-  if (!tenders || tenders.length === 0) return <EmptyState />;
+  if (tenders.length === 0) return <EmptyState />;
 
   const displayedTenders = tenders.slice(0, displayCount);
   const hasMore = displayCount < tenders.length;
@@ -87,7 +89,7 @@ export const TenderList = ({ tenders, isLoading }: TenderListProps) => {
           <TenderCard
             key={tender.id}
             id={tender.id}
-            title={tender.title || ""}
+            title={tender.title}
             organization={tender.organization_name || tender.category || "Unknown"}
             location={tender.region || tender.wilaya || "Unknown"}
             deadline={tender.deadline || "Not specified"}

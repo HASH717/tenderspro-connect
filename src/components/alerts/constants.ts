@@ -56,7 +56,7 @@ export const WILAYA_OPTIONS = [
   { value: "55", label: "55 - Touggourt" },
   { value: "56", label: "56 - Djanet" },
   { value: "57", label: "57 - El M'Ghair" },
-  { value: "58", label: "58 - El Meniaa" }
+  { value: "58", label: "58 - El Meniaa" },
 ];
 
 export const TENDER_TYPE_OPTIONS = [

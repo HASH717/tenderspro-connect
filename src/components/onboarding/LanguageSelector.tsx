@@ -1,4 +1,3 @@
-
 import { useTranslation } from "react-i18next";
 import {
   Select,
@@ -21,21 +20,9 @@ export const LanguageSelector = ({ onLanguageChange }: LanguageSelectorProps) =>
           <SelectValue placeholder="Choose a language" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="en">
-            <div className="flex items-center justify-between w-full">
-              <span>English</span>
-            </div>
-          </SelectItem>
-          <SelectItem value="fr">
-            <div className="flex items-center justify-between w-full">
-              <span>Français</span>
-            </div>
-          </SelectItem>
-          <SelectItem value="ar">
-            <div className="flex items-center justify-between w-full">
-              <span>العربية</span>
-            </div>
-          </SelectItem>
+          <SelectItem value="en">English</SelectItem>
+          <SelectItem value="fr">Français</SelectItem>
+          <SelectItem value="ar">العربية</SelectItem>
         </SelectContent>
       </Select>
     </div>

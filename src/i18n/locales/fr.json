@@ -1,4 +1,3 @@
-
 {
   "navigation": {
     "home": "Accueil",
@@ -20,7 +19,7 @@
     "tenderType": "Type de marché",
     "announcementType": "Type d'annonce",
     "category": "Catégorie",
-    "wilaya": "Wilaya",
+    "wilaya": "Région",
     "microEnterprises": "Micro-entreprises",
     "searchButton": "Rechercher",
     "clearFilters": "Effacer les filtres",
@@ -75,6 +74,27 @@
       "skikda": "Skikda",
       "constantine": "Constantine",
       "oran": "Oran"
+    }
+  },
+  "profile": {
+    "email": "Email",
+    "newPassword": "Nouveau mot de passe",
+    "newPasswordPlaceholder": "Entrez le nouveau mot de passe",
+    "newPasswordHint": "(laisser vide pour garder l'actuel)",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "phoneNumber": "Numéro de téléphone",
+    "loading": "Chargement du profil...",
+    "saveChanges": "Enregistrer les modifications",
+    "saving": "Mise à jour...",
+    "logout": "Déconnexion",
+    "enterEmail": "Entrez votre email",
+    "enterPhoneNumber": "Entrez votre numéro de téléphone",
+    "language_updated": "Langue mise à jour avec succès",
+    "tabs": {
+      "profile": "Profil",
+      "subscription": "Abonnement",
+      "preferences": "Préférences"
     }
   },
   "alerts": {
