@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -22,7 +23,8 @@ export const CategorySelector = ({
         .from('tenders')
         .select('category')
         .not('category', 'is', null)
-        .not('category', 'eq', '');
+        .not('category', 'eq', '')
+        .distinct();
 
       if (error) {
         console.error('Error fetching categories:', error);
@@ -30,8 +32,9 @@ export const CategorySelector = ({
         return [];
       }
 
+      // Extract unique categories and sort them
       const uniqueCategories = Array.from(new Set(data.map(tender => tender.category)))
-        .filter(category => category)
+        .filter(Boolean)
         .sort();
 
       return uniqueCategories;
