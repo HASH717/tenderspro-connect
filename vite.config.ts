@@ -8,6 +8,7 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    strictPort: true,
     allowedHosts: [
       "74bd72ef-c253-4d7f-87d7-ab46b197b9e5.lovableproject.com",
     ],
@@ -16,7 +17,8 @@ export default defineConfig(({ mode }) => ({
       protocol: 'wss',
       host: "74bd72ef-c253-4d7f-87d7-ab46b197b9e5.lovableproject.com",
       path: "/@vite/client",
-      timeout: 30000
+      timeout: 30000,
+      overlay: true
     }
   },
   plugins: [
@@ -30,4 +32,5 @@ export default defineConfig(({ mode }) => ({
     },
   },
   base: "/",
+  clearScreen: false
 }));
