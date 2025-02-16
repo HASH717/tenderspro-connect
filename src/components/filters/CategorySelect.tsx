@@ -180,7 +180,7 @@ export const CategorySelect = ({ value, onChange }: CategorySelectProps) => {
               value={category}
               className="flex items-center justify-between"
             >
-              {category}
+              <span>{category}</span>
             </SelectItem>
           ))}
 
