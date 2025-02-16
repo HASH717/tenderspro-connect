@@ -149,7 +149,7 @@ export const AlertForm = ({ onClose, onSave, editingAlert }: AlertFormProps) => 
           options={WILAYA_OPTIONS}
           selectedValues={selectedWilayas}
           onChange={setSelectedWilayas}
-          className="bg-muted/50 p-4 rounded-lg"
+          className="bg-muted/50 p-4 rounded-lg [&_button:hover_span]:text-[#333333] [&_button_span]:transition-colors"
         />
 
         <MultiSelect
@@ -157,7 +157,7 @@ export const AlertForm = ({ onClose, onSave, editingAlert }: AlertFormProps) => 
           options={TENDER_TYPE_OPTIONS}
           selectedValues={selectedTenderTypes}
           onChange={setSelectedTenderTypes}
-          className="bg-muted/50 p-4 rounded-lg"
+          className="bg-muted/50 p-4 rounded-lg [&_button:hover_span]:text-[#333333] [&_button_span]:transition-colors"
         />
 
         <MultiSelect
