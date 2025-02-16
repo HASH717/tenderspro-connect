@@ -1,25 +1,101 @@
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Alert } from "./types";
+import { PushNotifications } from '@capacitor/push-notifications';
+import { Capacitor } from '@capacitor/core';
 
 export const NotificationManager = () => {
   const { toast } = useToast();
   const { session } = useAuth();
-  const [notificationsPermission, setNotificationsPermission] = useState<NotificationPermission>("default");
+  const [hasPermission, setHasPermission] = useState(false);
+  const isNative = Capacitor.isNativePlatform();
 
-  // Check notification permission on mount and when it changes
-  useEffect(() => {
-    if ("Notification" in window) {
-      console.log('Current notification permission:', Notification.permission);
-      setNotificationsPermission(Notification.permission);
+  // Initialize push notifications
+  const initializePushNotifications = async () => {
+    if (!isNative) {
+      console.log('Not a native platform, push notifications unavailable');
+      return;
     }
-  }, []);
 
+    try {
+      // Request permission
+      const permissionStatus = await PushNotifications.requestPermissions();
+      console.log('Permission status:', permissionStatus.receive);
+      
+      if (permissionStatus.receive === 'granted') {
+        // Register with FCM
+        await PushNotifications.register();
+        setHasPermission(true);
+        
+        // Show success message
+        toast({
+          title: "Notifications Enabled",
+          description: "You will now receive notifications for new tenders",
+        });
+      } else {
+        console.log('Push notification permission denied');
+        toast({
+          title: "Notifications Disabled",
+          description: "Please enable notifications in your device settings to receive tender updates",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error initializing push notifications:', error);
+      toast({
+        title: "Notification Error",
+        description: "Failed to initialize push notifications",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Set up push notification handlers
+  useEffect(() => {
+    if (!isNative) return;
+
+    // Registration success event
+    PushNotifications.addListener('registration', (token) => {
+      console.log('Push registration success:', token.value);
+      // Here you would typically send this token to your backend
+    });
+
+    // Registration error event
+    PushNotifications.addListener('registrationError', (error) => {
+      console.error('Push registration error:', error);
+    });
+
+    // Push notification received event
+    PushNotifications.addListener('pushNotificationReceived', (notification) => {
+      console.log('Push notification received:', notification);
+      // Handle the notification when the app is in foreground
+      toast({
+        title: notification.title || "New Tender Match",
+        description: notification.body,
+      });
+    });
+
+    // Push notification action clicked event
+    PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
+      console.log('Push notification action performed:', notification);
+      // Handle notification click - e.g., navigate to specific tender
+      if (notification.notification.data.tenderId) {
+        window.location.href = `/tenders/${notification.notification.data.tenderId}`;
+      }
+    });
+
+    return () => {
+      // Clean up listeners
+      PushNotifications.removeAllListeners();
+    };
+  }, [toast]);
+
+  // Set up realtime subscription for new tender notifications
   useEffect(() => {
     if (!session?.user?.id) {
       console.log('No user session found, skipping notification setup');
@@ -27,7 +103,6 @@ export const NotificationManager = () => {
     }
 
     console.log('Setting up real-time notifications for user:', session.user.id);
-    console.log('Current notification permission state:', notificationsPermission);
 
     const channel = supabase
       .channel('schema-db-changes')
@@ -43,122 +118,34 @@ export const NotificationManager = () => {
           console.log('New notification received:', payload);
           
           // Fetch the tender details
-          const { data: tender, error: tenderError } = await supabase
+          const { data: tender } = await supabase
             .from('tenders')
             .select('*')
             .eq('id', payload.new.tender_id)
             .single();
-
-          if (tenderError) {
-            console.error('Error fetching tender:', tenderError);
-            return;
-          }
 
           if (!tender) {
             console.log('No tender found for id:', payload.new.tender_id);
             return;
           }
 
-          console.log('Tender found:', tender);
-
           // Fetch the alert details
-          const { data: alert, error: alertError } = await supabase
+          const { data: alert } = await supabase
             .from('alerts')
             .select('*')
             .eq('id', payload.new.alert_id)
             .single();
-
-          if (alertError) {
-            console.error('Error fetching alert:', alertError);
-            return;
-          }
 
           if (!alert) {
             console.log('No alert found for id:', payload.new.alert_id);
             return;
           }
 
-          console.log('Alert found:', alert);
-          console.log('Alert notification preferences:', alert.notification_preferences);
-
           const preferences = alert.notification_preferences as Alert['notification_preferences'];
-          const emailEnabled = preferences?.email ?? false;
           const inAppEnabled = preferences?.in_app ?? true;
 
-          console.log('Notification preferences - Email:', emailEnabled, 'In-app:', inAppEnabled);
-
-          // Handle desktop notification
-          if (notificationsPermission === "granted") {
-            console.log('Attempting to show desktop notification');
-            try {
-              // Create notification with more visible content
-              const notification = new Notification("New Tender Match!", {
-                body: `${tender.title}\nCategory: ${tender.category}\nRegion: ${tender.wilaya}`,
-                icon: "/favicon.ico",
-                badge: "/favicon.ico",
-                requireInteraction: true, // Keep notification until user interacts with it
-                tag: `tender-${tender.id}`, // Unique tag to prevent duplicate notifications
-              });
-
-              // Handle notification click
-              notification.onclick = (event) => {
-                event.preventDefault(); // Prevent the default action
-                window.focus(); // Focus the window
-                window.location.href = `/tenders/${tender.id}`; // Navigate to tender details
-                notification.close(); // Close the notification
-              };
-
-              console.log('Desktop notification shown successfully');
-            } catch (error) {
-              console.error('Error showing desktop notification:', error);
-              // Fallback to toast if desktop notification fails
-              toast({
-                title: "New Tender Match!",
-                description: `A new tender matching your alert "${alert.name}": ${tender.title}`,
-              });
-            }
-          } else {
-            console.log('Desktop notifications not granted, permission state:', notificationsPermission);
-          }
-
-          // Handle email notification
-          if (emailEnabled) {
-            console.log('Attempting to send email notification');
-            try {
-              const { error } = await supabase.functions.invoke('send-alert-email', {
-                body: {
-                  to: session.user.email,
-                  subject: `New Tender Match: ${tender.title}`,
-                  html: `
-                    <h1>New Tender Match</h1>
-                    <p>A new tender matching your alert "${alert.name}" has been found:</p>
-                    <h2>${tender.title}</h2>
-                    <p><strong>Category:</strong> ${tender.category}</p>
-                    <p><strong>Region:</strong> ${tender.wilaya}</p>
-                    <p><strong>Deadline:</strong> ${new Date(tender.deadline).toLocaleDateString()}</p>
-                    <a href="${window.location.origin}/tenders/${tender.id}">View Tender Details</a>
-                  `,
-                  alertId: alert.id,
-                  tenderId: tender.id,
-                  userId: session.user.id
-                }
-              });
-
-              if (error) throw error;
-              console.log('Email notification sent successfully');
-            } catch (error) {
-              console.error('Error sending email notification:', error);
-              toast({
-                title: "Email Notification Failed",
-                description: "There was an error sending the email notification.",
-                variant: "destructive",
-              });
-            }
-          }
-
-          // Always show in-app toast notification as a fallback
+          // Show in-app notification if enabled
           if (inAppEnabled) {
-            console.log('Showing in-app toast notification');
             toast({
               title: "New Tender Match!",
               description: `A new tender matching your alert "${alert.name}": ${tender.title}`,
@@ -168,71 +155,20 @@ export const NotificationManager = () => {
       )
       .subscribe();
 
-    console.log('Real-time channel subscribed successfully');
-
     return () => {
-      console.log('Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
-  }, [session?.user?.id, notificationsPermission, toast]);
+  }, [session?.user?.id, toast]);
 
-  const requestNotificationPermission = async () => {
-    if (!("Notification" in window)) {
-      console.log('Browser notifications not supported');
-      toast({
-        title: "Notifications Not Supported",
-        description: "Your browser doesn't support desktop notifications",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      console.log('Requesting notification permission');
-      const permission = await Notification.requestPermission();
-      console.log('Permission request result:', permission);
-      
-      setNotificationsPermission(permission);
-      
-      if (permission === "granted") {
-        // Send a test notification to verify permissions
-        const testNotification = new Notification("Notifications Enabled!", {
-          body: "You will now receive desktop notifications for new tenders",
-          icon: "/favicon.ico",
-        });
-        
-        console.log('Test notification sent successfully');
-        
-        toast({
-          title: "Notifications Enabled",
-          description: "You will now receive desktop notifications for new tenders",
-        });
-      } else {
-        console.log('Notification permission not granted:', permission);
-        toast({
-          title: "Notifications Disabled",
-          description: "You will not receive desktop notifications for new tenders",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error('Error requesting notification permission:', error);
-      toast({
-        title: "Permission Error",
-        description: "Failed to request notification permission",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Only show the enable button if permission is in default state
-  if (notificationsPermission !== "default") return null;
+  // Only show the button if we're on a native platform and don't have permission yet
+  if (!isNative || hasPermission) return null;
 
   return (
     <Button
-      onClick={requestNotificationPermission}
+      onClick={initializePushNotifications}
       variant="outline"
-      className="gap-2"
+      size="sm"
+      className="gap-2 whitespace-nowrap"
     >
       <Bell className="h-4 w-4" />
       Enable Notifications
