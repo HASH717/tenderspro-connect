@@ -17,14 +17,14 @@ export const TenderTypeSelect = ({ value, onChange }: TenderTypeSelectProps) => 
   const { t } = useTranslation();
 
   const tenderTypes = [
-    { id: "national_call", name: "Appel d'offres national" },
-    { id: "national_international", name: "Appel d'offres national et international" },
-    { id: "sale_notice", name: "Avis de vente" },
-    { id: "international_consultation", name: "Consultation internationale" },
-    { id: "national_consultation", name: "Consultation nationale" },
-    { id: "expression_interest", name: "Manifestation d'intérêt" },
-    { id: "national_preselection", name: "Présélection nationale" },
-    { id: "adjudication", name: "Adjudication" }
+    "Appel d'offres national",
+    "Appel d'offres national et international",
+    "Avis de vente",
+    "Consultation internationale",
+    "Consultation nationale",
+    "Manifestation d'intérêt",
+    "Présélection nationale",
+    "Adjudication"
   ];
 
   return (
@@ -35,10 +35,10 @@ export const TenderTypeSelect = ({ value, onChange }: TenderTypeSelectProps) => 
       <SelectContent>
         {tenderTypes.map((type) => (
           <SelectItem 
-            key={type.id} 
-            value={type.id}
+            key={type.toLowerCase()}
+            value={type}
           >
-            {t(`filters.types.${type.id}`, type.name)}
+            {type}
           </SelectItem>
         ))}
       </SelectContent>

@@ -125,12 +125,12 @@ export const AlertForm = ({ onClose, onSave, editingAlert }: AlertFormProps) => 
     <div className="space-y-4 border rounded-lg p-6 bg-white shadow-sm">
       <div className="flex justify-between items-start">
         <div className="space-y-2 flex-1">
-          <Label htmlFor="alert-name" className="text-sm font-medium">{t("alerts.name")}</Label>
+          <Label htmlFor="alert-name" className="text-sm font-medium">Alert Name</Label>
           <Input
             id="alert-name"
             value={alertName}
             onChange={(e) => setAlertName(e.target.value)}
-            placeholder={t("alerts.namePlaceholder")}
+            placeholder="Name your alert"
             className="max-w-md"
           />
         </div>
@@ -145,7 +145,7 @@ export const AlertForm = ({ onClose, onSave, editingAlert }: AlertFormProps) => 
 
       <div className="grid gap-6">
         <MultiSelect
-          label={t("alerts.regions")}
+          label="Regions"
           options={WILAYA_OPTIONS}
           selectedValues={selectedWilayas}
           onChange={setSelectedWilayas}
@@ -153,7 +153,7 @@ export const AlertForm = ({ onClose, onSave, editingAlert }: AlertFormProps) => 
         />
 
         <MultiSelect
-          label={t("alerts.marketType")}
+          label="Market type"
           options={TENDER_TYPE_OPTIONS}
           selectedValues={selectedTenderTypes}
           onChange={setSelectedTenderTypes}
@@ -161,7 +161,7 @@ export const AlertForm = ({ onClose, onSave, editingAlert }: AlertFormProps) => 
         />
 
         <MultiSelect
-          label={t("alerts.categories")}
+          label="Categories"
           options={categoryOptions}
           selectedValues={selectedCategories}
           onChange={setSelectedCategories}
@@ -174,13 +174,13 @@ export const AlertForm = ({ onClose, onSave, editingAlert }: AlertFormProps) => 
             checked={emailNotifications}
             onCheckedChange={setEmailNotifications}
           />
-          <Label htmlFor="email-notifications">{t("alerts.receiveEmailNotifications")}</Label>
+          <Label htmlFor="email-notifications">Receive email notifications</Label>
         </div>
       </div>
 
       <div className="flex justify-end pt-4">
         <Button onClick={handleSaveAlert}>
-          {t("alerts.save")}
+          Save
         </Button>
       </div>
     </div>

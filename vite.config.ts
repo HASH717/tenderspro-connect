@@ -8,9 +8,6 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    allowedHosts: [
-      "74bd72ef-c253-4d7f-87d7-ab46b197b9e5.lovableproject.com"
-    ]
   },
   plugins: [
     react(),
@@ -23,11 +20,4 @@ export default defineConfig(({ mode }) => ({
     },
   },
   base: "/",
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks: undefined,
-      },
-    },
-  },
 }));

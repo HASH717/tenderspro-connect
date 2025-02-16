@@ -1,4 +1,3 @@
-
 import { useTranslation } from "react-i18next";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -6,13 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-
-interface CategoryOption {
-  value: string;
-  label: string;
-}
-
-type Category = string | CategoryOption;
 
 interface PreferencesTabProps {
   currentLanguage: string;
@@ -66,19 +58,9 @@ export const PreferencesTab = ({ currentLanguage, onLanguageChange, preferredCat
   });
 
   // Ensure we always have an array to work with, prioritizing subscription data if available
-  const displayCategories: Category[] = Array.isArray(subscriptionData) && subscriptionData.length > 0 
+  const displayCategories = Array.isArray(subscriptionData) && subscriptionData.length > 0 
     ? subscriptionData 
     : Array.isArray(preferredCategories) ? preferredCategories : [];
-
-  const getCategoryKey = (category: Category): string => {
-    if (category === null) return 'null';
-    return typeof category === 'object' ? category.value : category;
-  };
-
-  const getCategoryLabel = (category: Category): string => {
-    if (category === null) return '';
-    return typeof category === 'object' ? category.label : category;
-  };
 
   return (
     <div className="bg-white p-6 rounded-lg border space-y-6">
@@ -113,8 +95,8 @@ export const PreferencesTab = ({ currentLanguage, onLanguageChange, preferredCat
         <div className="flex flex-wrap gap-2">
           {displayCategories.length > 0 ? (
             displayCategories.map((category) => (
-              <Badge key={getCategoryKey(category)} variant="secondary">
-                {getCategoryLabel(category)}
+              <Badge key={category} variant="secondary">
+                {category}
               </Badge>
             ))
           ) : (
