@@ -28,17 +28,22 @@ export const TenderTypeSelect = ({ value, onChange }: TenderTypeSelectProps) => 
   ];
 
   return (
-    <Select value={value} onValueChange={onChange}>
+    <Select 
+      value={value || undefined} 
+      onValueChange={onChange}
+    >
       <SelectTrigger className="bg-white/80 backdrop-blur-sm border-muted/50">
         <SelectValue placeholder={t("filters.tenderType")} />
       </SelectTrigger>
       <SelectContent>
         {tenderTypes.map((type) => (
           <SelectItem 
-            key={type.toLowerCase()}
+            key={type}
             value={type}
           >
-            {type}
+            <div className="flex items-center justify-between w-full">
+              <span>{type}</span>
+            </div>
           </SelectItem>
         ))}
       </SelectContent>
