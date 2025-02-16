@@ -22,9 +22,19 @@ export default defineConfig({
       '/.lovable': {
         target: 'https://74bd72ef-c253-4d7f-87d7-ab46b197b9e5.lovableproject.com',
         changeOrigin: true,
-        secure: false
+        secure: false,
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('proxy error', err);
+          });
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            console.log('Sending Request to the Target:', req.method, req.url);
+          });
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
+            console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
+          });
+        }
       }
-    },
-    allowedHosts: ['74bd72ef-c253-4d7f-87d7-ab46b197b9e5.lovableproject.com']
+    }
   }
 });
