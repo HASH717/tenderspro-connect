@@ -34,7 +34,10 @@ export const WilayaSelect = ({ value, onChange }: WilayaSelectProps) => {
   ];
 
   return (
-    <Select value={value} onValueChange={onChange}>
+    <Select 
+      value={value || undefined} 
+      onValueChange={onChange}
+    >
       <SelectTrigger className="bg-white/80 backdrop-blur-sm border-muted/50">
         <SelectValue placeholder={t("filters.wilaya")} />
       </SelectTrigger>
