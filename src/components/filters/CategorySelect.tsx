@@ -173,23 +173,20 @@ export const CategorySelect = ({ value, onChange }: CategorySelectProps) => {
       </SelectTrigger>
       <SelectContent>
         <ScrollArea className="h-[300px]">
-          {/* Accessible Categories */}
           {accessible.map((category) => (
             <SelectItem 
               key={category} 
               value={category}
               className="flex items-center justify-between"
             >
-              <span>{category}</span>
+              {category}
             </SelectItem>
           ))}
 
-          {/* Separator between accessible and locked categories */}
           {locked.length > 0 && accessible.length > 0 && (
             <Separator className="my-2" />
           )}
 
-          {/* Locked Categories */}
           {locked.map((category) => (
             <SelectItem 
               key={category} 
