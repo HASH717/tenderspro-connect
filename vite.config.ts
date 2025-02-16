@@ -14,7 +14,7 @@ export default defineConfig({
   server: {
     host: "::",
     port: 8080,
-    hmr: true, // Simplified HMR configuration
+    hmr: true,
     headers: {
       'Access-Control-Allow-Origin': '*'
     },
@@ -24,6 +24,7 @@ export default defineConfig({
         changeOrigin: true,
         secure: false
       }
-    }
+    },
+    allowedHosts: ['74bd72ef-c253-4d7f-87d7-ab46b197b9e5.lovableproject.com']
   }
 });
