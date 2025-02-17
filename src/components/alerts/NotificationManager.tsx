@@ -89,97 +89,114 @@ export const NotificationManager = () => {
     try {
       console.log('Starting push notification setup');
       
-      // Force the check for native platform
-      const deviceInfo = await Device.getInfo();
-      console.log('Device info:', deviceInfo, 'platform:', deviceInfo.platform);
-      
-      // Set native device state based on platform check
-      const isNative = deviceInfo.platform === 'android' || deviceInfo.platform === 'ios';
-      console.log('Is native device:', isNative);
-      setIsNativeDevice(isNative);
-
-      if (!isNative) {
-        console.log('Not a native mobile platform, skipping push setup');
-        return;
-      }
-
-      // Create notification channel for Android
-      if (deviceInfo.platform === 'android') {
-        await createNotificationChannel();
-      }
-      
-      // Check current permission status
-      const permissionStatus = await PushNotifications.checkPermissions();
-      console.log('Current permission status:', permissionStatus);
-      
-      if (permissionStatus.receive !== 'granted') {
-        console.log('Requesting push notification permissions');
-        const result = await PushNotifications.requestPermissions();
-        console.log('Permission request result:', result);
-        
-        if (result.receive !== 'granted') {
-          console.error('Push notification permission denied');
-          toast({
-            title: "Permission Required",
-            description: "Please enable push notifications in your device settings",
-            variant: "destructive",
-          });
+      try {
+        // Check if we can actually use the Capacitor Plugin
+        if (typeof PushNotifications.checkPermissions !== 'function') {
+          console.error('PushNotifications plugin not available');
           return;
         }
-      }
 
-      // Remove existing listeners before adding new ones
-      await PushNotifications.removeAllListeners();
-      console.log('Removed existing listeners');
+        // Force the check for native platform
+        const deviceInfo = await Device.getInfo();
+        console.log('Device info:', {
+          platform: deviceInfo.platform,
+          isVirtual: deviceInfo.isVirtual,
+          model: deviceInfo.model,
+          operatingSystem: deviceInfo.operatingSystem,
+          webViewVersion: deviceInfo.webViewVersion
+        });
+        
+        // Set native device state based on platform check
+        const isNative = deviceInfo.platform === 'android' || deviceInfo.platform === 'ios';
+        console.log('Is native device:', isNative);
+        setIsNativeDevice(isNative);
 
-      // Register for push notifications
-      console.log('Registering for push notifications');
-      await PushNotifications.register();
-      console.log('Push notifications registered');
-
-      // Set up registration listener
-      PushNotifications.addListener('registration', async (token) => {
-        console.log('Got push token:', token.value);
-        setPushToken(token.value);
-
-        try {
-          await storePushToken(token.value, deviceInfo.platform);
-          toast({
-            title: "Success",
-            description: "Push notifications enabled successfully",
-          });
-        } catch (error) {
-          console.error('Error in registration process:', error);
-          toast({
-            title: "Error",
-            description: "Failed to register for push notifications",
-            variant: "destructive",
-          });
+        if (!isNative) {
+          console.log('Not a native mobile platform, skipping push setup');
+          return;
         }
-      });
 
-      // Set up notification received listener
-      PushNotifications.addListener('pushNotificationReceived', 
-        (notification: PushNotificationSchema) => {
-          console.log('Received push notification:', notification);
-          toast({
-            title: notification.title || "New Notification",
-            description: notification.body,
-          });
+        // Create notification channel for Android
+        if (deviceInfo.platform === 'android') {
+          await createNotificationChannel();
         }
-      );
-
-      // Set up notification action listener
-      PushNotifications.addListener('pushNotificationActionPerformed',
-        (notification: ActionPerformed) => {
-          console.log('Push notification action performed:', notification);
-          if (notification.notification.data?.tenderId) {
-            window.location.href = `/tenders/${notification.notification.data.tenderId}`;
+        
+        // Check current permission status
+        const permissionStatus = await PushNotifications.checkPermissions();
+        console.log('Current permission status:', permissionStatus);
+        
+        if (permissionStatus.receive !== 'granted') {
+          console.log('Requesting push notification permissions');
+          const result = await PushNotifications.requestPermissions();
+          console.log('Permission request result:', result);
+          
+          if (result.receive !== 'granted') {
+            console.error('Push notification permission denied');
+            toast({
+              title: "Permission Required",
+              description: "Please enable push notifications in your device settings",
+              variant: "destructive",
+            });
+            return;
           }
         }
-      );
 
-      console.log('All push notification listeners set up');
+        // Remove existing listeners before adding new ones
+        await PushNotifications.removeAllListeners();
+        console.log('Removed existing listeners');
+
+        // Register for push notifications
+        console.log('Registering for push notifications');
+        await PushNotifications.register();
+        console.log('Push notifications registered');
+
+        // Set up registration listener
+        PushNotifications.addListener('registration', async (token) => {
+          console.log('Got push token:', token.value);
+          setPushToken(token.value);
+
+          try {
+            await storePushToken(token.value, deviceInfo.platform);
+            toast({
+              title: "Success",
+              description: "Push notifications enabled successfully",
+            });
+          } catch (error) {
+            console.error('Error in registration process:', error);
+            toast({
+              title: "Error",
+              description: "Failed to register for push notifications",
+              variant: "destructive",
+            });
+          }
+        });
+
+        // Set up notification received listener
+        PushNotifications.addListener('pushNotificationReceived', 
+          (notification: PushNotificationSchema) => {
+            console.log('Received push notification:', notification);
+            toast({
+              title: notification.title || "New Notification",
+              description: notification.body,
+            });
+          }
+        );
+
+        // Set up notification action listener
+        PushNotifications.addListener('pushNotificationActionPerformed',
+          (notification: ActionPerformed) => {
+            console.log('Push notification action performed:', notification);
+            if (notification.notification.data?.tenderId) {
+              window.location.href = `/tenders/${notification.notification.data.tenderId}`;
+            }
+          }
+        );
+
+        console.log('All push notification listeners set up');
+      } catch (setupError) {
+        console.error('Error during setup:', setupError);
+        throw setupError;
+      }
     } catch (error) {
       console.error('Error in setupPushNotifications:', error);
       toast({
@@ -189,6 +206,20 @@ export const NotificationManager = () => {
       });
     }
   };
+
+  // Immediately check device type on component mount
+  useEffect(() => {
+    const checkDevice = async () => {
+      try {
+        const deviceInfo = await Device.getInfo();
+        console.log('Initial device check:', deviceInfo);
+        setIsNativeDevice(deviceInfo.platform === 'android' || deviceInfo.platform === 'ios');
+      } catch (error) {
+        console.error('Error checking device:', error);
+      }
+    };
+    checkDevice();
+  }, []);
 
   // Call setupPushNotifications when the component mounts and we have a session
   useEffect(() => {
