@@ -6,7 +6,7 @@ import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => ({
   define: {
-    __HMR_CONFIG_NAME__: JSON.stringify("hmr"),
+    'process.env': {},
   },
   server: {
     host: "::",
