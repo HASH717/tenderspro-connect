@@ -19,6 +19,16 @@ interface WebPushPayload {
       body: string;
     };
     data?: Record<string, string>;
+    android: {
+      priority: 'high';
+      notification: {
+        sound: string;
+        channelId: string;
+        priority: 'high';
+        defaultSound: boolean;
+        visibility: 'public';
+      };
+    };
   };
 }
 
@@ -26,6 +36,10 @@ async function getAccessToken() {
   try {
     const serviceAccount = JSON.parse(Deno.env.get('FIREBASE_SERVICE_ACCOUNT') ?? '{}');
     
+    if (!serviceAccount.private_key) {
+      throw new Error('Firebase service account private key not found');
+    }
+
     // Generate JWT
     const now = Math.floor(Date.now() / 1000);
     const header = {
@@ -77,7 +91,13 @@ async function getAccessToken() {
       }),
     });
 
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      throw new Error(`Failed to get access token: ${errorText}`);
+    }
+
     const { access_token } = await tokenResponse.json();
+    console.log('Successfully obtained FCM access token');
     return access_token;
   } catch (error) {
     console.error('Error getting access token:', error);
@@ -85,13 +105,15 @@ async function getAccessToken() {
   }
 }
 
-async function sendPushNotifications(tokens: any[], tender: any, alert: any, projectId: string, accessToken: string) {
-  const sendPromises = tokens.map(async ({ push_token }) => {
-    console.log('Sending push notification to token:', push_token);
+async function sendPushNotifications(tokens: string[], tender: any, alert: any, projectId: string, accessToken: string) {
+  console.log('Sending push notifications to tokens:', tokens);
+  
+  const sendPromises = tokens.map(async (token) => {
+    console.log('Preparing notification for token:', token);
     
     const payload: WebPushPayload = {
       message: {
-        token: push_token,
+        token: token,
         notification: {
           title: "New Tender Match!",
           body: `A new tender matching your alert "${alert.name}": ${tender.title}`
@@ -99,10 +121,21 @@ async function sendPushNotifications(tokens: any[], tender: any, alert: any, pro
         data: {
           tenderId: tender.id,
           alertId: alert.id
+        },
+        android: {
+          priority: 'high',
+          notification: {
+            sound: 'notification_sound',
+            channelId: 'tenders-notifications',
+            priority: 'high',
+            defaultSound: true,
+            visibility: 'public'
+          }
         }
       }
     };
-    console.log('FCM payload:', payload);
+    
+    console.log('Sending FCM request with payload:', JSON.stringify(payload));
 
     const res = await fetch(
       `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
@@ -122,59 +155,12 @@ async function sendPushNotifications(tokens: any[], tender: any, alert: any, pro
       throw new Error(`Failed to send push notification: ${errorText}`);
     }
 
-    return await res.json();
+    const response = await res.json();
+    console.log('FCM response:', response);
+    return response;
   });
 
   return await Promise.all(sendPromises);
-}
-
-async function getUserEmail(userId: string) {
-  const { data: { user }, error } = await supabaseAdmin.auth.admin.getUserById(userId);
-  if (error) {
-    console.error('Error fetching user:', error);
-    throw error;
-  }
-  if (!user?.email) {
-    console.error('No email found for user:', userId);
-    throw new Error('User email not found');
-  }
-  console.log('Found email for user:', user.email);
-  return user.email;
-}
-
-async function sendEmail(tender_id: string, alert_id: string, user_id: string) {
-  try {
-    const userEmail = await getUserEmail(user_id);
-    console.log('Sending email notification to:', userEmail);
-
-    const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-alert-email`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        tender_id,
-        alert_id,
-        user_id,
-        to: userEmail,
-        subject: "New Tender Match!"
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Email service error:', errorText);
-      throw new Error(`Email service responded with ${response.status}: ${errorText}`);
-    }
-
-    const result = await response.json();
-    console.log('Email service response:', result);
-    return result;
-  } catch (error) {
-    console.error('Error sending email:', error);
-    throw error;
-  }
 }
 
 Deno.serve(async (req) => {
@@ -213,23 +199,31 @@ Deno.serve(async (req) => {
     console.log('Fetched alert:', alert);
 
     // Fetch user's push tokens
-    const { data: tokens, error: tokensError } = await supabaseAdmin
+    const { data: tokenData, error: tokensError } = await supabaseAdmin
       .from('user_push_tokens')
-      .select('push_token, device_type')
+      .select('push_token')
       .eq('user_id', user_id);
 
     if (tokensError) {
       console.error('Error fetching push tokens:', tokensError);
       throw tokensError;
     }
+
+    const tokens = tokenData?.map(t => t.push_token) || [];
     console.log('Found push tokens:', tokens);
 
     let pushResults = [];
-    if (tokens && tokens.length > 0) {
+    if (tokens.length > 0) {
       // Get access token for FCM
       const accessToken = await getAccessToken();
+      console.log('Got FCM access token');
+      
       const serviceAccount = JSON.parse(Deno.env.get('FIREBASE_SERVICE_ACCOUNT') ?? '{}');
       const projectId = serviceAccount.project_id;
+      
+      if (!projectId) {
+        throw new Error('Firebase project ID not found in service account');
+      }
 
       // Send push notifications
       pushResults = await sendPushNotifications(tokens, tender, alert, projectId, accessToken);
@@ -238,16 +232,10 @@ Deno.serve(async (req) => {
       console.log('No push tokens found for user:', user_id);
     }
 
-    // Send email notification
-    console.log('Sending email notification');
-    const emailResult = await sendEmail(tender_id, alert_id, user_id);
-    console.log('Email notification result:', emailResult);
-
     return new Response(
       JSON.stringify({ 
-        message: 'Notifications sent successfully', 
-        push_results: pushResults,
-        email_result: emailResult 
+        message: 'Notifications processed', 
+        push_results: pushResults
       }),
       { 
         headers: { 
