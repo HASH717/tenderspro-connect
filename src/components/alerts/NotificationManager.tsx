@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Alert } from "./types";
 import { 
   PushNotifications,
   PushNotificationSchema,
@@ -18,111 +17,136 @@ export const NotificationManager = () => {
   const { session } = useAuth();
   const [notificationsPermission, setNotificationsPermission] = useState<NotificationPermission>("default");
   const [isNativeDevice, setIsNativeDevice] = useState(false);
+  const [pushToken, setPushToken] = useState<string | null>(null);
 
-  useEffect(() => {
-    const checkPlatform = async () => {
-      try {
-        const info = await Device.getInfo();
-        const isNative = info.platform === 'android' || info.platform === 'ios';
-        console.log('Device platform:', info.platform, 'isNative:', isNative);
-        setIsNativeDevice(isNative);
-        
-        if (isNative && session?.user?.id) {
-          console.log('Setting up push notifications for native device');
-          await setupPushNotifications();
-        }
-      } catch (error) {
-        console.error('Error checking platform:', error);
-        setIsNativeDevice(false);
+  const storePushToken = async (token: string, deviceType: string) => {
+    if (!session?.user?.id) {
+      console.error('No user session found when storing push token');
+      return;
+    }
+
+    try {
+      console.log('Attempting to store push token:', {
+        userId: session.user.id,
+        deviceType,
+        tokenLength: token.length
+      });
+
+      const { data, error } = await supabase
+        .from('user_push_tokens')
+        .upsert({
+          user_id: session.user.id,
+          push_token: token,
+          device_type: deviceType,
+          last_updated: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,push_token'
+        });
+
+      if (error) {
+        console.error('Error storing push token:', error);
+        throw error;
       }
-    };
-    
-    checkPlatform();
-  }, [session?.user?.id]);
+
+      console.log('Successfully stored push token');
+      return data;
+    } catch (error) {
+      console.error('Failed to store push token:', error);
+      throw error;
+    }
+  };
 
   const setupPushNotifications = async () => {
     try {
-      console.log('Requesting push notification permissions');
-      const result = await PushNotifications.requestPermissions();
-      console.log('Push notification permission result:', result);
+      console.log('Starting push notification setup');
       
-      if (result.receive === 'granted') {
-        console.log('Registering push notifications');
-        await PushNotifications.register();
-
-        await PushNotifications.removeAllListeners();
-
-        // Add registration listener
-        PushNotifications.addListener('registration', async token => {
-          console.log('Push registration success, token:', token.value);
-          if (session?.user?.id) {
-            try {
-              const deviceInfo = await Device.getInfo();
-              console.log('Storing push token for user:', session.user.id, 'device:', deviceInfo.platform);
-              
-              const { data, error } = await supabase
-                .from('user_push_tokens')
-                .upsert({
-                  user_id: session.user.id,
-                  push_token: token.value,
-                  device_type: deviceInfo.platform,
-                  last_updated: new Date().toISOString()
-                }, {
-                  onConflict: 'user_id,push_token'
-                });
-
-              if (error) {
-                console.error('Error storing push token:', error);
-                toast({
-                  title: "Error",
-                  description: "Failed to register for push notifications",
-                  variant: "destructive",
-                });
-              } else {
-                console.log('Successfully stored push token:', data);
-                toast({
-                  title: "Success",
-                  description: "Push notifications enabled successfully",
-                });
-              }
-            } catch (error) {
-              console.error('Error in token registration process:', error);
-            }
-          }
-        });
-
-        // Add notification received listener
-        PushNotifications.addListener('pushNotificationReceived', 
-          (notification: PushNotificationSchema) => {
-            console.log('Push notification received:', notification);
-            toast({
-              title: notification.title || "New Notification",
-              description: notification.body,
-            });
-          }
-        );
-
-        // Add notification click listener
-        PushNotifications.addListener('pushNotificationActionPerformed',
-          (notification: ActionPerformed) => {
-            console.log('Push notification action performed:', notification);
-            if (notification.notification.data?.tenderId) {
-              window.location.href = `/tenders/${notification.notification.data.tenderId}`;
-            }
-          }
-        );
-
-        console.log('Push notification listeners set up successfully');
-      } else {
-        console.log('Push notifications permission denied');
-        toast({
-          title: "Permission Required",
-          description: "Please enable push notifications in your device settings",
-          variant: "destructive",
-        });
+      // Check if we're running in a Capacitor app
+      const deviceInfo = await Device.getInfo();
+      console.log('Device info:', deviceInfo);
+      
+      if (!deviceInfo.platform || (deviceInfo.platform !== 'android' && deviceInfo.platform !== 'ios')) {
+        console.log('Not a native mobile platform:', deviceInfo.platform);
+        setIsNativeDevice(false);
+        return;
       }
+
+      setIsNativeDevice(true);
+      
+      // Check current permission status
+      const permissionStatus = await PushNotifications.checkPermissions();
+      console.log('Current permission status:', permissionStatus);
+      
+      if (permissionStatus.receive !== 'granted') {
+        console.log('Requesting push notification permissions');
+        const result = await PushNotifications.requestPermissions();
+        console.log('Permission request result:', result);
+        
+        if (result.receive !== 'granted') {
+          console.log('Push notification permission denied');
+          toast({
+            title: "Permission Required",
+            description: "Please enable push notifications in your device settings",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      // Register for push notifications
+      console.log('Registering for push notifications');
+      await PushNotifications.register();
+      console.log('Push notifications registered');
+
+      // Remove existing listeners to prevent duplicates
+      await PushNotifications.removeAllListeners();
+      console.log('Removed existing listeners');
+
+      // Set up registration listener
+      PushNotifications.addListener('registration', async (token) => {
+        console.log('Got push token:', token.value);
+        setPushToken(token.value);
+
+        try {
+          await storePushToken(token.value, deviceInfo.platform);
+          
+          toast({
+            title: "Success",
+            description: "Push notifications enabled successfully",
+          });
+        } catch (error) {
+          console.error('Error in registration process:', error);
+          toast({
+            title: "Error",
+            description: "Failed to register for push notifications",
+            variant: "destructive",
+          });
+        }
+      });
+
+      // Set up notification received listener
+      PushNotifications.addListener('pushNotificationReceived', 
+        (notification: PushNotificationSchema) => {
+          console.log('Received push notification:', notification);
+          toast({
+            title: notification.title || "New Notification",
+            description: notification.body,
+          });
+        }
+      );
+
+      // Set up notification action listener
+      PushNotifications.addListener('pushNotificationActionPerformed',
+        (notification: ActionPerformed) => {
+          console.log('Push notification action performed:', notification);
+          if (notification.notification.data?.tenderId) {
+            window.location.href = `/tenders/${notification.notification.data.tenderId}`;
+          }
+        }
+      );
+
+      console.log('All push notification listeners set up');
     } catch (error) {
-      console.error('Error setting up push notifications:', error);
+      console.error('Error in setupPushNotifications:', error);
       toast({
         title: "Error",
         description: "Failed to set up push notifications",
@@ -130,6 +154,15 @@ export const NotificationManager = () => {
       });
     }
   };
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      console.log('Setting up push notifications for user:', session.user.id);
+      setupPushNotifications();
+    } else {
+      console.log('No user session, skipping push notification setup');
+    }
+  }, [session?.user?.id]);
 
   useEffect(() => {
     if (!session?.user?.id) {
@@ -173,9 +206,10 @@ export const NotificationManager = () => {
             console.error('Error invoking send-push-notification function:', error);
           }
 
+          // Handle web notifications
           if (!isNativeDevice && notificationsPermission === "granted") {
             const notification = new Notification("New Tender Match!", {
-              body: `A new tender matching your alert`,
+              body: `A new tender matching your alert has been found`,
               icon: "/favicon.ico",
             });
 
@@ -229,8 +263,9 @@ export const NotificationManager = () => {
     }
   };
 
+  // Only show the button for web notifications if we're not on a native device
   const shouldShowButton = !isNativeDevice && notificationsPermission === "default";
-  console.log('Should show notification button:', shouldShowButton, 'isNativeDevice:', isNativeDevice);
+  console.log('Should show notification button:', shouldShowButton, 'isNativeDevice:', isNativeDevice, 'pushToken:', pushToken);
 
   if (!shouldShowButton) return null;
 
