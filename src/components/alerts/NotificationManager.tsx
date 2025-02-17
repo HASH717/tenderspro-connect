@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -51,8 +50,10 @@ export const NotificationManager = () => {
         // Add listeners for push notifications
         PushNotifications.addListener('registration', token => {
           console.log('Push registration success:', token.value);
-          // Here you would send this token to your backend to associate it with the user
-          storePushToken(token.value);
+          // Store the token in the database
+          if (session?.user?.id) {
+            storePushToken(token.value);
+          }
         });
 
         PushNotifications.addListener('pushNotificationReceived', 
@@ -86,16 +87,13 @@ export const NotificationManager = () => {
     if (!session?.user?.id) return;
 
     try {
-      const { error } = await supabase
-        .from('user_push_tokens')
-        .upsert({
-          user_id: session.user.id,
-          push_token: token,
-          device_type: await Device.getInfo().then(info => info.platform),
-          last_updated: new Date().toISOString()
-        }, {
-          onConflict: 'user_id,push_token'
-        });
+      const deviceInfo = await Device.getInfo();
+      // Using raw query to insert into user_push_tokens
+      const { error } = await supabase.rpc('store_push_token', {
+        p_user_id: session.user.id,
+        p_push_token: token,
+        p_device_type: deviceInfo.platform
+      });
 
       if (error) {
         console.error('Error storing push token:', error);
