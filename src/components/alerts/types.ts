@@ -52,10 +52,12 @@ export const mapFiltersToDb = (filters: Partial<Alert>, userId: string) => {
 export const mapDbToFilters = (dbAlert: any): Alert => {
   // Split the wilaya string and map to full format
   const wilayas = dbAlert.wilaya ? dbAlert.wilaya.split(",").map(wilayaNumber => {
-    if (!wilayaNumber) return ''; // Handle null/undefined wilaya
     // Find the matching full wilaya string
-    const matchingOption = WILAYA_OPTIONS.find(opt => opt.startsWith(wilayaNumber.trim() + " -"));
-    return matchingOption || wilayaNumber; // Return full format if found, otherwise original value
+    const matchingOption = WILAYA_OPTIONS.find(opt => {
+      const [num] = opt.split(" - ");
+      return num.trim() === wilayaNumber.trim();
+    });
+    return matchingOption || ""; // Return full format if found, otherwise empty string
   }).filter(Boolean) : []; // Remove empty strings
 
   const tenderType = dbAlert.tender_type ? dbAlert.tender_type.split(",") : [];
