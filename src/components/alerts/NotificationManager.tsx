@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,14 +18,12 @@ export const NotificationManager = () => {
   const [notificationsPermission, setNotificationsPermission] = useState<NotificationPermission>("default");
   const [isNativeDevice, setIsNativeDevice] = useState(false);
 
-  // Check if running on native device
   useEffect(() => {
     const checkPlatform = async () => {
       try {
         const info = await Device.getInfo();
         setIsNativeDevice(info.platform === 'android' || info.platform === 'ios');
         
-        // If on native device, initialize push notifications
         if (info.platform === 'android' || info.platform === 'ios') {
           await setupPushNotifications();
         }
@@ -41,17 +38,13 @@ export const NotificationManager = () => {
 
   const setupPushNotifications = async () => {
     try {
-      // Request permission to use push notifications
       const result = await PushNotifications.requestPermissions();
       
       if (result.receive === 'granted') {
-        // Register with push notification service
         await PushNotifications.register();
 
-        // Add listeners for push notifications
         PushNotifications.addListener('registration', token => {
           console.log('Push registration success:', token.value);
-          // Store the token in the database
           if (session?.user?.id) {
             storePushToken(token.value);
           }
@@ -60,7 +53,6 @@ export const NotificationManager = () => {
         PushNotifications.addListener('pushNotificationReceived', 
           (notification: PushNotificationSchema) => {
             console.log('Push notification received:', notification);
-            // Show toast for received notification
             toast({
               title: notification.title || "New Notification",
               description: notification.body,
@@ -71,9 +63,7 @@ export const NotificationManager = () => {
         PushNotifications.addListener('pushNotificationActionPerformed',
           (notification: ActionPerformed) => {
             console.log('Push notification action performed:', notification);
-            // Handle notification click action here
             if (notification.notification.data?.tenderId) {
-              // Navigate to tender details if available
               window.location.href = `/tenders/${notification.notification.data.tenderId}`;
             }
           }
@@ -129,7 +119,6 @@ export const NotificationManager = () => {
         async (payload) => {
           console.log('New notification received:', payload);
           
-          // Fetch the tender details
           const { data: tender, error: tenderError } = await supabase
             .from('tenders')
             .select('*')
@@ -146,7 +135,6 @@ export const NotificationManager = () => {
             return;
           }
 
-          // Fetch the alert details
           const { data: alert, error: alertError } = await supabase
             .from('alerts')
             .select('*')
@@ -166,7 +154,6 @@ export const NotificationManager = () => {
           const preferences = alert.notification_preferences as Alert['notification_preferences'];
           const emailEnabled = preferences?.email ?? false;
 
-          // Handle email notifications
           if (emailEnabled) {
             try {
               const { error } = await supabase.functions.invoke('send-alert-email', {
@@ -196,7 +183,6 @@ export const NotificationManager = () => {
             }
           }
 
-          // Show browser notification if on desktop and enabled
           if (!isNativeDevice && notificationsPermission === "granted") {
             const notification = new Notification("New Tender Match!", {
               body: `A new tender matching your alert: ${tender.title}`,
@@ -209,7 +195,6 @@ export const NotificationManager = () => {
             };
           }
 
-          // Show toast notification
           toast({
             title: "New Tender Match!",
             description: `A new tender matching your alert: ${tender.title}`,
@@ -224,7 +209,36 @@ export const NotificationManager = () => {
     };
   }, [session?.user?.id, notificationsPermission, toast, isNativeDevice]);
 
-  // Only show the notification button on desktop devices when permission is needed
+  const requestNotificationPermission = async () => {
+    if (!("Notification" in window)) {
+      toast({
+        title: "Notifications Not Supported",
+        description: "Your browser doesn't support desktop notifications",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      setNotificationsPermission(permission);
+      
+      if (permission === "granted") {
+        toast({
+          title: "Notifications Enabled",
+          description: "You will now receive desktop notifications for new tenders",
+        });
+      }
+    } catch (error) {
+      console.error('Error requesting notification permission:', error);
+      toast({
+        title: "Permission Error",
+        description: "Failed to request notification permission",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isNativeDevice || notificationsPermission !== "default") return null;
 
   return (
