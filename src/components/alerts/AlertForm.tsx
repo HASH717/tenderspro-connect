@@ -32,6 +32,9 @@ export const AlertForm = ({ onClose, onSave, editingAlert }: AlertFormProps) => 
     editingAlert?.notification_preferences?.email || false
   );
 
+  console.log('Editing Alert:', editingAlert);
+  console.log('Selected Wilayas:', selectedWilayas);
+
   const { data: categoryOptions = [] } = useQuery({
     queryKey: ['all-tender-categories'],
     queryFn: async () => {
@@ -121,6 +124,12 @@ export const AlertForm = ({ onClose, onSave, editingAlert }: AlertFormProps) => 
     onClose();
   };
 
+  // Create proper option objects for the wilayas
+  const wilayaOptions = WILAYA_OPTIONS.map(wilaya => ({
+    value: wilaya,
+    label: wilaya,
+  }));
+
   return (
     <div className="space-y-4 border rounded-lg p-6 bg-white shadow-sm">
       <div className="flex justify-between items-start">
@@ -146,7 +155,7 @@ export const AlertForm = ({ onClose, onSave, editingAlert }: AlertFormProps) => 
       <div className="grid gap-6">
         <MultiSelect
           label="Regions"
-          options={WILAYA_OPTIONS.map(wilaya => ({ value: wilaya, label: wilaya }))}
+          options={wilayaOptions}
           selectedValues={selectedWilayas}
           onChange={setSelectedWilayas}
           className="bg-muted/50 p-4 rounded-lg"
