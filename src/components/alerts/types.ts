@@ -73,4 +73,3 @@ export const WILAYA_OPTIONS = [
   "53 - In Salah", "54 - In Guezzam", "55 - Touggourt", "56 - Djanet",
   "57 - El M'Ghair", "58 - El Meniaa"
 ];
-
