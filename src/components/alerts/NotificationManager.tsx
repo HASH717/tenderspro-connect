@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -56,23 +57,49 @@ export const NotificationManager = () => {
     }
   };
 
+  useEffect(() => {
+    const checkPlatform = async () => {
+      try {
+        const info = await Device.getInfo();
+        const isNative = info.platform === 'android' || info.platform === 'ios';
+        console.log('Device platform:', info.platform, 'isNative:', isNative);
+        setIsNativeDevice(isNative);
+        
+        if (isNative && session?.user?.id) {
+          console.log('Setting up push notifications for native device');
+          await setupPushNotifications();
+        }
+      } catch (error) {
+        console.error('Error checking platform:', error);
+        setIsNativeDevice(false);
+      }
+    };
+    
+    checkPlatform();
+  }, [session?.user?.id]);
+
   const setupPushNotifications = async () => {
     try {
       console.log('Starting push notification setup');
       
-      // Request permissions immediately
-      console.log('Requesting push notification permissions');
-      const result = await PushNotifications.requestPermissions();
-      console.log('Permission request result:', result);
+      // Request permissions
+      const permissionStatus = await PushNotifications.checkPermissions();
+      console.log('Current permission status:', permissionStatus);
       
-      if (result.receive !== 'granted') {
-        console.log('Push notification permission denied');
-        toast({
-          title: "Permission Required",
-          description: "Please enable push notifications in your device settings",
-          variant: "destructive",
-        });
-        return;
+      if (permissionStatus.receive !== 'granted') {
+        console.log('Requesting push notification permissions');
+        const result = await PushNotifications.requestPermissions();
+        console.log('Permission request result:', result);
+        
+        if (result.receive !== 'granted') {
+          console.log('Push notification permission denied');
+          toast({
+            title: "Permission Required",
+            description: "Please enable push notifications in your device settings",
+            variant: "destructive",
+          });
+          return;
+        }
       }
 
       // Register for push notifications
@@ -136,28 +163,6 @@ export const NotificationManager = () => {
       });
     }
   };
-
-  useEffect(() => {
-    const checkPlatformAndSetupNotifications = async () => {
-      try {
-        const info = await Device.getInfo();
-        const isNative = info.platform === 'android' || info.platform === 'ios';
-        console.log('Device platform:', info.platform, 'isNative:', isNative);
-        setIsNativeDevice(isNative);
-        
-        if (isNative) {
-          console.log('Native device detected, setting up push notifications immediately');
-          await setupPushNotifications();
-        }
-      } catch (error) {
-        console.error('Error in platform check:', error);
-        setIsNativeDevice(false);
-      }
-    };
-    
-    // Call immediately on component mount
-    checkPlatformAndSetupNotifications();
-  }, []); // Empty dependency array to run only once on mount
 
   useEffect(() => {
     if (!session?.user?.id) {
