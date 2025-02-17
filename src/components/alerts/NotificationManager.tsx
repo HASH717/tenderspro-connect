@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -51,13 +52,46 @@ export const NotificationManager = () => {
 
         await PushNotifications.removeAllListeners();
 
+        // Add registration listener
         PushNotifications.addListener('registration', async token => {
           console.log('Push registration success, token:', token.value);
           if (session?.user?.id) {
-            await storePushToken(token.value);
+            try {
+              const deviceInfo = await Device.getInfo();
+              console.log('Storing push token for user:', session.user.id, 'device:', deviceInfo.platform);
+              
+              const { data, error } = await supabase
+                .from('user_push_tokens')
+                .upsert({
+                  user_id: session.user.id,
+                  push_token: token.value,
+                  device_type: deviceInfo.platform,
+                  last_updated: new Date().toISOString()
+                }, {
+                  onConflict: 'user_id,push_token'
+                });
+
+              if (error) {
+                console.error('Error storing push token:', error);
+                toast({
+                  title: "Error",
+                  description: "Failed to register for push notifications",
+                  variant: "destructive",
+                });
+              } else {
+                console.log('Successfully stored push token:', data);
+                toast({
+                  title: "Success",
+                  description: "Push notifications enabled successfully",
+                });
+              }
+            } catch (error) {
+              console.error('Error in token registration process:', error);
+            }
           }
         });
 
+        // Add notification received listener
         PushNotifications.addListener('pushNotificationReceived', 
           (notification: PushNotificationSchema) => {
             console.log('Push notification received:', notification);
@@ -68,6 +102,7 @@ export const NotificationManager = () => {
           }
         );
 
+        // Add notification click listener
         PushNotifications.addListener('pushNotificationActionPerformed',
           (notification: ActionPerformed) => {
             console.log('Push notification action performed:', notification);
@@ -76,35 +111,23 @@ export const NotificationManager = () => {
             }
           }
         );
+
+        console.log('Push notification listeners set up successfully');
       } else {
         console.log('Push notifications permission denied');
+        toast({
+          title: "Permission Required",
+          description: "Please enable push notifications in your device settings",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error('Error setting up push notifications:', error);
-    }
-  };
-
-  const storePushToken = async (token: string) => {
-    if (!session?.user?.id) return;
-
-    try {
-      const deviceInfo = await Device.getInfo();
-      const { error } = await supabase
-        .from('user_push_tokens')
-        .upsert({
-          user_id: session.user.id,
-          push_token: token,
-          device_type: deviceInfo.platform,
-          last_updated: new Date().toISOString()
-        }, {
-          onConflict: 'user_id,push_token'
-        });
-
-      if (error) {
-        console.error('Error storing push token:', error);
-      }
-    } catch (error) {
-      console.error('Error storing push token:', error);
+      toast({
+        title: "Error",
+        description: "Failed to set up push notifications",
+        variant: "destructive",
+      });
     }
   };
 
@@ -140,6 +163,11 @@ export const NotificationManager = () => {
 
             if (error) {
               console.error('Error sending push notification:', error);
+              toast({
+                title: "Error",
+                description: "Failed to send push notification",
+                variant: "destructive",
+              });
             }
           } catch (error) {
             console.error('Error invoking send-push-notification function:', error);
