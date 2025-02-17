@@ -22,9 +22,12 @@ export const NotificationManager = () => {
     const checkPlatform = async () => {
       try {
         const info = await Device.getInfo();
-        setIsNativeDevice(info.platform === 'android' || info.platform === 'ios');
+        const isNative = info.platform === 'android' || info.platform === 'ios';
+        console.log('Device platform:', info.platform, 'isNative:', isNative);
+        setIsNativeDevice(isNative);
         
-        if (info.platform === 'android' || info.platform === 'ios') {
+        if (isNative) {
+          console.log('Setting up push notifications for native device');
           await setupPushNotifications();
         }
       } catch (error) {
@@ -33,20 +36,25 @@ export const NotificationManager = () => {
       }
     };
     
-    checkPlatform();
-  }, []);
+    if (session?.user?.id) {
+      checkPlatform();
+    }
+  }, [session?.user?.id]);
 
   const setupPushNotifications = async () => {
     try {
+      console.log('Requesting push notification permissions');
       const result = await PushNotifications.requestPermissions();
+      console.log('Push notification permission result:', result);
       
       if (result.receive === 'granted') {
+        console.log('Registering push notifications');
         await PushNotifications.register();
 
-        PushNotifications.addListener('registration', token => {
-          console.log('Push registration success:', token.value);
+        PushNotifications.addListener('registration', async token => {
+          console.log('Push registration success, token:', token.value);
           if (session?.user?.id) {
-            storePushToken(token.value);
+            await storePushToken(token.value);
           }
         });
 
@@ -68,6 +76,8 @@ export const NotificationManager = () => {
             }
           }
         );
+      } else {
+        console.log('Push notifications permission denied');
       }
     } catch (error) {
       console.error('Error setting up push notifications:', error);
@@ -239,7 +249,10 @@ export const NotificationManager = () => {
     }
   };
 
-  if (isNativeDevice || notificationsPermission !== "default") return null;
+  const shouldShowButton = !isNativeDevice && notificationsPermission === "default";
+  console.log('Should show notification button:', shouldShowButton, 'isNativeDevice:', isNativeDevice);
+
+  if (!shouldShowButton) return null;
 
   return (
     <Button
