@@ -18,6 +18,7 @@ export const NotificationManager = () => {
   const { session } = useAuth();
   const [notificationsPermission, setNotificationsPermission] = useState<NotificationPermission>("default");
   const [isNativeDevice, setIsNativeDevice] = useState(false);
+  const [pushToken, setPushToken] = useState<string | null>(null);
 
   useEffect(() => {
     const checkPlatform = async () => {
@@ -47,46 +48,66 @@ export const NotificationManager = () => {
       console.log('Push notification permission result:', result);
       
       if (result.receive === 'granted') {
-        console.log('Registering push notifications');
+        console.log('Permission granted, registering push notifications');
         await PushNotifications.register();
+        console.log('Push notifications registered successfully');
 
+        // Clear existing listeners before adding new ones
         await PushNotifications.removeAllListeners();
+        console.log('Removed all existing push notification listeners');
 
         // Add registration listener
         PushNotifications.addListener('registration', async token => {
           console.log('Push registration success, token:', token.value);
+          setPushToken(token.value);
+
           if (session?.user?.id) {
             try {
               const deviceInfo = await Device.getInfo();
               console.log('Storing push token for user:', session.user.id, 'device:', deviceInfo.platform);
               
-              const { data, error } = await supabase
+              // First, check if token already exists
+              const { data: existingTokens, error: checkError } = await supabase
                 .from('user_push_tokens')
-                .upsert({
-                  user_id: session.user.id,
-                  push_token: token.value,
-                  device_type: deviceInfo.platform,
-                  last_updated: new Date().toISOString()
-                }, {
-                  onConflict: 'user_id,push_token'
-                });
+                .select('*')
+                .eq('user_id', session.user.id)
+                .eq('push_token', token.value);
 
-              if (error) {
-                console.error('Error storing push token:', error);
-                toast({
-                  title: "Error",
-                  description: "Failed to register for push notifications",
-                  variant: "destructive",
-                });
-              } else {
-                console.log('Successfully stored push token:', data);
+              if (checkError) {
+                console.error('Error checking existing token:', checkError);
+                throw checkError;
+              }
+
+              if (!existingTokens || existingTokens.length === 0) {
+                const { error } = await supabase
+                  .from('user_push_tokens')
+                  .insert({
+                    user_id: session.user.id,
+                    push_token: token.value,
+                    device_type: deviceInfo.platform,
+                    last_updated: new Date().toISOString()
+                  });
+
+                if (error) {
+                  console.error('Error storing push token:', error);
+                  throw error;
+                }
+
+                console.log('Successfully stored new push token');
                 toast({
                   title: "Success",
                   description: "Push notifications enabled successfully",
                 });
+              } else {
+                console.log('Token already exists in database');
               }
             } catch (error) {
               console.error('Error in token registration process:', error);
+              toast({
+                title: "Error",
+                description: "Failed to register for push notifications",
+                variant: "destructive",
+              });
             }
           }
         });
@@ -230,7 +251,7 @@ export const NotificationManager = () => {
   };
 
   const shouldShowButton = !isNativeDevice && notificationsPermission === "default";
-  console.log('Should show notification button:', shouldShowButton, 'isNativeDevice:', isNativeDevice);
+  console.log('Should show notification button:', shouldShowButton, 'isNativeDevice:', isNativeDevice, 'pushToken:', pushToken);
 
   if (!shouldShowButton) return null;
 
