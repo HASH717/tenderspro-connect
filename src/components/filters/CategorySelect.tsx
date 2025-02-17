@@ -42,10 +42,10 @@ export const CategorySelect = ({ value, onChange }: CategorySelectProps) => {
       }
 
       const uniqueCategories = Array.from(new Set(data.map(tender => tender.category)))
-        .filter(category => category)
+        .filter(Boolean)
         .sort();
 
-      return uniqueCategories;
+      return uniqueCategories as string[];
     }
   });
 
@@ -84,7 +84,7 @@ export const CategorySelect = ({ value, onChange }: CategorySelectProps) => {
 
           return {
             subscription: trialSub,
-            categories: profile.preferred_categories || []
+            categories: profile?.preferred_categories || []
           };
         }
 
@@ -142,20 +142,20 @@ export const CategorySelect = ({ value, onChange }: CategorySelectProps) => {
     onChange(category);
   };
 
-  // Split categories into accessible and locked
   const categorizeItems = () => {
     const accessible: string[] = [];
     const locked: string[] = [];
 
     allCategories.forEach(category => {
-      if (isCategoryAccessible(category)) {
-        accessible.push(category);
-      } else {
-        locked.push(category);
+      if (category && typeof category === 'string') {
+        if (isCategoryAccessible(category)) {
+          accessible.push(category);
+        } else {
+          locked.push(category);
+        }
       }
     });
 
-    // Move selected category to the top if it exists
     if (value && accessible.includes(value)) {
       accessible.splice(accessible.indexOf(value), 1);
       accessible.unshift(value);
@@ -173,23 +173,20 @@ export const CategorySelect = ({ value, onChange }: CategorySelectProps) => {
       </SelectTrigger>
       <SelectContent>
         <ScrollArea className="h-[300px]">
-          {/* Accessible Categories */}
           {accessible.map((category) => (
             <SelectItem 
               key={category} 
               value={category}
               className="flex items-center justify-between"
             >
-              <span>{category}</span>
+              {category}
             </SelectItem>
           ))}
 
-          {/* Separator between accessible and locked categories */}
           {locked.length > 0 && accessible.length > 0 && (
             <Separator className="my-2" />
           )}
 
-          {/* Locked Categories */}
           {locked.map((category) => (
             <SelectItem 
               key={category} 
@@ -198,7 +195,7 @@ export const CategorySelect = ({ value, onChange }: CategorySelectProps) => {
               disabled
             >
               <span>{category}</span>
-              <Lock className="h-4 w-4 ml-2 inline-block" />
+              <Lock className="h-4 w-4 ml-2" />
             </SelectItem>
           ))}
         </ScrollArea>
