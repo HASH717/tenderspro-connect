@@ -14,7 +14,15 @@ const config: CapacitorConfig = {
   },
   plugins: {
     PushNotifications: {
-      presentationOptions: ["badge", "sound", "alert"]
+      presentationOptions: ["badge", "sound", "alert"],
+      android: {
+        smallIcon: "ic_launcher_foreground",
+        sound: "notification_sound",
+        vibrate: true,
+        importance: "high",
+        channelId: "tenders-notifications",
+        channelName: "Tender Notifications"
+      }
     }
   }
 };

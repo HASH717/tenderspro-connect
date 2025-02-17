@@ -56,6 +56,27 @@ export const NotificationManager = () => {
     }
   };
 
+  const createNotificationChannel = async () => {
+    try {
+      const deviceInfo = await Device.getInfo();
+      if (deviceInfo.platform === 'android') {
+        await PushNotifications.createChannel({
+          id: 'tenders-notifications',
+          name: 'Tender Notifications',
+          description: 'Notifications for new tender matches',
+          importance: 5,
+          visibility: 1,
+          vibration: true,
+          lights: true,
+          sound: 'notification_sound'
+        });
+        console.log('Notification channel created');
+      }
+    } catch (error) {
+      console.error('Error creating notification channel:', error);
+    }
+  };
+
   const setupPushNotifications = async () => {
     try {
       console.log('Starting push notification setup');
@@ -71,6 +92,11 @@ export const NotificationManager = () => {
       }
 
       setIsNativeDevice(true);
+
+      // Create notification channel for Android
+      if (deviceInfo.platform === 'android') {
+        await createNotificationChannel();
+      }
       
       // Check current permission status
       const permissionStatus = await PushNotifications.checkPermissions();
