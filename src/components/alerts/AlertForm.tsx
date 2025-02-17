@@ -146,7 +146,7 @@ export const AlertForm = ({ onClose, onSave, editingAlert }: AlertFormProps) => 
       <div className="grid gap-6">
         <MultiSelect
           label="Regions"
-          options={WILAYA_OPTIONS}
+          options={WILAYA_OPTIONS.map(wilaya => ({ value: wilaya, label: wilaya }))}
           selectedValues={selectedWilayas}
           onChange={setSelectedWilayas}
           className="bg-muted/50 p-4 rounded-lg"
