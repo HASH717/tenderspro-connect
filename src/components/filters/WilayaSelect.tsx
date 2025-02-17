@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { WILAYA_OPTIONS } from "../alerts/types";
+import { WILAYA_OPTIONS } from "../alerts/constants";
 
 interface WilayaSelectProps {
   value: string;
@@ -25,10 +25,10 @@ export const WilayaSelect = ({ value, onChange }: WilayaSelectProps) => {
       <SelectContent>
         {WILAYA_OPTIONS.map((wilaya) => (
           <SelectItem 
-            key={wilaya} 
-            value={wilaya}
+            key={wilaya.value} 
+            value={wilaya.value}
           >
-            {wilaya}
+            {wilaya.label}
           </SelectItem>
         ))}
       </SelectContent>
