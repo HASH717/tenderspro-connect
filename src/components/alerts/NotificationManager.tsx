@@ -32,15 +32,24 @@ export const NotificationManager = () => {
         tokenLength: token.length
       });
 
+      // First, clean up any existing tokens for this user
+      const { error: deleteError } = await supabase
+        .from('user_push_tokens')
+        .delete()
+        .eq('user_id', session.user.id);
+
+      if (deleteError) {
+        console.error('Error cleaning up old tokens:', deleteError);
+      }
+
+      // Then insert the new token
       const { data, error } = await supabase
         .from('user_push_tokens')
-        .upsert({
+        .insert({
           user_id: session.user.id,
           push_token: token,
           device_type: deviceType,
           last_updated: new Date().toISOString()
-        }, {
-          onConflict: 'user_id,push_token'
         });
 
       if (error) {
@@ -58,22 +67,21 @@ export const NotificationManager = () => {
 
   const createNotificationChannel = async () => {
     try {
-      const deviceInfo = await Device.getInfo();
-      if (deviceInfo.platform === 'android') {
-        await PushNotifications.createChannel({
-          id: 'tenders-notifications',
-          name: 'Tender Notifications',
-          description: 'Notifications for new tender matches',
-          importance: 5,
-          visibility: 1,
-          vibration: true,
-          lights: true,
-          sound: 'notification_sound'
-        });
-        console.log('Notification channel created');
-      }
+      console.log('Creating notification channel');
+      await PushNotifications.createChannel({
+        id: 'tenders-notifications',
+        name: 'Tender Notifications',
+        description: 'Notifications for new tender matches',
+        importance: 5,
+        visibility: 1,
+        vibration: true,
+        lights: true,
+        sound: 'notification_sound'
+      });
+      console.log('Notification channel created successfully');
     } catch (error) {
       console.error('Error creating notification channel:', error);
+      throw error;
     }
   };
 
@@ -81,17 +89,19 @@ export const NotificationManager = () => {
     try {
       console.log('Starting push notification setup');
       
-      // Check if we're running in a Capacitor app
+      // Force the check for native platform
       const deviceInfo = await Device.getInfo();
-      console.log('Device info:', deviceInfo);
+      console.log('Device info:', deviceInfo, 'platform:', deviceInfo.platform);
       
-      if (!deviceInfo.platform || (deviceInfo.platform !== 'android' && deviceInfo.platform !== 'ios')) {
-        console.log('Not a native mobile platform:', deviceInfo.platform);
-        setIsNativeDevice(false);
+      // Set native device state based on platform check
+      const isNative = deviceInfo.platform === 'android' || deviceInfo.platform === 'ios';
+      console.log('Is native device:', isNative);
+      setIsNativeDevice(isNative);
+
+      if (!isNative) {
+        console.log('Not a native mobile platform, skipping push setup');
         return;
       }
-
-      setIsNativeDevice(true);
 
       // Create notification channel for Android
       if (deviceInfo.platform === 'android') {
@@ -108,7 +118,7 @@ export const NotificationManager = () => {
         console.log('Permission request result:', result);
         
         if (result.receive !== 'granted') {
-          console.log('Push notification permission denied');
+          console.error('Push notification permission denied');
           toast({
             title: "Permission Required",
             description: "Please enable push notifications in your device settings",
@@ -118,14 +128,14 @@ export const NotificationManager = () => {
         }
       }
 
+      // Remove existing listeners before adding new ones
+      await PushNotifications.removeAllListeners();
+      console.log('Removed existing listeners');
+
       // Register for push notifications
       console.log('Registering for push notifications');
       await PushNotifications.register();
       console.log('Push notifications registered');
-
-      // Remove existing listeners to prevent duplicates
-      await PushNotifications.removeAllListeners();
-      console.log('Removed existing listeners');
 
       // Set up registration listener
       PushNotifications.addListener('registration', async (token) => {
@@ -134,7 +144,6 @@ export const NotificationManager = () => {
 
         try {
           await storePushToken(token.value, deviceInfo.platform);
-          
           toast({
             title: "Success",
             description: "Push notifications enabled successfully",
@@ -181,6 +190,7 @@ export const NotificationManager = () => {
     }
   };
 
+  // Call setupPushNotifications when the component mounts and we have a session
   useEffect(() => {
     if (session?.user?.id) {
       console.log('Setting up push notifications for user:', session.user.id);
