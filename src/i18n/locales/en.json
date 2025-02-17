@@ -1,3 +1,4 @@
+
 {
   "navigation": {
     "home": "Home",
@@ -19,7 +20,7 @@
     "tenderType": "Market type",
     "announcementType": "Announcement type",
     "category": "Category",
-    "wilaya": "Region",
+    "wilaya": "Wilaya",
     "microEnterprises": "Micro-enterprises",
     "searchButton": "Search",
     "clearFilters": "Clear filters",
@@ -74,27 +75,6 @@
       "skikda": "Skikda",
       "constantine": "Constantine",
       "oran": "Oran"
-    }
-  },
-  "profile": {
-    "email": "Email",
-    "newPassword": "New Password",
-    "newPasswordPlaceholder": "Enter new password",
-    "newPasswordHint": "(leave blank to keep current)",
-    "firstName": "First Name",
-    "lastName": "Last Name",
-    "phoneNumber": "Phone Number",
-    "loading": "Loading profile...",
-    "saveChanges": "Save Changes",
-    "saving": "Updating...",
-    "logout": "Logout",
-    "enterEmail": "Enter email",
-    "enterPhoneNumber": "Enter phone number",
-    "language_updated": "Language updated successfully",
-    "tabs": {
-      "profile": "Profile",
-      "subscription": "Subscription",
-      "preferences": "Preferences"
     }
   },
   "alerts": {

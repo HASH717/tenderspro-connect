@@ -1,3 +1,4 @@
+
 {
   "navigation": {
     "home": "الرئيسية",
@@ -19,7 +20,7 @@
     "tenderType": "نوع السوق",
     "announcementType": "نوع الإعلان",
     "category": "الفئة",
-    "wilaya": "المنطقة",
+    "wilaya": "ولاية",
     "microEnterprises": "المؤسسات الصغيرة",
     "searchButton": "بحث",
     "clearFilters": "مسح الفلاتر",
@@ -74,27 +75,6 @@
       "skikda": "سكيكدة",
       "constantine": "قسنطينة",
       "oran": "وهران"
-    }
-  },
-  "profile": {
-    "email": "البريد الإلكتروني",
-    "newPassword": "كلمة المرور الجديدة",
-    "newPasswordPlaceholder": "أدخل كلمة المرور الجديدة",
-    "newPasswordHint": "(اتركه فارغًا للاحتفاظ بالحالي)",
-    "firstName": "الاسم الأول",
-    "lastName": "اسم العائلة",
-    "phoneNumber": "رقم الهاتف",
-    "loading": "جاري تحميل الملف الشخصي...",
-    "saveChanges": "حفظ التغييرات",
-    "saving": "جاري التحديث...",
-    "logout": "تسجيل الخروج",
-    "enterEmail": "أدخل البريد الإلكتروني",
-    "enterPhoneNumber": "أدخل رقم الهاتف",
-    "language_updated": "تم تحديث اللغة بنجاح",
-    "tabs": {
-      "profile": "الملف الشخصي",
-      "subscription": "الاشتراك",
-      "preferences": "التفضيلات"
     }
   },
   "alerts": {

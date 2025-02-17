@@ -64,7 +64,6 @@ export const TenderCard = ({
     return new Date(dateString).toLocaleDateString();
   };
 
-  // Consider both active and trial subscriptions as valid
   const isSubscribed = subscription?.status === 'active' || subscription?.status === 'trial';
 
   return (

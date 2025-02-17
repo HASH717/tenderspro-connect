@@ -24,7 +24,7 @@ export const AlertList = ({ alerts, onEdit, onDelete }: AlertListProps) => {
               <h3 className="font-medium">{alert.name}</h3>
               <p className="text-sm text-muted-foreground space-x-2">
                 {alert.wilaya.length > 0 && (
-                  <span>{alert.wilaya.length} regions</span>
+                  <span>{alert.wilaya.length} wilayas</span>
                 )}
                 {alert.tenderType.length > 0 && (
                   <span>• {alert.tenderType.length} market types</span>
