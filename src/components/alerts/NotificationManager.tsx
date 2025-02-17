@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Alert } from "./types";
 import { 
   PushNotifications,
   PushNotificationSchema,
@@ -61,6 +60,18 @@ export const NotificationManager = () => {
     try {
       console.log('Starting push notification setup');
       
+      // Check if we're running in a Capacitor app
+      const deviceInfo = await Device.getInfo();
+      console.log('Device info:', deviceInfo);
+      
+      if (!deviceInfo.platform || (deviceInfo.platform !== 'android' && deviceInfo.platform !== 'ios')) {
+        console.log('Not a native mobile platform:', deviceInfo.platform);
+        setIsNativeDevice(false);
+        return;
+      }
+
+      setIsNativeDevice(true);
+      
       // Check current permission status
       const permissionStatus = await PushNotifications.checkPermissions();
       console.log('Current permission status:', permissionStatus);
@@ -96,8 +107,6 @@ export const NotificationManager = () => {
         setPushToken(token.value);
 
         try {
-          const deviceInfo = await Device.getInfo();
-          console.log('Device info:', deviceInfo);
           await storePushToken(token.value, deviceInfo.platform);
           
           toast({
@@ -147,27 +156,11 @@ export const NotificationManager = () => {
   };
 
   useEffect(() => {
-    const checkPlatform = async () => {
-      try {
-        const info = await Device.getInfo();
-        const isNative = info.platform === 'android' || info.platform === 'ios';
-        console.log('Device platform:', info.platform, 'isNative:', isNative);
-        setIsNativeDevice(isNative);
-        
-        if (isNative && session?.user?.id) {
-          console.log('Setting up push notifications for native device');
-          await setupPushNotifications();
-        }
-      } catch (error) {
-        console.error('Error checking platform:', error);
-        setIsNativeDevice(false);
-      }
-    };
-    
     if (session?.user?.id) {
-      checkPlatform();
+      console.log('Setting up push notifications for user:', session.user.id);
+      setupPushNotifications();
     } else {
-      console.log('No user session, skipping platform check');
+      console.log('No user session, skipping push notification setup');
     }
   }, [session?.user?.id]);
 
@@ -270,6 +263,7 @@ export const NotificationManager = () => {
     }
   };
 
+  // Only show the button for web notifications if we're not on a native device
   const shouldShowButton = !isNativeDevice && notificationsPermission === "default";
   console.log('Should show notification button:', shouldShowButton, 'isNativeDevice:', isNativeDevice, 'pushToken:', pushToken);
 
