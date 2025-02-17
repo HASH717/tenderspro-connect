@@ -12,11 +12,79 @@ const supabaseAdmin = createClient(
 );
 
 interface WebPushPayload {
-  notification: {
-    title: string;
-    body: string;
+  message: {
+    token: string;
+    notification: {
+      title: string;
+      body: string;
+    };
     data?: Record<string, string>;
   };
+}
+
+async function getAccessToken() {
+  try {
+    const serviceAccount = JSON.parse(Deno.env.get('FIREBASE_SERVICE_ACCOUNT') ?? '{}');
+    
+    // Generate JWT
+    const now = Math.floor(Date.now() / 1000);
+    const header = {
+      alg: 'RS256',
+      typ: 'JWT',
+      kid: serviceAccount.private_key_id
+    };
+    
+    const claim = {
+      iss: serviceAccount.client_email,
+      sub: serviceAccount.client_email,
+      aud: 'https://oauth2.googleapis.com/token',
+      iat: now,
+      exp: now + 3600,
+      scope: 'https://www.googleapis.com/auth/firebase.messaging'
+    };
+
+    const headerB64 = btoa(JSON.stringify(header));
+    const claimB64 = btoa(JSON.stringify(claim));
+    
+    // Sign the JWT
+    const key = serviceAccount.private_key;
+    const textEncoder = new TextEncoder();
+    const signatureInput = textEncoder.encode(`${headerB64}.${claimB64}`);
+    const cryptoKey = await crypto.subtle.importKey(
+      'pkcs8',
+      new TextEncoder().encode(key),
+      {
+        name: 'RSASSA-PKCS1-v1_5',
+        hash: 'SHA-256',
+      },
+      false,
+      ['sign']
+    );
+    const signature = await crypto.subtle.sign(
+      'RSASSA-PKCS1-v1_5',
+      cryptoKey,
+      signatureInput
+    );
+    const jwt = `${headerB64}.${claimB64}.${btoa(String.fromCharCode(...new Uint8Array(signature)))}`;
+
+    // Exchange JWT for access token
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+        assertion: jwt,
+      }),
+    });
+
+    const { access_token } = await tokenResponse.json();
+    return access_token;
+  } catch (error) {
+    console.error('Error getting access token:', error);
+    throw error;
+  }
 }
 
 Deno.serve(async (req) => {
@@ -80,39 +148,41 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Prepare notification payload
-    const payload: WebPushPayload = {
-      notification: {
-        title: "New Tender Match!",
-        body: `A new tender matching your alert "${alert.name}": ${tender.title}`,
-        data: {
-          tenderId: tender_id,
-          alertId: alert_id
-        }
-      }
-    };
-    console.log('Prepared notification payload:', payload);
+    // Get access token for FCM
+    const accessToken = await getAccessToken();
+    const serviceAccount = JSON.parse(Deno.env.get('FIREBASE_SERVICE_ACCOUNT') ?? '{}');
+    const projectId = serviceAccount.project_id;
 
     // Send push notification to each token
     const sendPromises = tokens.map(async ({ push_token }) => {
       console.log('Sending push notification to token:', push_token);
       
-      const fcmPayload = {
-        to: push_token,
-        priority: 'high',
-        content_available: true,
-        ...payload,
+      const payload: WebPushPayload = {
+        message: {
+          token: push_token,
+          notification: {
+            title: "New Tender Match!",
+            body: `A new tender matching your alert "${alert.name}": ${tender.title}`
+          },
+          data: {
+            tenderId: tender_id,
+            alertId: alert_id
+          }
+        }
       };
-      console.log('FCM payload:', fcmPayload);
+      console.log('FCM payload:', payload);
 
-      const res = await fetch('https://fcm.googleapis.com/fcm/send', {
-        method: 'POST',
-        headers: {
-          'Authorization': `key=${Deno.env.get('FCM_SERVER_KEY')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(fcmPayload),
-      });
+      const res = await fetch(
+        `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        }
+      );
 
       if (!res.ok) {
         const errorText = await res.text();
