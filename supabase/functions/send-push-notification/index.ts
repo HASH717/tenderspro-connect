@@ -24,13 +24,7 @@ interface WebPushPayload {
 
 async function getAccessToken() {
   try {
-    console.log('Getting Firebase access token');
     const serviceAccount = JSON.parse(Deno.env.get('FIREBASE_SERVICE_ACCOUNT') ?? '{}');
-    console.log('Service account project ID:', serviceAccount.project_id);
-    
-    if (!serviceAccount.private_key) {
-      throw new Error('Firebase private key is missing');
-    }
     
     // Generate JWT
     const now = Math.floor(Date.now() / 1000);
@@ -84,7 +78,6 @@ async function getAccessToken() {
     });
 
     const { access_token } = await tokenResponse.json();
-    console.log('Successfully obtained Firebase access token');
     return access_token;
   } catch (error) {
     console.error('Error getting access token:', error);
@@ -93,8 +86,6 @@ async function getAccessToken() {
 }
 
 async function sendPushNotifications(tokens: any[], tender: any, alert: any, projectId: string, accessToken: string) {
-  console.log('Sending push notifications to tokens:', tokens);
-  
   const sendPromises = tokens.map(async ({ push_token }) => {
     console.log('Sending push notification to token:', push_token);
     
@@ -131,16 +122,13 @@ async function sendPushNotifications(tokens: any[], tender: any, alert: any, pro
       throw new Error(`Failed to send push notification: ${errorText}`);
     }
 
-    const responseData = await res.json();
-    console.log('FCM API response:', responseData);
-    return responseData;
+    return await res.json();
   });
 
   return await Promise.all(sendPromises);
 }
 
 async function getUserEmail(userId: string) {
-  console.log('Getting email for user:', userId);
   const { data: { user }, error } = await supabaseAdmin.auth.admin.getUserById(userId);
   if (error) {
     console.error('Error fetching user:', error);
