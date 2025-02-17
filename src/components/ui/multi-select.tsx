@@ -96,7 +96,7 @@ export function MultiSelect({
               "flex items-center gap-2 p-2 text-sm rounded-md border transition-colors",
               "hover:bg-muted",
               selectedValues.includes(option.value)
-                ? "bg-accent text-accent-foreground"
+                ? "bg-accent text-accent-foreground hover:text-gray-800"
                 : "bg-background"
             )}
           >
