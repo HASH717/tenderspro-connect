@@ -6,17 +6,104 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Alert } from "./types";
+import { 
+  PushNotifications,
+  PushNotificationSchema,
+  ActionPerformed 
+} from '@capacitor/push-notifications';
+import { Device } from '@capacitor/device';
 
 export const NotificationManager = () => {
   const { toast } = useToast();
   const { session } = useAuth();
   const [notificationsPermission, setNotificationsPermission] = useState<NotificationPermission>("default");
+  const [isNativeDevice, setIsNativeDevice] = useState(false);
 
+  // Check if running on native device
   useEffect(() => {
-    if ("Notification" in window) {
-      setNotificationsPermission(Notification.permission);
-    }
+    const checkPlatform = async () => {
+      try {
+        const info = await Device.getInfo();
+        setIsNativeDevice(info.platform === 'android' || info.platform === 'ios');
+        
+        // If on native device, initialize push notifications
+        if (info.platform === 'android' || info.platform === 'ios') {
+          await setupPushNotifications();
+        }
+      } catch (error) {
+        console.error('Error checking platform:', error);
+        setIsNativeDevice(false);
+      }
+    };
+    
+    checkPlatform();
   }, []);
+
+  const setupPushNotifications = async () => {
+    try {
+      // Request permission to use push notifications
+      const result = await PushNotifications.requestPermissions();
+      
+      if (result.receive === 'granted') {
+        // Register with push notification service
+        await PushNotifications.register();
+
+        // Add listeners for push notifications
+        PushNotifications.addListener('registration', token => {
+          console.log('Push registration success:', token.value);
+          // Here you would send this token to your backend to associate it with the user
+          storePushToken(token.value);
+        });
+
+        PushNotifications.addListener('pushNotificationReceived', 
+          (notification: PushNotificationSchema) => {
+            console.log('Push notification received:', notification);
+            // Show toast for received notification
+            toast({
+              title: notification.title || "New Notification",
+              description: notification.body,
+            });
+          }
+        );
+
+        PushNotifications.addListener('pushNotificationActionPerformed',
+          (notification: ActionPerformed) => {
+            console.log('Push notification action performed:', notification);
+            // Handle notification click action here
+            if (notification.notification.data?.tenderId) {
+              // Navigate to tender details if available
+              window.location.href = `/tenders/${notification.notification.data.tenderId}`;
+            }
+          }
+        );
+      }
+    } catch (error) {
+      console.error('Error setting up push notifications:', error);
+    }
+  };
+
+  const storePushToken = async (token: string) => {
+    if (!session?.user?.id) return;
+
+    try {
+      const { error } = await supabase
+        .from('user_push_tokens')
+        .upsert({
+          user_id: session.user.id,
+          push_token: token,
+          device_type: await Device.getInfo().then(info => info.platform),
+          last_updated: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,push_token'
+        });
+
+      if (error) {
+        console.error('Error storing push token:', error);
+      }
+    } catch (error) {
+      console.error('Error storing push token:', error);
+    }
+  };
 
   useEffect(() => {
     if (!session?.user?.id) {
@@ -56,9 +143,7 @@ export const NotificationManager = () => {
             return;
           }
 
-          console.log('Tender found:', tender);
-
-          // Fetch the alert details to check email preferences
+          // Fetch the alert details
           const { data: alert, error: alertError } = await supabase
             .from('alerts')
             .select('*')
@@ -75,18 +160,13 @@ export const NotificationManager = () => {
             return;
           }
 
-          console.log('Alert found:', alert);
-          console.log('Alert notification preferences:', alert.notification_preferences);
-
           const preferences = alert.notification_preferences as Alert['notification_preferences'];
           const emailEnabled = preferences?.email ?? false;
 
-          console.log('Email notifications enabled:', emailEnabled);
-
+          // Handle email notifications
           if (emailEnabled) {
-            console.log('Attempting to send email notification');
             try {
-              const { data, error } = await supabase.functions.invoke('send-alert-email', {
+              const { error } = await supabase.functions.invoke('send-alert-email', {
                 body: {
                   to: session.user.email,
                   subject: `New Tender Match: ${tender.title}`,
@@ -95,7 +175,7 @@ export const NotificationManager = () => {
                     <p>A new tender matching your alert "${alert.name}" has been found:</p>
                     <h2>${tender.title}</h2>
                     <p><strong>Category:</strong> ${tender.category}</p>
-                    <p><strong>Region:</strong> ${tender.wilaya}</p>
+                    <p><strong>Wilaya:</strong> ${tender.wilaya}</p>
                     <p><strong>Deadline:</strong> ${new Date(tender.deadline).toLocaleDateString()}</p>
                     <a href="${window.location.origin}/tenders/${tender.id}">View Tender Details</a>
                   `,
@@ -107,21 +187,14 @@ export const NotificationManager = () => {
 
               if (error) {
                 console.error('Error sending email notification:', error);
-                toast({
-                  title: "Failed to Send Email",
-                  description: "There was an error sending the email notification.",
-                  variant: "destructive",
-                });
-              } else {
-                console.log('Email notification sent successfully:', data);
               }
             } catch (error) {
               console.error('Error invoking send-alert-email function:', error);
             }
           }
 
-          // Show browser notification if enabled
-          if (notificationsPermission === "granted") {
+          // Show browser notification if on desktop and enabled
+          if (!isNativeDevice && notificationsPermission === "granted") {
             const notification = new Notification("New Tender Match!", {
               body: `A new tender matching your alert: ${tender.title}`,
               icon: "/favicon.ico",
@@ -129,6 +202,7 @@ export const NotificationManager = () => {
 
             notification.onclick = () => {
               window.focus();
+              window.location.href = `/tenders/${tender.id}`;
             };
           }
 
@@ -141,13 +215,11 @@ export const NotificationManager = () => {
       )
       .subscribe();
 
-    console.log('Real-time channel subscribed');
-
     return () => {
       console.log('Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
-  }, [session?.user?.id, notificationsPermission, toast]);
+  }, [session?.user?.id, notificationsPermission, toast, isNativeDevice]);
 
   const requestNotificationPermission = async () => {
     if (!("Notification" in window)) {
@@ -179,7 +251,8 @@ export const NotificationManager = () => {
     }
   };
 
-  if (notificationsPermission !== "default") return null;
+  // Only show the notification button on desktop devices when permission is needed
+  if (isNativeDevice || notificationsPermission !== "default") return null;
 
   return (
     <Button
@@ -192,4 +265,3 @@ export const NotificationManager = () => {
     </Button>
   );
 };
-
