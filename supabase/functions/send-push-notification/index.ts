@@ -130,12 +130,23 @@ async function sendPushNotifications(tokens: any[], tender: any, alert: any, pro
 
 async function getUserEmail(userId: string) {
   const { data: { user }, error } = await supabaseAdmin.auth.admin.getUserById(userId);
-  if (error) throw error;
-  return user?.email;
+  if (error) {
+    console.error('Error fetching user:', error);
+    throw error;
+  }
+  if (!user?.email) {
+    console.error('No email found for user:', userId);
+    throw new Error('User email not found');
+  }
+  console.log('Found email for user:', user.email);
+  return user.email;
 }
 
 async function sendEmail(tender_id: string, alert_id: string, user_id: string) {
   try {
+    const userEmail = await getUserEmail(user_id);
+    console.log('Sending email notification to:', userEmail);
+
     const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-alert-email`, {
       method: 'POST',
       headers: {
@@ -146,14 +157,20 @@ async function sendEmail(tender_id: string, alert_id: string, user_id: string) {
         tender_id,
         alert_id,
         user_id,
+        to: userEmail,
+        subject: "New Tender Match!"
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`Email service responded with ${response.status}`);
+      const errorText = await response.text();
+      console.error('Email service error:', errorText);
+      throw new Error(`Email service responded with ${response.status}: ${errorText}`);
     }
 
-    return await response.json();
+    const result = await response.json();
+    console.log('Email service response:', result);
+    return result;
   } catch (error) {
     console.error('Error sending email:', error);
     throw error;
