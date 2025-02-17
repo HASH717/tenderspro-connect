@@ -57,32 +57,11 @@ export const NotificationManager = () => {
     }
   };
 
-  useEffect(() => {
-    const checkPlatform = async () => {
-      try {
-        const info = await Device.getInfo();
-        const isNative = info.platform === 'android' || info.platform === 'ios';
-        console.log('Device platform:', info.platform, 'isNative:', isNative);
-        setIsNativeDevice(isNative);
-        
-        if (isNative && session?.user?.id) {
-          console.log('Setting up push notifications for native device');
-          await setupPushNotifications();
-        }
-      } catch (error) {
-        console.error('Error checking platform:', error);
-        setIsNativeDevice(false);
-      }
-    };
-    
-    checkPlatform();
-  }, [session?.user?.id]);
-
   const setupPushNotifications = async () => {
     try {
       console.log('Starting push notification setup');
       
-      // Request permissions
+      // Check current permission status
       const permissionStatus = await PushNotifications.checkPermissions();
       console.log('Current permission status:', permissionStatus);
       
@@ -107,17 +86,18 @@ export const NotificationManager = () => {
       await PushNotifications.register();
       console.log('Push notifications registered');
 
-      // Remove existing listeners
+      // Remove existing listeners to prevent duplicates
       await PushNotifications.removeAllListeners();
       console.log('Removed existing listeners');
 
-      // Set up listeners
+      // Set up registration listener
       PushNotifications.addListener('registration', async (token) => {
         console.log('Got push token:', token.value);
         setPushToken(token.value);
 
         try {
           const deviceInfo = await Device.getInfo();
+          console.log('Device info:', deviceInfo);
           await storePushToken(token.value, deviceInfo.platform);
           
           toast({
@@ -134,6 +114,7 @@ export const NotificationManager = () => {
         }
       });
 
+      // Set up notification received listener
       PushNotifications.addListener('pushNotificationReceived', 
         (notification: PushNotificationSchema) => {
           console.log('Received push notification:', notification);
@@ -144,6 +125,7 @@ export const NotificationManager = () => {
         }
       );
 
+      // Set up notification action listener
       PushNotifications.addListener('pushNotificationActionPerformed',
         (notification: ActionPerformed) => {
           console.log('Push notification action performed:', notification);
@@ -163,6 +145,31 @@ export const NotificationManager = () => {
       });
     }
   };
+
+  useEffect(() => {
+    const checkPlatform = async () => {
+      try {
+        const info = await Device.getInfo();
+        const isNative = info.platform === 'android' || info.platform === 'ios';
+        console.log('Device platform:', info.platform, 'isNative:', isNative);
+        setIsNativeDevice(isNative);
+        
+        if (isNative && session?.user?.id) {
+          console.log('Setting up push notifications for native device');
+          await setupPushNotifications();
+        }
+      } catch (error) {
+        console.error('Error checking platform:', error);
+        setIsNativeDevice(false);
+      }
+    };
+    
+    if (session?.user?.id) {
+      checkPlatform();
+    } else {
+      console.log('No user session, skipping platform check');
+    }
+  }, [session?.user?.id]);
 
   useEffect(() => {
     if (!session?.user?.id) {
@@ -206,9 +213,10 @@ export const NotificationManager = () => {
             console.error('Error invoking send-push-notification function:', error);
           }
 
+          // Handle web notifications
           if (!isNativeDevice && notificationsPermission === "granted") {
             const notification = new Notification("New Tender Match!", {
-              body: `A new tender matching your alert`,
+              body: `A new tender matching your alert has been found`,
               icon: "/favicon.ico",
             });
 
