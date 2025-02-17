@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -88,12 +89,16 @@ export const NotificationManager = () => {
 
     try {
       const deviceInfo = await Device.getInfo();
-      // Using raw query to insert into user_push_tokens
-      const { error } = await supabase.rpc('store_push_token', {
-        p_user_id: session.user.id,
-        p_push_token: token,
-        p_device_type: deviceInfo.platform
-      });
+      const { error } = await supabase
+        .from('user_push_tokens')
+        .upsert({
+          user_id: session.user.id,
+          push_token: token,
+          device_type: deviceInfo.platform,
+          last_updated: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,push_token'
+        });
 
       if (error) {
         console.error('Error storing push token:', error);
@@ -218,36 +223,6 @@ export const NotificationManager = () => {
       supabase.removeChannel(channel);
     };
   }, [session?.user?.id, notificationsPermission, toast, isNativeDevice]);
-
-  const requestNotificationPermission = async () => {
-    if (!("Notification" in window)) {
-      toast({
-        title: "Notifications Not Supported",
-        description: "Your browser doesn't support desktop notifications",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const permission = await Notification.requestPermission();
-      setNotificationsPermission(permission);
-      
-      if (permission === "granted") {
-        toast({
-          title: "Notifications Enabled",
-          description: "You will now receive desktop notifications for new tenders",
-        });
-      }
-    } catch (error) {
-      console.error('Error requesting notification permission:', error);
-      toast({
-        title: "Permission Error",
-        description: "Failed to request notification permission",
-        variant: "destructive",
-      });
-    }
-  };
 
   // Only show the notification button on desktop devices when permission is needed
   if (isNativeDevice || notificationsPermission !== "default") return null;

@@ -409,6 +409,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      store_push_token: {
+        Args: {
+          p_user_id: string
+          p_push_token: string
+          p_device_type: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
