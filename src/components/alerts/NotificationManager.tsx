@@ -26,7 +26,7 @@ export const NotificationManager = () => {
         console.log('Device platform:', info.platform, 'isNative:', isNative);
         setIsNativeDevice(isNative);
         
-        if (isNative) {
+        if (isNative && session?.user?.id) {
           console.log('Setting up push notifications for native device');
           await setupPushNotifications();
         }
@@ -36,9 +36,7 @@ export const NotificationManager = () => {
       }
     };
     
-    if (session?.user?.id) {
-      checkPlatform();
-    }
+    checkPlatform();
   }, [session?.user?.id]);
 
   const setupPushNotifications = async () => {
@@ -50,6 +48,8 @@ export const NotificationManager = () => {
       if (result.receive === 'granted') {
         console.log('Registering push notifications');
         await PushNotifications.register();
+
+        await PushNotifications.removeAllListeners();
 
         PushNotifications.addListener('registration', async token => {
           console.log('Push registration success, token:', token.value);
@@ -129,85 +129,37 @@ export const NotificationManager = () => {
         async (payload) => {
           console.log('New notification received:', payload);
           
-          const { data: tender, error: tenderError } = await supabase
-            .from('tenders')
-            .select('*')
-            .eq('id', payload.new.tender_id)
-            .single();
-
-          if (tenderError) {
-            console.error('Error fetching tender:', tenderError);
-            return;
-          }
-
-          if (!tender) {
-            console.log('No tender found for id:', payload.new.tender_id);
-            return;
-          }
-
-          const { data: alert, error: alertError } = await supabase
-            .from('alerts')
-            .select('*')
-            .eq('id', payload.new.alert_id)
-            .single();
-
-          if (alertError) {
-            console.error('Error fetching alert:', alertError);
-            return;
-          }
-
-          if (!alert) {
-            console.log('No alert found for id:', payload.new.alert_id);
-            return;
-          }
-
-          const preferences = alert.notification_preferences as Alert['notification_preferences'];
-          const emailEnabled = preferences?.email ?? false;
-
-          if (emailEnabled) {
-            try {
-              const { error } = await supabase.functions.invoke('send-alert-email', {
-                body: {
-                  to: session.user.email,
-                  subject: `New Tender Match: ${tender.title}`,
-                  html: `
-                    <h1>New Tender Match</h1>
-                    <p>A new tender matching your alert "${alert.name}" has been found:</p>
-                    <h2>${tender.title}</h2>
-                    <p><strong>Category:</strong> ${tender.category}</p>
-                    <p><strong>Wilaya:</strong> ${tender.wilaya}</p>
-                    <p><strong>Deadline:</strong> ${new Date(tender.deadline).toLocaleDateString()}</p>
-                    <a href="${window.location.origin}/tenders/${tender.id}">View Tender Details</a>
-                  `,
-                  alertId: alert.id,
-                  tenderId: tender.id,
-                  userId: session.user.id
-                }
-              });
-
-              if (error) {
-                console.error('Error sending email notification:', error);
+          try {
+            const { error } = await supabase.functions.invoke('send-push-notification', {
+              body: {
+                tender_id: payload.new.tender_id,
+                alert_id: payload.new.alert_id,
+                user_id: session.user.id
               }
-            } catch (error) {
-              console.error('Error invoking send-alert-email function:', error);
+            });
+
+            if (error) {
+              console.error('Error sending push notification:', error);
             }
+          } catch (error) {
+            console.error('Error invoking send-push-notification function:', error);
           }
 
           if (!isNativeDevice && notificationsPermission === "granted") {
             const notification = new Notification("New Tender Match!", {
-              body: `A new tender matching your alert: ${tender.title}`,
+              body: `A new tender matching your alert`,
               icon: "/favicon.ico",
             });
 
             notification.onclick = () => {
               window.focus();
-              window.location.href = `/tenders/${tender.id}`;
+              window.location.href = `/tenders/${payload.new.tender_id}`;
             };
           }
 
           toast({
             title: "New Tender Match!",
-            description: `A new tender matching your alert: ${tender.title}`,
+            description: "A new tender matching your alert has been found",
           });
         }
       )
