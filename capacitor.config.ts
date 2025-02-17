@@ -6,25 +6,11 @@ const config: CapacitorConfig = {
   appName: 'TendersPro',
   webDir: 'dist',
   server: {
-    androidScheme: 'https',
+    url: 'https://74bd72ef-c253-4d7f-87d7-ab46b197b9e5.lovableproject.com?forceHideBadge=true',
     cleartext: true,
-    allowNavigation: [
-      '*.lovableproject.com'
-    ]
+    androidScheme: 'https'
   },
-  plugins: {
-    PushNotifications: {
-      presentationOptions: ["badge", "sound", "alert"],
-      android: {
-        smallIcon: "ic_launcher_foreground",
-        sound: "notification_sound",
-        vibrate: true,
-        importance: "high",
-        channelId: "tenders-notifications",
-        channelName: "Tender Notifications"
-      }
-    }
-  }
+  bundledWebRuntime: false
 };
 
 export default config;

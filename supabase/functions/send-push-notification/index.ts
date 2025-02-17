@@ -19,16 +19,6 @@ interface WebPushPayload {
       body: string;
     };
     data?: Record<string, string>;
-    android: {
-      priority: 'high';
-      notification: {
-        sound: string;
-        channelId: string;
-        priority: 'high';
-        defaultSound: boolean;
-        visibility: 'public';
-      };
-    };
   };
 }
 
@@ -36,10 +26,6 @@ async function getAccessToken() {
   try {
     const serviceAccount = JSON.parse(Deno.env.get('FIREBASE_SERVICE_ACCOUNT') ?? '{}');
     
-    if (!serviceAccount.private_key) {
-      throw new Error('Firebase service account private key not found');
-    }
-
     // Generate JWT
     const now = Math.floor(Date.now() / 1000);
     const header = {
@@ -60,6 +46,7 @@ async function getAccessToken() {
     const headerB64 = btoa(JSON.stringify(header));
     const claimB64 = btoa(JSON.stringify(claim));
     
+    // Sign the JWT
     const key = serviceAccount.private_key;
     const textEncoder = new TextEncoder();
     const signatureInput = textEncoder.encode(`${headerB64}.${claimB64}`);
@@ -80,6 +67,7 @@ async function getAccessToken() {
     );
     const jwt = `${headerB64}.${claimB64}.${btoa(String.fromCharCode(...new Uint8Array(signature)))}`;
 
+    // Exchange JWT for access token
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: {
@@ -91,13 +79,7 @@ async function getAccessToken() {
       }),
     });
 
-    if (!tokenResponse.ok) {
-      const errorText = await tokenResponse.text();
-      throw new Error(`Failed to get access token: ${errorText}`);
-    }
-
     const { access_token } = await tokenResponse.json();
-    console.log('Successfully obtained FCM access token');
     return access_token;
   } catch (error) {
     console.error('Error getting access token:', error);
@@ -105,65 +87,8 @@ async function getAccessToken() {
   }
 }
 
-async function sendPushNotifications(tokens: string[], tender: any, alert: any, projectId: string, accessToken: string) {
-  console.log('Sending push notifications to tokens:', tokens);
-  
-  const sendPromises = tokens.map(async (token) => {
-    console.log('Preparing notification for token:', token);
-    
-    const payload: WebPushPayload = {
-      message: {
-        token: token,
-        notification: {
-          title: "New Tender Match!",
-          body: `A new tender matching your alert "${alert.name}": ${tender.title}`
-        },
-        data: {
-          tenderId: tender.id,
-          alertId: alert.id
-        },
-        android: {
-          priority: 'high',
-          notification: {
-            sound: 'notification_sound',
-            channelId: 'tenders-notifications',
-            priority: 'high',
-            defaultSound: true,
-            visibility: 'public'
-          }
-        }
-      }
-    };
-    
-    console.log('Sending FCM request with payload:', JSON.stringify(payload));
-
-    const res = await fetch(
-      `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      }
-    );
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error('FCM API error:', errorText);
-      throw new Error(`Failed to send push notification: ${errorText}`);
-    }
-
-    const response = await res.json();
-    console.log('FCM response:', response);
-    return response;
-  });
-
-  return await Promise.all(sendPromises);
-}
-
 Deno.serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -199,44 +124,82 @@ Deno.serve(async (req) => {
     console.log('Fetched alert:', alert);
 
     // Fetch user's push tokens
-    const { data: tokenData, error: tokensError } = await supabaseAdmin
+    const { data: tokens, error: tokensError } = await supabaseAdmin
       .from('user_push_tokens')
-      .select('push_token')
+      .select('push_token, device_type')
       .eq('user_id', user_id);
 
     if (tokensError) {
       console.error('Error fetching push tokens:', tokensError);
       throw tokensError;
     }
-
-    const tokens = tokenData?.map(t => t.push_token) || [];
     console.log('Found push tokens:', tokens);
 
-    let pushResults = [];
-    if (tokens.length > 0) {
-      // Get access token for FCM
-      const accessToken = await getAccessToken();
-      console.log('Got FCM access token');
-      
-      const serviceAccount = JSON.parse(Deno.env.get('FIREBASE_SERVICE_ACCOUNT') ?? '{}');
-      const projectId = serviceAccount.project_id;
-      
-      if (!projectId) {
-        throw new Error('Firebase project ID not found in service account');
-      }
-
-      // Send push notifications
-      pushResults = await sendPushNotifications(tokens, tender, alert, projectId, accessToken);
-      console.log('Push notification results:', pushResults);
-    } else {
+    if (!tokens || tokens.length === 0) {
       console.log('No push tokens found for user:', user_id);
+      return new Response(
+        JSON.stringify({ message: 'No push tokens found for user' }),
+        { 
+          headers: { 
+            ...corsHeaders,
+            'Content-Type': 'application/json' 
+          } 
+        }
+      );
     }
 
+    // Get access token for FCM
+    const accessToken = await getAccessToken();
+    const serviceAccount = JSON.parse(Deno.env.get('FIREBASE_SERVICE_ACCOUNT') ?? '{}');
+    const projectId = serviceAccount.project_id;
+
+    // Send push notification to each token
+    const sendPromises = tokens.map(async ({ push_token }) => {
+      console.log('Sending push notification to token:', push_token);
+      
+      const payload: WebPushPayload = {
+        message: {
+          token: push_token,
+          notification: {
+            title: "New Tender Match!",
+            body: `A new tender matching your alert "${alert.name}": ${tender.title}`
+          },
+          data: {
+            tenderId: tender_id,
+            alertId: alert_id
+          }
+        }
+      };
+      console.log('FCM payload:', payload);
+
+      const res = await fetch(
+        `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('FCM API error:', errorText);
+        throw new Error(`Failed to send push notification: ${errorText}`);
+      }
+
+      const responseData = await res.json();
+      console.log('FCM API response:', responseData);
+      return responseData;
+    });
+
+    const results = await Promise.all(sendPromises);
+    console.log('All push notifications sent:', results);
+
     return new Response(
-      JSON.stringify({ 
-        message: 'Notifications processed', 
-        push_results: pushResults
-      }),
+      JSON.stringify({ message: 'Push notifications sent successfully', results }),
       { 
         headers: { 
           ...corsHeaders,

@@ -11,10 +11,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const supabaseClient = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-);
+interface EmailPayload {
+  to: string;
+  subject: string;
+  alertId: string;
+  tenderId: string;
+  userId: string;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -22,14 +25,6 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Starting email sending process');
-    const { tender_id, alert_id, user_id, to, subject } = await req.json();
-    console.log('Received request:', { tender_id, alert_id, user_id, to, subject });
-
-    if (!to) {
-      throw new Error('Recipient email (to) is required');
-    }
-
     const accessKeyId = Deno.env.get("AWS_ACCESS_KEY_ID");
     const secretAccessKey = Deno.env.get("AWS_SECRET_ACCESS_KEY");
 
@@ -38,38 +33,49 @@ serve(async (req) => {
       throw new Error('AWS credentials are not configured');
     }
 
+    console.log('AWS credentials validated');
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const payload: EmailPayload = await req.json();
+    const { to, subject, alertId, tenderId, userId } = payload;
+
     // Fetch tender and alert details
     const { data: tender, error: tenderError } = await supabaseClient
       .from('tenders')
       .select('*')
-      .eq('id', tender_id)
+      .eq('id', tenderId)
       .single();
 
-    if (tenderError) {
-      console.error('Error fetching tender:', tenderError);
-      throw tenderError;
-    }
-    console.log('Fetched tender:', tender);
+    if (tenderError) throw tenderError;
 
     const { data: alert, error: alertError } = await supabaseClient
       .from('alerts')
       .select('*')
-      .eq('id', alert_id)
+      .eq('id', alertId)
       .single();
 
-    if (alertError) {
-      console.error('Error fetching alert:', alertError);
-      throw alertError;
-    }
-    console.log('Fetched alert:', alert);
+    if (alertError) throw alertError;
+
+    console.log('Email details:', {
+      to,
+      subject,
+      fromEmail: "abdou@trycartback.com",
+      tenderId,
+      alertId,
+      userId
+    });
 
     // Check if email was already sent
     const { data: existingNotification, error: checkError } = await supabaseClient
       .from('alert_email_notifications')
       .select('*')
-      .eq('alert_id', alert_id)
-      .eq('tender_id', tender_id)
-      .eq('user_id', user_id)
+      .eq('alert_id', alertId)
+      .eq('tender_id', tenderId)
+      .eq('user_id', userId)
       .single();
 
     if (checkError && checkError.code !== 'PGRST116') {
@@ -98,7 +104,7 @@ serve(async (req) => {
         category: tender.category,
         wilaya: tender.wilaya,
         deadline: new Date(tender.deadline).toLocaleDateString(),
-        tenderUrl: `${req.headers.get('origin') || 'https://tenders.pro'}/tenders/${tender.id}`
+        tenderUrl: `${req.headers.get('origin')}/tenders/${tender.id}`
       })
     );
 
@@ -133,7 +139,6 @@ serve(async (req) => {
       },
     });
 
-    console.log('Sending email to:', to);
     const response = await sesClient.send(sendEmailCommand);
     console.log('Email sent successfully:', response);
 
@@ -141,9 +146,9 @@ serve(async (req) => {
     const { error: logError } = await supabaseClient
       .from('alert_email_notifications')
       .insert({
-        alert_id: alert_id,
-        tender_id: tender_id,
-        user_id: user_id,
+        alert_id: alertId,
+        tender_id: tenderId,
+        user_id: userId,
         email_status: 'sent',
         sent_at: new Date().toISOString()
       });
@@ -157,9 +162,9 @@ serve(async (req) => {
     const { error: updateError } = await supabaseClient
       .from('tender_notifications')
       .update({ processed_at: new Date().toISOString() })
-      .eq('alert_id', alert_id)
-      .eq('tender_id', tender_id)
-      .eq('user_id', user_id);
+      .eq('alert_id', alertId)
+      .eq('tender_id', tenderId)
+      .eq('user_id', userId);
 
     if (updateError) {
       console.error('Error updating tender notification:', updateError);
