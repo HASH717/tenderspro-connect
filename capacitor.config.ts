@@ -9,11 +9,12 @@ const config: CapacitorConfig = {
     androidScheme: 'https',
     cleartext: true,
     allowNavigation: [
+      'localhost',
       '*.lovableproject.com',
       '74bd72ef-c253-4d7f-87d7-ab46b197b9e5.lovableproject.com'
     ],
-    hostname: '74bd72ef-c253-4d7f-87d7-ab46b197b9e5.lovableproject.com',
-    url: 'https://74bd72ef-c253-4d7f-87d7-ab46b197b9e5.lovableproject.com'
+    hostname: 'localhost',
+    url: 'http://localhost:8080'
   },
   plugins: {
     PushNotifications: {
