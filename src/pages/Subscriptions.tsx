@@ -12,6 +12,8 @@ import { SubscriptionPlans } from "@/components/subscriptions/SubscriptionPlans"
 import { TestModeAlert } from "@/components/subscriptions/TestModeAlert";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 
 const Subscriptions = () => {
   const { t } = useTranslation();
@@ -95,6 +97,12 @@ const Subscriptions = () => {
 
           if (latestSubscription) {
             console.log('Latest subscription found:', latestSubscription);
+            
+            // If on mobile, close the browser first
+            if (Capacitor.isNativePlatform()) {
+              await Browser.close();
+            }
+            
             navigate('/subscriptions/categories', {
               replace: true,
               state: {
@@ -163,7 +171,13 @@ const Subscriptions = () => {
       if (error) throw error;
 
       if (data?.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
+        if (Capacitor.isNativePlatform()) {
+          // Open in in-app browser for mobile
+          await Browser.open({ url: data.checkoutUrl });
+        } else {
+          // Regular browser redirect for web
+          window.location.href = data.checkoutUrl;
+        }
       } else {
         throw new Error('No checkout URL received');
       }
