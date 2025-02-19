@@ -13,8 +13,8 @@ const config: CapacitorConfig = {
       '*.lovableproject.com',
       '74bd72ef-c253-4d7f-87d7-ab46b197b9e5.lovableproject.com'
     ],
-    hostname: '0.0.0.0', // Changed this to match Vite config
-    url: 'http://10.0.2.2:8080' // Use 10.0.2.2 for Android emulator
+    hostname: '0.0.0.0',
+    url: 'http://192.168.1.40:8080' // Updated to use your computer's IP address
   },
   plugins: {
     PushNotifications: {
