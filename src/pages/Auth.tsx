@@ -15,10 +15,21 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    console.log('Auth page - Session state:', !!session);
+    console.log('Auth page - Return path:', returnTo);
+
     if (session) {
-      navigate(returnTo);
+      // Ensure we're using the complete return path
+      const fullReturnPath = returnTo.includes('?') 
+        ? returnTo 
+        : location.state?.returnTo || '/';
+      
+      console.log('Auth page - Redirecting to:', fullReturnPath);
+      
+      // Use replace to prevent back button issues
+      navigate(fullReturnPath, { replace: true });
     }
-  }, [session, navigate, returnTo]);
+  }, [session, navigate, returnTo, location.state]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted p-4">

@@ -15,13 +15,17 @@ export const LoginForm = ({ isLoading, setIsLoading }: { isLoading: boolean; set
     const password = formData.get('password') as string;
 
     try {
+      console.log('Attempting login...');
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
+      
+      console.log('Login successful');
     } catch (error: any) {
+      console.error('Login error:', error);
       toast.error(error.message);
     } finally {
       setIsLoading(false);
