@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => ({
     'process.env': {},
   },
   server: {
-    host: true,
+    host: '0.0.0.0', // Changed this to allow external connections
     port: 8080,
     strictPort: true,
     cors: true,

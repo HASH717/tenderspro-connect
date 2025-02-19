@@ -6,15 +6,15 @@ const config: CapacitorConfig = {
   appName: 'TendersPro',
   webDir: 'dist',
   server: {
-    androidScheme: 'https',
+    androidScheme: 'http', // Changed to http for development
     cleartext: true,
     allowNavigation: [
       'localhost',
       '*.lovableproject.com',
       '74bd72ef-c253-4d7f-87d7-ab46b197b9e5.lovableproject.com'
     ],
-    hostname: 'localhost',
-    url: 'http://localhost:8080'
+    hostname: '0.0.0.0', // Changed this to match Vite config
+    url: 'http://10.0.2.2:8080' // Use 10.0.2.2 for Android emulator
   },
   plugins: {
     PushNotifications: {
