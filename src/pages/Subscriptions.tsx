@@ -74,6 +74,7 @@ const Subscriptions = () => {
     retryDelay: 1000
   });
 
+  // Handle the payment success redirect
   useEffect(() => {
     const success = searchParams.get('success');
     const plan = searchParams.get('plan');
@@ -171,9 +172,12 @@ const Subscriptions = () => {
       if (error) throw error;
 
       if (data?.checkoutUrl) {
+        // For mobile, open in in-app browser
         if (Capacitor.isNativePlatform()) {
-          // Open in in-app browser for mobile
-          await Browser.open({ url: data.checkoutUrl });
+          await Browser.open({ 
+            url: data.checkoutUrl,
+            windowName: '_self' // Force same window
+          });
         } else {
           // Regular browser redirect for web
           window.location.href = data.checkoutUrl;
