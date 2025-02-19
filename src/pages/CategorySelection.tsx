@@ -58,10 +58,11 @@ const CategorySelection = () => {
 
   useEffect(() => {
     if (!session) {
-      console.log('No session, redirecting to auth');
+      console.log('No session, redirecting to auth with return path:', location.pathname + location.search);
       navigate('/auth', { 
+        replace: true,
         state: { 
-          returnTo: location.pathname
+          returnTo: location.pathname + location.search
         }
       });
       return;
@@ -85,7 +86,7 @@ const CategorySelection = () => {
     }
 
     console.log('Current subscription:', subscription);
-  }, [session, subscription, navigate, isLoading, error, location.pathname]);
+  }, [session, subscription, navigate, isLoading, error, location.pathname, location.search]);
 
   if (!session || isLoading || !subscription) {
     return null;

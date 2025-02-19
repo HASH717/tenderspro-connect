@@ -79,7 +79,7 @@ const Subscriptions = () => {
     const checkoutId = searchParams.get('checkout_id');
     
     const handleSuccessfulPayment = async () => {
-      if (success === 'true' && plan && checkoutId) {
+      if (success === 'true' && plan && checkoutId && session?.user?.id) {
         setIsRefreshing(true);
         console.log('Payment successful, refreshing subscription data...');
         
@@ -96,22 +96,17 @@ const Subscriptions = () => {
           const { data: latestSubscription } = await supabase
             .from('subscriptions')
             .select('*')
-            .eq('user_id', session?.user?.id)
+            .eq('user_id', session.user.id)
             .eq('status', 'active')
             .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle();
 
           if (latestSubscription) {
-            console.log('Latest subscription found:', latestSubscription);
-            
+            console.log('Latest subscription found, navigating to categories');
             navigate('/subscriptions/categories', { 
               replace: true,
-              state: { 
-                fromPayment: true,
-                subscriptionId: latestSubscription.id,
-                plan: latestSubscription.plan
-              }
+              state: { fromPayment: true }
             });
           } else {
             console.error('No active subscription found after payment');
@@ -136,8 +131,15 @@ const Subscriptions = () => {
 
     if (session?.user?.id) {
       handleSuccessfulPayment();
+    } else if (success === 'true') {
+      navigate('/auth', {
+        replace: true,
+        state: { 
+          returnTo: location.pathname + location.search
+        }
+      });
     }
-  }, [searchParams, session?.user?.id, navigate, refetchSubscription, toast]);
+  }, [searchParams, session?.user?.id, navigate, refetchSubscription, toast, location]);
 
   const handleSubscribe = async (plan: any) => {
     try {
