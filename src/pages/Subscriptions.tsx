@@ -1,4 +1,3 @@
-
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -74,7 +73,6 @@ const Subscriptions = () => {
     retryDelay: 1000
   });
 
-  // Handle the payment success redirect
   useEffect(() => {
     const success = searchParams.get('success');
     const plan = searchParams.get('plan');
@@ -86,6 +84,10 @@ const Subscriptions = () => {
         console.log('Payment successful, refreshing subscription data...');
         
         try {
+          if (Capacitor.isNativePlatform()) {
+            await Browser.close();
+          }
+
           await refetchSubscription();
           const { data: latestSubscription } = await supabase
             .from('subscriptions')
@@ -99,18 +101,7 @@ const Subscriptions = () => {
           if (latestSubscription) {
             console.log('Latest subscription found:', latestSubscription);
             
-            // If on mobile, close the browser first
-            if (Capacitor.isNativePlatform()) {
-              await Browser.close();
-            }
-            
-            navigate('/subscriptions/categories', {
-              replace: true,
-              state: {
-                subscriptionId: latestSubscription.id,
-                plan: latestSubscription.plan
-              }
-            });
+            window.location.replace('/subscriptions/categories');
           } else {
             console.error('No active subscription found after payment');
             toast({
@@ -135,7 +126,7 @@ const Subscriptions = () => {
     if (session?.user?.id) {
       handleSuccessfulPayment();
     }
-  }, [searchParams, session?.user?.id, navigate, refetchSubscription, toast]);
+  }, [searchParams, session?.user?.id, refetchSubscription, toast]);
 
   const handleSubscribe = async (plan: any) => {
     try {
@@ -172,14 +163,12 @@ const Subscriptions = () => {
       if (error) throw error;
 
       if (data?.checkoutUrl) {
-        // For mobile, open in in-app browser
         if (Capacitor.isNativePlatform()) {
           await Browser.open({ 
             url: data.checkoutUrl,
-            windowName: '_self' // Force same window
+            windowName: '_self'
           });
         } else {
-          // Regular browser redirect for web
           window.location.href = data.checkoutUrl;
         }
       } else {

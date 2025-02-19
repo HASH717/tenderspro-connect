@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,6 +8,8 @@ import { CategorySelection as CategorySelectionComponent } from "@/components/su
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Browser } from '@capacitor/browser';
+import { Capacitor } from '@capacitor/core';
 
 const CategorySelection = () => {
   const navigate = useNavigate();
@@ -41,6 +44,20 @@ const CategorySelection = () => {
     retry: 5,
     retryDelay: 1000
   });
+
+  useEffect(() => {
+    const init = async () => {
+      if (Capacitor.isNativePlatform()) {
+        try {
+          await Browser.close();
+        } catch (error) {
+          console.error('Error closing browser:', error);
+        }
+      }
+    };
+
+    init();
+  }, []);
 
   useEffect(() => {
     if (!session) {
