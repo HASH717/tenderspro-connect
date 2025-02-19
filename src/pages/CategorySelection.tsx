@@ -15,10 +15,6 @@ const CategorySelection = () => {
   const navigate = useNavigate();
   const { session } = useAuth();
   const location = useLocation();
-  
-  const searchParams = new URLSearchParams(location.search);
-  const success = searchParams.get('success');
-  const plan = searchParams.get('plan');
 
   const { data: subscription, isLoading, error } = useQuery({
     queryKey: ['latest-subscription', session?.user?.id],
@@ -47,7 +43,8 @@ const CategorySelection = () => {
 
   useEffect(() => {
     const init = async () => {
-      if (Capacitor.isNativePlatform()) {
+      // Close browser if coming from payment flow
+      if (Capacitor.isNativePlatform() && location.state?.fromPayment) {
         try {
           await Browser.close();
         } catch (error) {
@@ -57,14 +54,14 @@ const CategorySelection = () => {
     };
 
     init();
-  }, []);
+  }, [location.state]);
 
   useEffect(() => {
     if (!session) {
       console.log('No session, redirecting to auth');
       navigate('/auth', { 
         state: { 
-          returnTo: location.pathname + location.search
+          returnTo: location.pathname
         }
       });
       return;
@@ -81,25 +78,14 @@ const CategorySelection = () => {
       return;
     }
 
-    if (!subscription && success === 'true') {
-      console.log('Payment successful but no subscription found, retrying...');
-      return; // Let the query retry
-    }
-
     if (!subscription) {
       console.log('No subscription found, redirecting to subscriptions');
       navigate('/subscriptions');
       return;
     }
 
-    if (subscription.plan === 'Enterprise') {
-      console.log('Enterprise plan, redirecting to home');
-      navigate('/');
-      return;
-    }
-
     console.log('Current subscription:', subscription);
-  }, [session, success, subscription, navigate, isLoading, error, location]);
+  }, [session, subscription, navigate, isLoading, error, location.pathname]);
 
   if (!session || isLoading || !subscription) {
     return null;

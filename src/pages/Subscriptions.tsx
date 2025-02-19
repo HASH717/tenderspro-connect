@@ -85,7 +85,11 @@ const Subscriptions = () => {
         
         try {
           if (Capacitor.isNativePlatform()) {
-            await Browser.close();
+            try {
+              await Browser.close();
+            } catch (error) {
+              console.error('Error closing browser:', error);
+            }
           }
 
           await refetchSubscription();
@@ -101,7 +105,14 @@ const Subscriptions = () => {
           if (latestSubscription) {
             console.log('Latest subscription found:', latestSubscription);
             
-            window.location.replace('/subscriptions/categories');
+            navigate('/subscriptions/categories', { 
+              replace: true,
+              state: { 
+                fromPayment: true,
+                subscriptionId: latestSubscription.id,
+                plan: latestSubscription.plan
+              }
+            });
           } else {
             console.error('No active subscription found after payment');
             toast({
@@ -126,7 +137,7 @@ const Subscriptions = () => {
     if (session?.user?.id) {
       handleSuccessfulPayment();
     }
-  }, [searchParams, session?.user?.id, refetchSubscription, toast]);
+  }, [searchParams, session?.user?.id, navigate, refetchSubscription, toast]);
 
   const handleSubscribe = async (plan: any) => {
     try {
