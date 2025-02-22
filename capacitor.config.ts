@@ -17,13 +17,13 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ["badge", "sound", "alert"],
       importance: "high",
-      iconColor: "#4CAF50"
+      iconColor: "#4CAF50",
+      fcmSandbox: false // Set to true for development APNs environment
     }
   },
   ios: {
-    scheme: 'TendersPro'
+    scheme: 'TendersPro',
   }
 };
 
 export default config;
-
