@@ -71,6 +71,21 @@ export const NotificationManager = () => {
       }
 
       setIsNativeDevice(true);
+
+      // Create notification channel for Android
+      if (deviceInfo.platform === 'android') {
+        await PushNotifications.createChannel({
+          id: 'tenders',
+          name: 'Tender Notifications',
+          description: 'Notifications for new tender matches',
+          importance: 5, // High importance for background notifications
+          visibility: 1, // Public
+          sound: 'default',
+          vibration: true,
+          lights: true
+        });
+        console.log('Created Android notification channel');
+      }
       
       // Check current permission status
       const permissionStatus = await PushNotifications.checkPermissions();
@@ -123,10 +138,10 @@ export const NotificationManager = () => {
         }
       });
 
-      // Set up notification received listener
+      // Set up notification received listener (for foreground)
       PushNotifications.addListener('pushNotificationReceived', 
         (notification: PushNotificationSchema) => {
-          console.log('Received push notification:', notification);
+          console.log('Received push notification in foreground:', notification);
           toast({
             title: notification.title || "New Notification",
             description: notification.body,
@@ -134,7 +149,7 @@ export const NotificationManager = () => {
         }
       );
 
-      // Set up notification action listener
+      // Set up notification action listener (for background)
       PushNotifications.addListener('pushNotificationActionPerformed',
         (notification: ActionPerformed) => {
           console.log('Push notification action performed:', notification);
@@ -205,24 +220,6 @@ export const NotificationManager = () => {
           } catch (error) {
             console.error('Error invoking send-push-notification function:', error);
           }
-
-          // Handle web notifications
-          if (!isNativeDevice && notificationsPermission === "granted") {
-            const notification = new Notification("New Tender Match!", {
-              body: `A new tender matching your alert has been found`,
-              icon: "/favicon.ico",
-            });
-
-            notification.onclick = () => {
-              window.focus();
-              window.location.href = `/tenders/${payload.new.tender_id}`;
-            };
-          }
-
-          toast({
-            title: "New Tender Match!",
-            description: "A new tender matching your alert has been found",
-          });
         }
       )
       .subscribe();
@@ -263,10 +260,8 @@ export const NotificationManager = () => {
     }
   };
 
-  // Only show the button for web notifications if we're not on a native device
   const shouldShowButton = !isNativeDevice && notificationsPermission === "default";
-  console.log('Should show notification button:', shouldShowButton, 'isNativeDevice:', isNativeDevice, 'pushToken:', pushToken);
-
+  
   if (!shouldShowButton) return null;
 
   return (

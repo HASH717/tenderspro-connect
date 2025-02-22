@@ -18,6 +18,18 @@ interface WebPushPayload {
       title: string;
       body: string;
     };
+    android: {
+      notification: {
+        channelId: string;
+        icon: string;
+        color: string;
+        priority: 'high';
+        defaultSound: boolean;
+        defaultVibrateTimings: boolean;
+        visibility: 'public' | 'private' | 'secret';
+      };
+      priority: 'high';
+    };
     data?: Record<string, string>;
   };
 }
@@ -26,7 +38,6 @@ async function getAccessToken() {
   try {
     const serviceAccount = JSON.parse(Deno.env.get('FIREBASE_SERVICE_ACCOUNT') ?? '{}');
     
-    // Generate JWT
     const now = Math.floor(Date.now() / 1000);
     const header = {
       alg: 'RS256',
@@ -86,8 +97,8 @@ async function getAccessToken() {
 }
 
 async function sendPushNotifications(tokens: any[], tender: any, alert: any, projectId: string, accessToken: string) {
-  const sendPromises = tokens.map(async ({ push_token }) => {
-    console.log('Sending push notification to token:', push_token);
+  const sendPromises = tokens.map(async ({ push_token, device_type }) => {
+    console.log('Sending push notification to token:', push_token, 'device type:', device_type);
     
     const payload: WebPushPayload = {
       message: {
@@ -95,6 +106,18 @@ async function sendPushNotifications(tokens: any[], tender: any, alert: any, pro
         notification: {
           title: "New Tender Match!",
           body: `A new tender matching your alert "${alert.name}": ${tender.title}`
+        },
+        android: {
+          notification: {
+            channelId: 'tenders',
+            icon: 'notification_icon',
+            color: '#4CAF50',
+            priority: 'high',
+            defaultSound: true,
+            defaultVibrateTimings: true,
+            visibility: 'public'
+          },
+          priority: 'high'
         },
         data: {
           tenderId: tender.id,
@@ -122,7 +145,9 @@ async function sendPushNotifications(tokens: any[], tender: any, alert: any, pro
       throw new Error(`Failed to send push notification: ${errorText}`);
     }
 
-    return await res.json();
+    const result = await res.json();
+    console.log('FCM send result:', result);
+    return result;
   });
 
   return await Promise.all(sendPromises);
