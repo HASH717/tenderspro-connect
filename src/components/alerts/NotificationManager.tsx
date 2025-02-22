@@ -26,13 +26,7 @@ export const NotificationManager = () => {
     }
 
     try {
-      console.log('Attempting to store push token:', {
-        userId: session.user.id,
-        deviceType,
-        tokenLength: token.length
-      });
-
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('user_push_tokens')
         .upsert({
           user_id: session.user.id,
@@ -43,13 +37,9 @@ export const NotificationManager = () => {
           onConflict: 'user_id,push_token'
         });
 
-      if (error) {
-        console.error('Error storing push token:', error);
-        throw error;
-      }
-
+      if (error) throw error;
+      
       console.log('Successfully stored push token');
-      return data;
     } catch (error) {
       console.error('Failed to store push token:', error);
       throw error;
@@ -58,19 +48,13 @@ export const NotificationManager = () => {
 
   const setupPushNotifications = async () => {
     try {
-      console.log('Starting push notification setup');
-      
-      // Check if we're running in a Capacitor app
       const deviceInfo = await Device.getInfo();
-      console.log('Device info:', deviceInfo);
+      setIsNativeDevice(deviceInfo.platform === 'android' || deviceInfo.platform === 'ios');
       
-      if (!deviceInfo.platform || (deviceInfo.platform !== 'android' && deviceInfo.platform !== 'ios')) {
-        console.log('Not a native mobile platform:', deviceInfo.platform);
-        setIsNativeDevice(false);
+      if (!isNativeDevice) {
+        console.log('Not a native mobile platform');
         return;
       }
-
-      setIsNativeDevice(true);
 
       // Create notification channel for Android
       if (deviceInfo.platform === 'android') {
@@ -78,26 +62,20 @@ export const NotificationManager = () => {
           id: 'tenders',
           name: 'Tender Notifications',
           description: 'Notifications for new tender matches',
-          importance: 5, // High importance for background notifications
-          visibility: 1, // Public
+          importance: 5,
+          visibility: 1,
           sound: 'default',
           vibration: true,
           lights: true
         });
-        console.log('Created Android notification channel');
       }
       
-      // Check current permission status
       const permissionStatus = await PushNotifications.checkPermissions();
-      console.log('Current permission status:', permissionStatus);
       
       if (permissionStatus.receive !== 'granted') {
-        console.log('Requesting push notification permissions');
         const result = await PushNotifications.requestPermissions();
-        console.log('Permission request result:', result);
         
         if (result.receive !== 'granted') {
-          console.log('Push notification permission denied');
           toast({
             title: "Permission Required",
             description: "Please enable push notifications in your device settings",
@@ -107,23 +85,16 @@ export const NotificationManager = () => {
         }
       }
 
-      // Register for push notifications
-      console.log('Registering for push notifications');
       await PushNotifications.register();
-      console.log('Push notifications registered');
-
-      // Remove existing listeners to prevent duplicates
       await PushNotifications.removeAllListeners();
-      console.log('Removed existing listeners');
 
-      // Set up registration listener
+      // Registration handler
       PushNotifications.addListener('registration', async (token) => {
-        console.log('Got push token:', token.value);
+        console.log('Push registration success:', token.value);
         setPushToken(token.value);
 
         try {
           await storePushToken(token.value, deviceInfo.platform);
-          
           toast({
             title: "Success",
             description: "Push notifications enabled successfully",
@@ -138,10 +109,10 @@ export const NotificationManager = () => {
         }
       });
 
-      // Set up notification received listener (for foreground)
+      // Notification received handler (foreground)
       PushNotifications.addListener('pushNotificationReceived', 
         (notification: PushNotificationSchema) => {
-          console.log('Received push notification in foreground:', notification);
+          console.log('Notification received:', notification);
           toast({
             title: notification.title || "New Notification",
             description: notification.body,
@@ -149,17 +120,18 @@ export const NotificationManager = () => {
         }
       );
 
-      // Set up notification action listener (for background)
+      // Notification action handler (background/click)
       PushNotifications.addListener('pushNotificationActionPerformed',
-        (notification: ActionPerformed) => {
-          console.log('Push notification action performed:', notification);
-          if (notification.notification.data?.tenderId) {
-            window.location.href = `/tenders/${notification.notification.data.tenderId}`;
+        (action: ActionPerformed) => {
+          console.log('Notification action performed:', action);
+          const tenderId = action.notification.data?.tenderId;
+          if (tenderId) {
+            const baseUrl = window.location.origin;
+            window.location.href = `${baseUrl}/tenders/${tenderId}`;
           }
         }
       );
 
-      console.log('All push notification listeners set up');
     } catch (error) {
       console.error('Error in setupPushNotifications:', error);
       toast({
@@ -170,22 +142,17 @@ export const NotificationManager = () => {
     }
   };
 
+  // Setup push notifications when user session is available
   useEffect(() => {
     if (session?.user?.id) {
       console.log('Setting up push notifications for user:', session.user.id);
       setupPushNotifications();
-    } else {
-      console.log('No user session, skipping push notification setup');
     }
   }, [session?.user?.id]);
 
+  // Listen for realtime notifications
   useEffect(() => {
-    if (!session?.user?.id) {
-      console.log('No user session found, skipping notification setup');
-      return;
-    }
-
-    console.log('Setting up real-time notifications for user:', session.user.id);
+    if (!session?.user?.id) return;
 
     const channel = supabase
       .channel('schema-db-changes')
@@ -198,25 +165,14 @@ export const NotificationManager = () => {
           filter: `user_id=eq.${session.user.id}`
         },
         async (payload) => {
-          console.log('New notification received:', payload);
-          
           try {
-            const { error } = await supabase.functions.invoke('send-push-notification', {
+            await supabase.functions.invoke('send-push-notification', {
               body: {
                 tender_id: payload.new.tender_id,
                 alert_id: payload.new.alert_id,
                 user_id: session.user.id
               }
             });
-
-            if (error) {
-              console.error('Error sending push notification:', error);
-              toast({
-                title: "Error",
-                description: "Failed to send push notification",
-                variant: "destructive",
-              });
-            }
           } catch (error) {
             console.error('Error invoking send-push-notification function:', error);
           }
@@ -225,11 +181,11 @@ export const NotificationManager = () => {
       .subscribe();
 
     return () => {
-      console.log('Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
-  }, [session?.user?.id, notificationsPermission, toast, isNativeDevice]);
+  }, [session?.user?.id]);
 
+  // Handle web notifications
   const requestNotificationPermission = async () => {
     if (!("Notification" in window)) {
       toast({
@@ -247,7 +203,7 @@ export const NotificationManager = () => {
       if (permission === "granted") {
         toast({
           title: "Notifications Enabled",
-          description: "You will now receive desktop notifications for new tenders",
+          description: "You will now receive desktop notifications",
         });
       }
     } catch (error) {
@@ -275,3 +231,4 @@ export const NotificationManager = () => {
     </Button>
   );
 };
+
