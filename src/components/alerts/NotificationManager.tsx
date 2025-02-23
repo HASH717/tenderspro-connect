@@ -18,6 +18,7 @@ export const NotificationManager = () => {
   const [notificationsPermission, setNotificationsPermission] = useState<NotificationPermission>("default");
   const [isNativeDevice, setIsNativeDevice] = useState(false);
   const [pushToken, setPushToken] = useState<string | null>(null);
+  const [isSettingUp, setIsSettingUp] = useState(false);
 
   const storePushToken = async (token: string, deviceType: string) => {
     if (!session?.user?.id) {
@@ -51,6 +52,9 @@ export const NotificationManager = () => {
   };
 
   const setupPushNotifications = async () => {
+    if (isSettingUp) return;
+    setIsSettingUp(true);
+
     try {
       console.log('Setting up push notifications...');
       const deviceInfo = await Device.getInfo();
@@ -102,18 +106,50 @@ export const NotificationManager = () => {
 
       console.log('Registering for push notifications...');
       await PushNotifications.register();
+    } catch (error) {
+      console.error('Error in setupPushNotifications:', error);
+      toast({
+        title: "Error",
+        description: "Failed to set up push notifications",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSettingUp(false);
+    }
+  };
 
-      // Remove existing listeners before adding new ones
-      console.log('Removing existing listeners...');
-      await PushNotifications.removeAllListeners();
+  // Setup push notifications when user session is available
+  useEffect(() => {
+    let mounted = true;
 
-      // Registration success handler
-      console.log('Adding registration success listener...');
-      PushNotifications.addListener('registration', async (token) => {
+    const setup = async () => {
+      if (session?.user?.id && mounted) {
+        console.log('Setting up push notifications for user:', session.user.id);
+        await setupPushNotifications();
+      }
+    };
+
+    setup();
+
+    return () => {
+      mounted = false;
+    };
+  }, [session?.user?.id]);
+
+  // Setup notification listeners
+  useEffect(() => {
+    if (!isNativeDevice) return;
+
+    console.log('Setting up notification listeners...');
+    
+    // Registration success handler
+    const registrationListener = PushNotifications.addListener('registration', 
+      async (token) => {
         console.log('Push registration success:', token.value);
         setPushToken(token.value);
 
         try {
+          const deviceInfo = await Device.getInfo();
           await storePushToken(token.value, deviceInfo.platform);
           toast({
             title: "Success",
@@ -127,61 +163,55 @@ export const NotificationManager = () => {
             variant: "destructive",
           });
         }
-      });
+      }
+    );
 
-      // Registration error handler
-      console.log('Adding registration error listener...');
-      PushNotifications.addListener('registrationError', (error) => {
+    // Registration error handler
+    const registrationErrorListener = PushNotifications.addListener('registrationError',
+      (error) => {
         console.error('Push registration error:', error);
         toast({
           title: "Registration Error",
           description: "Failed to register for push notifications",
           variant: "destructive",
         });
-      });
+      }
+    );
 
-      // Notification received handler (foreground)
-      console.log('Adding notification received listener...');
-      PushNotifications.addListener('pushNotificationReceived', 
-        (notification: PushNotificationSchema) => {
-          console.log('Notification received:', notification);
-          toast({
-            title: notification.title || "New Notification",
-            description: notification.body,
-          });
+    // Notification received handler (foreground)
+    const notificationReceivedListener = PushNotifications.addListener(
+      'pushNotificationReceived',
+      (notification: PushNotificationSchema) => {
+        console.log('Notification received:', notification);
+        toast({
+          title: notification.title || "New Notification",
+          description: notification.body,
+        });
+      }
+    );
+
+    // Notification action handler (background/click)
+    const notificationActionListener = PushNotifications.addListener(
+      'pushNotificationActionPerformed',
+      (action: ActionPerformed) => {
+        console.log('Notification action performed:', action);
+        const tenderId = action.notification.data?.tenderId;
+        if (tenderId) {
+          const baseUrl = window.location.origin;
+          window.location.href = `${baseUrl}/tenders/${tenderId}`;
         }
-      );
+      }
+    );
 
-      // Notification action handler (background/click)
-      console.log('Adding notification action listener...');
-      PushNotifications.addListener('pushNotificationActionPerformed',
-        (action: ActionPerformed) => {
-          console.log('Notification action performed:', action);
-          const tenderId = action.notification.data?.tenderId;
-          if (tenderId) {
-            const baseUrl = window.location.origin;
-            window.location.href = `${baseUrl}/tenders/${tenderId}`;
-          }
-        }
-      );
-
-    } catch (error) {
-      console.error('Error in setupPushNotifications:', error);
-      toast({
-        title: "Error",
-        description: "Failed to set up push notifications",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Setup push notifications when user session is available
-  useEffect(() => {
-    if (session?.user?.id) {
-      console.log('Setting up push notifications for user:', session.user.id);
-      setupPushNotifications();
-    }
-  }, [session?.user?.id]);
+    // Cleanup function
+    return () => {
+      console.log('Cleaning up notification listeners...');
+      registrationListener.remove();
+      registrationErrorListener.remove();
+      notificationReceivedListener.remove();
+      notificationActionListener.remove();
+    };
+  }, [isNativeDevice]);
 
   // Listen for realtime notifications
   useEffect(() => {
@@ -216,6 +246,7 @@ export const NotificationManager = () => {
       .subscribe();
 
     return () => {
+      console.log('Cleaning up realtime subscription...');
       supabase.removeChannel(channel);
     };
   }, [session?.user?.id]);
