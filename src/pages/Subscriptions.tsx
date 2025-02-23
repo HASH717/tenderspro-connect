@@ -1,3 +1,4 @@
+
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -23,6 +24,12 @@ const Subscriptions = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Function to get the base URL that works in both development and production
+  const getBaseUrl = () => {
+    // Use the Lovable domain in both dev and prod for consistency
+    return 'https://74bd72ef-c253-4d7f-87d7-ab46b197b9e5.lovableproject.com';
+  };
 
   const { data: profile } = useQuery({
     queryKey: ['profile', session?.user?.id],
@@ -167,7 +174,7 @@ const Subscriptions = () => {
           plan: plan.name,
           priceId: plan.priceId,
           userId: session.user.id,
-          backUrl: `${window.location.origin}/subscriptions?success=true&plan=${plan.name}`,
+          backUrl: `${getBaseUrl()}/subscriptions?success=true&plan=${plan.name}`,
           categories: profile.preferred_categories,
           billingInterval: plan.billingInterval
         }
@@ -219,3 +226,4 @@ const Subscriptions = () => {
 };
 
 export default Subscriptions;
+
