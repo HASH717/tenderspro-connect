@@ -1,4 +1,3 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
 const corsHeaders = {
@@ -36,7 +35,21 @@ interface WebPushPayload {
 
 async function getAccessToken() {
   try {
-    const serviceAccount = JSON.parse(Deno.env.get('FIREBASE_SERVICE_ACCOUNT') ?? '{}');
+    const rawServiceAccount = Deno.env.get('FIREBASE_SERVICE_ACCOUNT') ?? '';
+    console.log('Raw service account length:', rawServiceAccount.length);
+    
+    let serviceAccount;
+    try {
+      serviceAccount = JSON.parse(rawServiceAccount);
+    } catch (parseError) {
+      console.error('Initial parse failed:', parseError);
+      const formattedJson = rawServiceAccount
+        .replace(/\\n/g, '\n')
+        .replace(/\n/g, '\\n');
+      serviceAccount = JSON.parse(formattedJson);
+    }
+    
+    console.log('Service account parsed successfully');
     
     const now = Math.floor(Date.now() / 1000);
     const header = {
@@ -57,12 +70,13 @@ async function getAccessToken() {
     const headerB64 = btoa(JSON.stringify(header));
     const claimB64 = btoa(JSON.stringify(claim));
     
-    const key = serviceAccount.private_key;
+    const privateKey = serviceAccount.private_key.replace(/\\n/g, '\n');
+    
     const textEncoder = new TextEncoder();
     const signatureInput = textEncoder.encode(`${headerB64}.${claimB64}`);
-    const cryptoKey = await crypto.subtle.importKey(
+    const signKey = await crypto.subtle.importKey(
       'pkcs8',
-      new TextEncoder().encode(key),
+      new TextEncoder().encode(privateKey),
       {
         name: 'RSASSA-PKCS1-v1_5',
         hash: 'SHA-256',
@@ -70,13 +84,15 @@ async function getAccessToken() {
       false,
       ['sign']
     );
+    
     const signature = await crypto.subtle.sign(
       'RSASSA-PKCS1-v1_5',
-      cryptoKey,
+      signKey,
       signatureInput
     );
+    
     const jwt = `${headerB64}.${claimB64}.${btoa(String.fromCharCode(...new Uint8Array(signature)))}`;
-
+    
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: {
@@ -88,10 +104,17 @@ async function getAccessToken() {
       }),
     });
 
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      console.error('Token response error:', errorText);
+      throw new Error(`Failed to get access token: ${errorText}`);
+    }
+
     const { access_token } = await tokenResponse.json();
+    console.log('Access token obtained successfully');
     return access_token;
   } catch (error) {
-    console.error('Error getting access token:', error);
+    console.error('Error in getAccessToken:', error);
     throw error;
   }
 }
@@ -211,7 +234,6 @@ Deno.serve(async (req) => {
     const { tender_id, alert_id, user_id } = await req.json();
     console.log('Received push notification request:', { tender_id, alert_id, user_id });
 
-    // Fetch the tender details
     const { data: tender, error: tenderError } = await supabaseAdmin
       .from('tenders')
       .select('*')
@@ -224,7 +246,6 @@ Deno.serve(async (req) => {
     }
     console.log('Fetched tender:', tender);
 
-    // Fetch the alert details
     const { data: alert, error: alertError } = await supabaseAdmin
       .from('alerts')
       .select('*')
@@ -237,7 +258,6 @@ Deno.serve(async (req) => {
     }
     console.log('Fetched alert:', alert);
 
-    // Fetch user's push tokens
     const { data: tokens, error: tokensError } = await supabaseAdmin
       .from('user_push_tokens')
       .select('push_token, device_type')
@@ -251,19 +271,16 @@ Deno.serve(async (req) => {
 
     let pushResults = [];
     if (tokens && tokens.length > 0) {
-      // Get access token for FCM
       const accessToken = await getAccessToken();
       const serviceAccount = JSON.parse(Deno.env.get('FIREBASE_SERVICE_ACCOUNT') ?? '{}');
       const projectId = serviceAccount.project_id;
 
-      // Send push notifications
       pushResults = await sendPushNotifications(tokens, tender, alert, projectId, accessToken);
       console.log('Push notification results:', pushResults);
     } else {
       console.log('No push tokens found for user:', user_id);
     }
 
-    // Send email notification
     console.log('Sending email notification');
     const emailResult = await sendEmail(tender_id, alert_id, user_id);
     console.log('Email notification result:', emailResult);
