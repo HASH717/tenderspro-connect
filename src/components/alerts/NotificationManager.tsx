@@ -26,6 +26,7 @@ export const NotificationManager = () => {
     }
 
     try {
+      console.log('Storing push token:', token, 'for device type:', deviceType);
       const { error } = await supabase
         .from('user_push_tokens')
         .upsert({
@@ -37,7 +38,10 @@ export const NotificationManager = () => {
           onConflict: 'user_id,push_token'
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Failed to store push token:', error);
+        throw error;
+      }
       
       console.log('Successfully stored push token');
     } catch (error) {
@@ -48,16 +52,21 @@ export const NotificationManager = () => {
 
   const setupPushNotifications = async () => {
     try {
+      console.log('Setting up push notifications...');
       const deviceInfo = await Device.getInfo();
-      setIsNativeDevice(deviceInfo.platform === 'android' || deviceInfo.platform === 'ios');
+      const isNative = deviceInfo.platform === 'android' || deviceInfo.platform === 'ios';
+      setIsNativeDevice(isNative);
       
-      if (!isNativeDevice) {
-        console.log('Not a native mobile platform');
+      if (!isNative) {
+        console.log('Not a native mobile platform, skipping push setup');
         return;
       }
 
+      console.log('Device platform:', deviceInfo.platform);
+
       // Create notification channel for Android
       if (deviceInfo.platform === 'android') {
+        console.log('Creating Android notification channel...');
         await PushNotifications.createChannel({
           id: 'tenders',
           name: 'Tender Notifications',
@@ -68,14 +77,20 @@ export const NotificationManager = () => {
           vibration: true,
           lights: true
         });
+        console.log('Android notification channel created successfully');
       }
       
+      console.log('Checking push notification permissions...');
       const permissionStatus = await PushNotifications.checkPermissions();
+      console.log('Current permission status:', permissionStatus);
       
       if (permissionStatus.receive !== 'granted') {
+        console.log('Requesting push notification permissions...');
         const result = await PushNotifications.requestPermissions();
+        console.log('Permission request result:', result);
         
         if (result.receive !== 'granted') {
+          console.log('Push notification permission denied');
           toast({
             title: "Permission Required",
             description: "Please enable push notifications in your device settings",
@@ -85,10 +100,15 @@ export const NotificationManager = () => {
         }
       }
 
+      console.log('Registering for push notifications...');
       await PushNotifications.register();
+
+      // Remove existing listeners before adding new ones
+      console.log('Removing existing listeners...');
       await PushNotifications.removeAllListeners();
 
-      // Registration handler
+      // Registration success handler
+      console.log('Adding registration success listener...');
       PushNotifications.addListener('registration', async (token) => {
         console.log('Push registration success:', token.value);
         setPushToken(token.value);
@@ -109,7 +129,19 @@ export const NotificationManager = () => {
         }
       });
 
+      // Registration error handler
+      console.log('Adding registration error listener...');
+      PushNotifications.addListener('registrationError', (error) => {
+        console.error('Push registration error:', error);
+        toast({
+          title: "Registration Error",
+          description: "Failed to register for push notifications",
+          variant: "destructive",
+        });
+      });
+
       // Notification received handler (foreground)
+      console.log('Adding notification received listener...');
       PushNotifications.addListener('pushNotificationReceived', 
         (notification: PushNotificationSchema) => {
           console.log('Notification received:', notification);
@@ -121,6 +153,7 @@ export const NotificationManager = () => {
       );
 
       // Notification action handler (background/click)
+      console.log('Adding notification action listener...');
       PushNotifications.addListener('pushNotificationActionPerformed',
         (action: ActionPerformed) => {
           console.log('Notification action performed:', action);
@@ -165,14 +198,16 @@ export const NotificationManager = () => {
           filter: `user_id=eq.${session.user.id}`
         },
         async (payload) => {
+          console.log('Received notification payload:', payload);
           try {
-            await supabase.functions.invoke('send-push-notification', {
+            const result = await supabase.functions.invoke('send-push-notification', {
               body: {
                 tender_id: payload.new.tender_id,
                 alert_id: payload.new.alert_id,
                 user_id: session.user.id
               }
             });
+            console.log('Push notification function result:', result);
           } catch (error) {
             console.error('Error invoking send-push-notification function:', error);
           }
