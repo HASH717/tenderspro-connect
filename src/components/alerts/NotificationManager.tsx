@@ -28,7 +28,7 @@ export const NotificationManager = () => {
     }
 
     try {
-      console.log('Storing push token:', token, 'for device type:', deviceType);
+      console.log('Attempting to store push token:', token.substring(0, 10) + '...', 'for device type:', deviceType);
       const { error } = await supabase
         .from('user_push_tokens')
         .upsert({
@@ -45,7 +45,7 @@ export const NotificationManager = () => {
         throw error;
       }
       
-      console.log('Successfully stored push token');
+      console.log('Successfully stored push token in database');
     } catch (error) {
       console.error('Failed to store push token:', error);
       throw error;
@@ -53,12 +53,16 @@ export const NotificationManager = () => {
   };
 
   const setupPushNotifications = async () => {
-    if (isSettingUp || setupComplete) return;
+    if (isSettingUp || setupComplete) {
+      console.log('Setup already in progress or completed');
+      return;
+    }
     setIsSettingUp(true);
 
     try {
-      console.log('Setting up push notifications...');
+      console.log('Starting push notifications setup...');
       const deviceInfo = await Device.getInfo();
+      console.log('Device info:', deviceInfo);
       const isNative = deviceInfo.platform === 'android' || deviceInfo.platform === 'ios';
       setIsNativeDevice(isNative);
       
@@ -66,8 +70,6 @@ export const NotificationManager = () => {
         console.log('Not a native mobile platform, skipping push setup');
         return;
       }
-
-      console.log('Device platform:', deviceInfo.platform);
 
       if (deviceInfo.platform === 'android') {
         console.log('Creating Android notification channel...');
@@ -85,7 +87,6 @@ export const NotificationManager = () => {
           console.log('Android notification channel created successfully');
         } catch (channelError) {
           console.error('Error creating notification channel:', channelError);
-          // Continue setup even if channel creation fails
         }
       }
       
@@ -105,6 +106,7 @@ export const NotificationManager = () => {
             description: "Please enable push notifications in your device settings",
             variant: "destructive",
           });
+          setIsSettingUp(false);
           return;
         }
       }
@@ -112,7 +114,7 @@ export const NotificationManager = () => {
       console.log('Setting up notification listeners...');
       const registrationListener = await PushNotifications.addListener('registration',
         async (token) => {
-          console.log('Push registration success:', token.value);
+          console.log('Push registration success, received token:', token.value.substring(0, 10) + '...');
           setPushToken(token.value);
 
           try {
@@ -124,6 +126,11 @@ export const NotificationManager = () => {
             });
           } catch (error) {
             console.error('Error in registration process:', error);
+            toast({
+              title: "Registration Error",
+              description: "Failed to store push token",
+              variant: "destructive",
+            });
           }
         }
       );
@@ -142,7 +149,7 @@ export const NotificationManager = () => {
       const receivedListener = await PushNotifications.addListener(
         'pushNotificationReceived',
         (notification: PushNotificationSchema) => {
-          console.log('Notification received:', notification);
+          console.log('Push notification received:', notification);
           toast({
             title: notification.title || "New Notification",
             description: notification.body,
@@ -162,7 +169,6 @@ export const NotificationManager = () => {
         }
       );
 
-      // Store cleanup functions
       const cleanup = () => {
         console.log('Cleaning up notification listeners...');
         registrationListener?.remove();
@@ -171,12 +177,12 @@ export const NotificationManager = () => {
         actionListener?.remove();
       };
 
-      // Add cleanup function to window for component unmount
       // @ts-ignore
       window.__pushNotificationCleanup = cleanup;
 
       console.log('Registering for push notifications...');
       await PushNotifications.register();
+      console.log('Push notifications registration completed');
       setSetupComplete(true);
     } catch (error) {
       console.error('Error in setupPushNotifications:', error);
@@ -190,7 +196,6 @@ export const NotificationManager = () => {
     }
   };
 
-  // Setup push notifications when user session is available
   useEffect(() => {
     let mounted = true;
 
@@ -201,7 +206,6 @@ export const NotificationManager = () => {
 
     return () => {
       mounted = false;
-      // Cleanup listeners
       // @ts-ignore
       if (window.__pushNotificationCleanup) {
         // @ts-ignore
@@ -214,8 +218,12 @@ export const NotificationManager = () => {
 
   // Listen for realtime notifications
   useEffect(() => {
-    if (!session?.user?.id) return;
+    if (!session?.user?.id) {
+      console.log('No user session, skipping realtime subscription');
+      return;
+    }
 
+    console.log('Setting up realtime subscription for user:', session.user.id);
     const channel = supabase
       .channel('schema-db-changes')
       .on(
@@ -227,7 +235,7 @@ export const NotificationManager = () => {
           filter: `user_id=eq.${session.user.id}`
         },
         async (payload) => {
-          console.log('Received notification payload:', payload);
+          console.log('Received realtime notification payload:', payload);
           try {
             const result = await supabase.functions.invoke('send-push-notification', {
               body: {
@@ -236,13 +244,20 @@ export const NotificationManager = () => {
                 user_id: session.user.id
               }
             });
-            console.log('Push notification function result:', result);
+            console.log('Push notification function invocation result:', result);
           } catch (error) {
             console.error('Error invoking send-push-notification function:', error);
+            toast({
+              title: "Notification Error",
+              description: "Failed to send push notification",
+              variant: "destructive",
+            });
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status);
+      });
 
     return () => {
       console.log('Cleaning up realtime subscription...');
@@ -253,6 +268,7 @@ export const NotificationManager = () => {
   // Handle web notifications
   const requestNotificationPermission = async () => {
     if (!("Notification" in window)) {
+      console.log('Web notifications not supported');
       toast({
         title: "Notifications Not Supported",
         description: "Your browser doesn't support desktop notifications",
@@ -262,7 +278,9 @@ export const NotificationManager = () => {
     }
 
     try {
+      console.log('Requesting web notification permission...');
       const permission = await Notification.requestPermission();
+      console.log('Web notification permission result:', permission);
       setNotificationsPermission(permission);
       
       if (permission === "granted") {
@@ -296,3 +314,4 @@ export const NotificationManager = () => {
     </Button>
   );
 };
+
