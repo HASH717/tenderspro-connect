@@ -142,74 +142,83 @@ export const NotificationManager = () => {
 
     console.log('Setting up notification listeners...');
     
-    // Registration success handler
-    const registrationListener = PushNotifications.addListener('registration', 
-      async (token) => {
-        console.log('Push registration success:', token.value);
-        setPushToken(token.value);
+    let registrationListener: any;
+    let registrationErrorListener: any;
+    let notificationReceivedListener: any;
+    let notificationActionListener: any;
 
-        try {
-          const deviceInfo = await Device.getInfo();
-          await storePushToken(token.value, deviceInfo.platform);
+    const setupListeners = async () => {
+      // Registration success handler
+      registrationListener = await PushNotifications.addListener('registration', 
+        async (token) => {
+          console.log('Push registration success:', token.value);
+          setPushToken(token.value);
+
+          try {
+            const deviceInfo = await Device.getInfo();
+            await storePushToken(token.value, deviceInfo.platform);
+            toast({
+              title: "Success",
+              description: "Push notifications enabled successfully",
+            });
+          } catch (error) {
+            console.error('Error in registration process:', error);
+            toast({
+              title: "Error",
+              description: "Failed to register for push notifications",
+              variant: "destructive",
+            });
+          }
+        }
+      );
+
+      // Registration error handler
+      registrationErrorListener = await PushNotifications.addListener('registrationError',
+        (error) => {
+          console.error('Push registration error:', error);
           toast({
-            title: "Success",
-            description: "Push notifications enabled successfully",
-          });
-        } catch (error) {
-          console.error('Error in registration process:', error);
-          toast({
-            title: "Error",
+            title: "Registration Error",
             description: "Failed to register for push notifications",
             variant: "destructive",
           });
         }
-      }
-    );
+      );
 
-    // Registration error handler
-    const registrationErrorListener = PushNotifications.addListener('registrationError',
-      (error) => {
-        console.error('Push registration error:', error);
-        toast({
-          title: "Registration Error",
-          description: "Failed to register for push notifications",
-          variant: "destructive",
-        });
-      }
-    );
-
-    // Notification received handler (foreground)
-    const notificationReceivedListener = PushNotifications.addListener(
-      'pushNotificationReceived',
-      (notification: PushNotificationSchema) => {
-        console.log('Notification received:', notification);
-        toast({
-          title: notification.title || "New Notification",
-          description: notification.body,
-        });
-      }
-    );
-
-    // Notification action handler (background/click)
-    const notificationActionListener = PushNotifications.addListener(
-      'pushNotificationActionPerformed',
-      (action: ActionPerformed) => {
-        console.log('Notification action performed:', action);
-        const tenderId = action.notification.data?.tenderId;
-        if (tenderId) {
-          const baseUrl = window.location.origin;
-          window.location.href = `${baseUrl}/tenders/${tenderId}`;
+      // Notification received handler (foreground)
+      notificationReceivedListener = await PushNotifications.addListener(
+        'pushNotificationReceived',
+        (notification: PushNotificationSchema) => {
+          console.log('Notification received:', notification);
+          toast({
+            title: notification.title || "New Notification",
+            description: notification.body,
+          });
         }
-      }
-    );
+      );
+
+      // Notification action handler (background/click)
+      notificationActionListener = await PushNotifications.addListener(
+        'pushNotificationActionPerformed',
+        (action: ActionPerformed) => {
+          console.log('Notification action performed:', action);
+          const tenderId = action.notification.data?.tenderId;
+          if (tenderId) {
+            const baseUrl = window.location.origin;
+            window.location.href = `${baseUrl}/tenders/${tenderId}`;
+          }
+        }
+      );
+    };
+
+    setupListeners();
 
     // Cleanup function
     return () => {
       console.log('Cleaning up notification listeners...');
-      registrationListener.remove();
-      registrationErrorListener.remove();
-      notificationReceivedListener.remove();
-      notificationActionListener.remove();
+      registrationListener?.remove();
+      registrationErrorListener?.remove();
+      notificationReceivedListener?.remove();
+      notificationActionListener?.remove();
     };
   }, [isNativeDevice]);
 
@@ -297,4 +306,3 @@ export const NotificationManager = () => {
     </Button>
   );
 };
-
