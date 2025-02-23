@@ -19,6 +19,7 @@ export const NotificationManager = () => {
   const [isNativeDevice, setIsNativeDevice] = useState(false);
   const [pushToken, setPushToken] = useState<string | null>(null);
   const [isSettingUp, setIsSettingUp] = useState(false);
+  const [setupComplete, setSetupComplete] = useState(false);
 
   const storePushToken = async (token: string, deviceType: string) => {
     if (!session?.user?.id) {
@@ -52,7 +53,7 @@ export const NotificationManager = () => {
   };
 
   const setupPushNotifications = async () => {
-    if (isSettingUp) return;
+    if (isSettingUp || setupComplete) return;
     setIsSettingUp(true);
 
     try {
@@ -68,20 +69,24 @@ export const NotificationManager = () => {
 
       console.log('Device platform:', deviceInfo.platform);
 
-      // Create notification channel for Android
       if (deviceInfo.platform === 'android') {
         console.log('Creating Android notification channel...');
-        await PushNotifications.createChannel({
-          id: 'tenders',
-          name: 'Tender Notifications',
-          description: 'Notifications for new tender matches',
-          importance: 5,
-          visibility: 1,
-          sound: 'default',
-          vibration: true,
-          lights: true
-        });
-        console.log('Android notification channel created successfully');
+        try {
+          await PushNotifications.createChannel({
+            id: 'tenders',
+            name: 'Tender Notifications',
+            description: 'Notifications for new tender matches',
+            importance: 5,
+            visibility: 1,
+            sound: 'default',
+            vibration: true,
+            lights: true
+          });
+          console.log('Android notification channel created successfully');
+        } catch (channelError) {
+          console.error('Error creating notification channel:', channelError);
+          // Continue setup even if channel creation fails
+        }
       }
       
       console.log('Checking push notification permissions...');
@@ -104,8 +109,75 @@ export const NotificationManager = () => {
         }
       }
 
+      console.log('Setting up notification listeners...');
+      const registrationListener = await PushNotifications.addListener('registration',
+        async (token) => {
+          console.log('Push registration success:', token.value);
+          setPushToken(token.value);
+
+          try {
+            const deviceInfo = await Device.getInfo();
+            await storePushToken(token.value, deviceInfo.platform);
+            toast({
+              title: "Success",
+              description: "Push notifications enabled successfully",
+            });
+          } catch (error) {
+            console.error('Error in registration process:', error);
+          }
+        }
+      );
+
+      const errorListener = await PushNotifications.addListener('registrationError',
+        (error) => {
+          console.error('Push registration error:', error);
+          toast({
+            title: "Registration Error",
+            description: "Failed to register for push notifications",
+            variant: "destructive",
+          });
+        }
+      );
+
+      const receivedListener = await PushNotifications.addListener(
+        'pushNotificationReceived',
+        (notification: PushNotificationSchema) => {
+          console.log('Notification received:', notification);
+          toast({
+            title: notification.title || "New Notification",
+            description: notification.body,
+          });
+        }
+      );
+
+      const actionListener = await PushNotifications.addListener(
+        'pushNotificationActionPerformed',
+        (action: ActionPerformed) => {
+          console.log('Notification action performed:', action);
+          const tenderId = action.notification.data?.tenderId;
+          if (tenderId) {
+            const baseUrl = window.location.origin;
+            window.location.href = `${baseUrl}/tenders/${tenderId}`;
+          }
+        }
+      );
+
+      // Store cleanup functions
+      const cleanup = () => {
+        console.log('Cleaning up notification listeners...');
+        registrationListener?.remove();
+        errorListener?.remove();
+        receivedListener?.remove();
+        actionListener?.remove();
+      };
+
+      // Add cleanup function to window for component unmount
+      // @ts-ignore
+      window.__pushNotificationCleanup = cleanup;
+
       console.log('Registering for push notifications...');
       await PushNotifications.register();
+      setSetupComplete(true);
     } catch (error) {
       console.error('Error in setupPushNotifications:', error);
       toast({
@@ -122,105 +194,23 @@ export const NotificationManager = () => {
   useEffect(() => {
     let mounted = true;
 
-    const setup = async () => {
-      if (session?.user?.id && mounted) {
-        console.log('Setting up push notifications for user:', session.user.id);
-        await setupPushNotifications();
-      }
-    };
-
-    setup();
+    if (session?.user?.id && mounted && !setupComplete) {
+      console.log('Setting up push notifications for user:', session.user.id);
+      setupPushNotifications();
+    }
 
     return () => {
       mounted = false;
+      // Cleanup listeners
+      // @ts-ignore
+      if (window.__pushNotificationCleanup) {
+        // @ts-ignore
+        window.__pushNotificationCleanup();
+        // @ts-ignore
+        delete window.__pushNotificationCleanup;
+      }
     };
-  }, [session?.user?.id]);
-
-  // Setup notification listeners
-  useEffect(() => {
-    if (!isNativeDevice) return;
-
-    console.log('Setting up notification listeners...');
-    
-    let registrationListener: any;
-    let registrationErrorListener: any;
-    let notificationReceivedListener: any;
-    let notificationActionListener: any;
-
-    const setupListeners = async () => {
-      // Registration success handler
-      registrationListener = await PushNotifications.addListener('registration', 
-        async (token) => {
-          console.log('Push registration success:', token.value);
-          setPushToken(token.value);
-
-          try {
-            const deviceInfo = await Device.getInfo();
-            await storePushToken(token.value, deviceInfo.platform);
-            toast({
-              title: "Success",
-              description: "Push notifications enabled successfully",
-            });
-          } catch (error) {
-            console.error('Error in registration process:', error);
-            toast({
-              title: "Error",
-              description: "Failed to register for push notifications",
-              variant: "destructive",
-            });
-          }
-        }
-      );
-
-      // Registration error handler
-      registrationErrorListener = await PushNotifications.addListener('registrationError',
-        (error) => {
-          console.error('Push registration error:', error);
-          toast({
-            title: "Registration Error",
-            description: "Failed to register for push notifications",
-            variant: "destructive",
-          });
-        }
-      );
-
-      // Notification received handler (foreground)
-      notificationReceivedListener = await PushNotifications.addListener(
-        'pushNotificationReceived',
-        (notification: PushNotificationSchema) => {
-          console.log('Notification received:', notification);
-          toast({
-            title: notification.title || "New Notification",
-            description: notification.body,
-          });
-        }
-      );
-
-      // Notification action handler (background/click)
-      notificationActionListener = await PushNotifications.addListener(
-        'pushNotificationActionPerformed',
-        (action: ActionPerformed) => {
-          console.log('Notification action performed:', action);
-          const tenderId = action.notification.data?.tenderId;
-          if (tenderId) {
-            const baseUrl = window.location.origin;
-            window.location.href = `${baseUrl}/tenders/${tenderId}`;
-          }
-        }
-      );
-    };
-
-    setupListeners();
-
-    // Cleanup function
-    return () => {
-      console.log('Cleaning up notification listeners...');
-      registrationListener?.remove();
-      registrationErrorListener?.remove();
-      notificationReceivedListener?.remove();
-      notificationActionListener?.remove();
-    };
-  }, [isNativeDevice]);
+  }, [session?.user?.id, setupComplete]);
 
   // Listen for realtime notifications
   useEffect(() => {
