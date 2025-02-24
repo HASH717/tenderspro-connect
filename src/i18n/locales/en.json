@@ -29,7 +29,8 @@
     "enterEmail": "Enter email",
     "saveChanges": "Save Changes",
     "saving": "Saving...",
-    "language_updated": "Language updated successfully"
+    "language_updated": "Language updated successfully",
+    "logout": "Logout"
   },
   "filters": {
     "search": "Search",
