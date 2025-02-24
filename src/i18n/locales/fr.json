@@ -10,9 +10,26 @@
     "home": "Accueil",
     "favorites": "Favoris",
     "alerts": "Alertes",
-    "profile": "Profil",
-    "noFavorites": "Pas encore de favoris",
-    "noAlerts": "Aucune alerte définie"
+    "profile": "Mon Profil"
+  },
+  "profile": {
+    "tabs": {
+      "profile": "Informations Personnelles",
+      "subscription": "Abonnement",
+      "preferences": "Préférences"
+    },
+    "email": "Email",
+    "newPassword": "Nouveau mot de passe",
+    "newPasswordHint": "(optionnel)",
+    "newPasswordPlaceholder": "Entrer un nouveau mot de passe",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "phoneNumber": "Numéro de téléphone",
+    "enterPhoneNumber": "Entrer le numéro de téléphone",
+    "enterEmail": "Entrer l'email",
+    "saveChanges": "Enregistrer",
+    "saving": "Enregistrement...",
+    "language_updated": "Langue mise à jour avec succès"
   },
   "filters": {
     "search": "Rechercher",

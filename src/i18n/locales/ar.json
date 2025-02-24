@@ -10,9 +10,26 @@
     "home": "الرئيسية",
     "favorites": "المفضلة",
     "alerts": "التنبيهات",
-    "profile": "الملف الشخصي",
-    "noFavorites": "لا توجد مفضلات حتى الآن",
-    "noAlerts": "لا توجد تنبيهات"
+    "profile": "ملفي الشخصي"
+  },
+  "profile": {
+    "tabs": {
+      "profile": "المعلومات الشخصية",
+      "subscription": "الاشتراك",
+      "preferences": "التفضيلات"
+    },
+    "email": "البريد الإلكتروني",
+    "newPassword": "كلمة المرور الجديدة",
+    "newPasswordHint": "(اختياري)",
+    "newPasswordPlaceholder": "أدخل كلمة المرور الجديدة",
+    "firstName": "الاسم الأول",
+    "lastName": "اللقب",
+    "phoneNumber": "رقم الهاتف",
+    "enterPhoneNumber": "أدخل رقم الهاتف",
+    "enterEmail": "أدخل البريد الإلكتروني",
+    "saveChanges": "حفظ التغييرات",
+    "saving": "جاري الحفظ...",
+    "language_updated": "تم تحديث اللغة بنجاح"
   },
   "filters": {
     "search": "بحث",
