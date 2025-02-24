@@ -31,7 +31,7 @@ dependencies {
     implementation "androidx.core:core-splashscreen:1.0.1"
     implementation "androidx.coordinatorlayout:coordinatorlayout:1.2.0"
     implementation project(':capacitor-android')
-    implementation project(':@capacitor/push-notifications')
+    implementation files('../node_modules/@capacitor/push-notifications/android/build/intermediates/aar_main_jar/debug/classes.jar')
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
