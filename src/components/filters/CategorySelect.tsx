@@ -1,4 +1,3 @@
-
 import { Lock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";

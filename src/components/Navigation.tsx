@@ -1,4 +1,3 @@
-
 import { Home, Heart, Bell, User, Globe, CreditCard } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";

@@ -1,4 +1,3 @@
-
 import { useTranslation } from "react-i18next";
 import Navigation from "@/components/Navigation";
 import { useIsMobile } from "@/hooks/use-mobile";

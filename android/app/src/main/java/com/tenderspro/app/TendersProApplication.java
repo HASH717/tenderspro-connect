@@ -1,4 +1,3 @@
-
 package com.tenderspro.app;
 
 import android.app.Application;
