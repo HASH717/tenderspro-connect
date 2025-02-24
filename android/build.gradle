@@ -10,9 +10,6 @@ buildscript {
     }
 }
 
-apply plugin: 'com.android.application'
-apply plugin: 'com.google.gms.google-services'
-
 allprojects {
     repositories {
         google()
@@ -25,3 +22,14 @@ ext {
     targetSdkVersion = 34
     minSdkVersion = 24
 }
+
+android {
+    compileSdkVersion rootProject.ext.compileSdkVersion
+    defaultConfig {
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+    }
+}
+
+apply plugin: 'com.android.application'
+apply plugin: 'com.google.gms.google-services'
