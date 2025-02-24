@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -54,7 +55,7 @@ export const NotificationManager = () => {
     try {
       console.log('Setting up push notifications...');
       const deviceInfo = await Device.getInfo();
-      const isNative = Capacitor.isNativePlatform(); // More robust check
+      const isNative = Capacitor.isNativePlatform();
       setIsNativeDevice(isNative);
 
       if (!isNative) {
@@ -64,14 +65,13 @@ export const NotificationManager = () => {
 
       console.log('Device platform:', deviceInfo.platform);
 
-      // Create notification channel for Android
       if (deviceInfo.platform === 'android') {
         console.log('Creating Android notification channel...');
         await PushNotifications.createChannel({
           id: 'tenders',
           name: 'Tender Notifications',
           description: 'Notifications for new tender matches',
-          importance: 5, // High importance for background notifications
+          importance: 5,
           visibility: 1,
           sound: 'default',
           vibration: true,
@@ -103,11 +103,9 @@ export const NotificationManager = () => {
       console.log('Registering for push notifications...');
       await PushNotifications.register();
 
-      // Remove existing listeners before adding new ones
       console.log('Removing existing listeners...');
       await PushNotifications.removeAllListeners();
 
-      // Registration success handler
       console.log('Adding registration success listener...');
       PushNotifications.addListener('registration', async (token) => {
         console.log('Push registration success:', token.value);
@@ -129,7 +127,6 @@ export const NotificationManager = () => {
         }
       });
 
-      // Registration error handler
       console.log('Adding registration error listener...');
       PushNotifications.addListener('registrationError', (error) => {
         console.error('Push registration error:', error);
@@ -140,7 +137,6 @@ export const NotificationManager = () => {
         });
       });
 
-      // Notification received handler (foreground)
       console.log('Adding notification received listener...');
       PushNotifications.addListener('pushNotificationReceived',
         (notification: PushNotificationSchema) => {
@@ -152,7 +148,6 @@ export const NotificationManager = () => {
         }
       );
 
-      // Notification action handler (background/click)
       console.log('Adding notification action listener...');
       PushNotifications.addListener('pushNotificationActionPerformed',
         (action: ActionPerformed) => {
@@ -175,17 +170,39 @@ export const NotificationManager = () => {
     }
   };
 
-  // Setup push notifications when user session is available
+  const requestNotificationPermission = async () => {
+    try {
+      const permission = await Notification.requestPermission();
+      setNotificationsPermission(permission);
+      
+      if (permission === "granted") {
+        toast({
+          title: "Success",
+          description: "Notifications enabled successfully",
+        });
+      } else {
+        toast({
+          title: "Permission Required",
+          description: "Please enable notifications in your browser settings",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error requesting notification permission:', error);
+      toast({
+        title: "Error",
+        description: "Failed to request notification permission",
+        variant: "destructive",
+      });
+    }
+  };
+
   useEffect(() => {
     if (session?.user?.id) {
       console.log('Setting up push notifications for user:', session.user.id);
       setupPushNotifications();
     }
   }, [session?.user?.id]);
-
-  // Listen for realtime notifications - unchanged
-
-  // Handle web notifications - unchanged
 
   const shouldShowButton = !isNativeDevice && notificationsPermission === "default";
 
