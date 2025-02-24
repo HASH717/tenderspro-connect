@@ -1,4 +1,3 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
 const corsHeaders = {
@@ -27,6 +26,9 @@ interface WebPushPayload {
         defaultSound: boolean;
         defaultVibrateTimings: boolean;
         visibility: 'public' | 'private' | 'secret';
+        // IMPORTANT: Add 'sticky' and 'ongoing' for background notifications
+        sticky: boolean;
+        ongoing: boolean;
       };
       priority: 'high';
     };
@@ -37,14 +39,14 @@ interface WebPushPayload {
 async function getAccessToken() {
   try {
     const serviceAccount = JSON.parse(Deno.env.get('FIREBASE_SERVICE_ACCOUNT') ?? '{}');
-    
+
     const now = Math.floor(Date.now() / 1000);
     const header = {
       alg: 'RS256',
       typ: 'JWT',
       kid: serviceAccount.private_key_id
     };
-    
+
     const claim = {
       iss: serviceAccount.client_email,
       sub: serviceAccount.client_email,
@@ -56,7 +58,7 @@ async function getAccessToken() {
 
     const headerB64 = btoa(JSON.stringify(header));
     const claimB64 = btoa(JSON.stringify(claim));
-    
+
     const key = serviceAccount.private_key;
     const textEncoder = new TextEncoder();
     const signatureInput = textEncoder.encode(`${headerB64}.${claimB64}`);
@@ -99,7 +101,7 @@ async function getAccessToken() {
 async function sendPushNotifications(tokens: any[], tender: any, alert: any, projectId: string, accessToken: string) {
   const sendPromises = tokens.map(async ({ push_token, device_type }) => {
     console.log('Sending push notification to token:', push_token, 'device type:', device_type);
-    
+
     const payload: WebPushPayload = {
       message: {
         token: push_token,
@@ -115,7 +117,9 @@ async function sendPushNotifications(tokens: any[], tender: any, alert: any, pro
             priority: 'high',
             defaultSound: true,
             defaultVibrateTimings: true,
-            visibility: 'public'
+            visibility: 'public',
+            sticky: true, // IMPORTANT: Mark as sticky for background
+            ongoing: true  // IMPORTANT: Mark as ongoing for background
           },
           priority: 'high'
         },
@@ -194,7 +198,7 @@ async function sendEmail(tender_id: string, alert_id: string, user_id: string) {
     }
 
     const result = await response.json();
-    console.log('Email service response:', result);
+    console.log('Email notification result:', result);
     return result;
   } catch (error) {
     console.error('Error sending email:', error);
@@ -269,16 +273,16 @@ Deno.serve(async (req) => {
     console.log('Email notification result:', emailResult);
 
     return new Response(
-      JSON.stringify({ 
-        message: 'Notifications sent successfully', 
+      JSON.stringify({
+        message: 'Notifications sent successfully',
         push_results: pushResults,
-        email_result: emailResult 
+        email_result: emailResult
       }),
-      { 
-        headers: { 
+      {
+        headers: {
           ...corsHeaders,
-          'Content-Type': 'application/json' 
-        } 
+          'Content-Type': 'application/json'
+        }
       }
     );
 
@@ -286,12 +290,12 @@ Deno.serve(async (req) => {
     console.error('Error in send-push-notification function:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
-        status: 500, 
-        headers: { 
+      {
+        status: 500,
+        headers: {
           ...corsHeaders,
-          'Content-Type': 'application/json' 
-        } 
+          'Content-Type': 'application/json'
+        }
       }
     );
   }
