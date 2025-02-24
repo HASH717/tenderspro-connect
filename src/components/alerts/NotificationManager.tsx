@@ -19,6 +19,7 @@ export const NotificationManager = () => {
   const [notificationsPermission, setNotificationsPermission] = useState<NotificationPermission>("default");
   const [isNativeDevice, setIsNativeDevice] = useState(false);
   const [pushToken, setPushToken] = useState<string | null>(null);
+  const [setupAttempted, setSetupAttempted] = useState(false);
 
   const storePushToken = async (token: string, deviceType: string) => {
     if (!session?.user?.id) {
@@ -52,6 +53,12 @@ export const NotificationManager = () => {
   };
 
   const setupPushNotifications = async () => {
+    if (setupAttempted) {
+      return;
+    }
+    
+    setSetupAttempted(true);
+
     try {
       console.log('Setting up push notifications...');
       const deviceInfo = await Device.getInfo();
@@ -76,6 +83,10 @@ export const NotificationManager = () => {
           sound: 'default',
           vibration: true,
           lights: true
+        })
+        .catch(error => {
+          console.error('Error creating notification channel:', error);
+          // Continue execution as this is not a critical error
         });
         console.log('Android notification channel created successfully');
       }
@@ -100,8 +111,24 @@ export const NotificationManager = () => {
         }
       }
 
-      console.log('Registering for push notifications...');
-      await PushNotifications.register();
+      try {
+        console.log('Registering for push notifications...');
+        await PushNotifications.register();
+      } catch (error: any) {
+        console.error('Push registration error:', error);
+        
+        // Check for Firebase initialization error
+        if (error.message?.includes('FirebaseApp is not initialized')) {
+          toast({
+            title: "Setup Required",
+            description: "Push notifications are not available. Please contact support.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        throw error;
+      }
 
       console.log('Removing existing listeners...');
       await PushNotifications.removeAllListeners();
