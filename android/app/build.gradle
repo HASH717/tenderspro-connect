@@ -23,6 +23,12 @@ android {
     }
 }
 
+repositories { // Added repositories block here
+    google()
+    mavenCentral()
+    maven { url "https://maven.google.com" } // Explicitly added Google Maven URL
+}
+
 dependencies {
     implementation "androidx.core:core-splashscreen:1.0.0"
     implementation platform('com.google.firebase:firebase-bom:32.7.2')
