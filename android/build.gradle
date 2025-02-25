@@ -2,11 +2,11 @@
 
 buildscript {
     repositories {
-        google()
+        google() // Ensure google() is FIRST
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.0.0'
+        classpath 'com.android.tools.build:gradle:8.2.2' // Updated Gradle Plugin Version
         classpath 'com.google.gms:google-services:4.4.0'
     }
 }
@@ -15,7 +15,7 @@ apply from: "variables.gradle"
 
 allprojects {
     repositories {
-        google()
+        google() // Ensure google() is FIRST
         mavenCentral()
     }
 }
