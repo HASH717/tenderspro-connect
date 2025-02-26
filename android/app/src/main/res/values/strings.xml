@@ -1,6 +1,0 @@
-<resources>
-    <string name="app_name">TendersPro</string>
-    <string name="title_activity_main">MainActivity</string>
-    <string name="package_name">com.tenderspro.app</string>
-    <string name="custom_url_scheme">com.tenderspro.app</string>
-</resources>

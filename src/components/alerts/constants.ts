@@ -1,3 +1,4 @@
+
 export const WILAYA_OPTIONS = [
   { value: "1", label: "1 - Adrar" },
   { value: "2", label: "2 - Chlef" },
@@ -69,3 +70,4 @@ export const TENDER_TYPE_OPTIONS = [
   { value: "national_preselection", label: "National Preselection" },
   { value: "adjudication", label: "Adjudication" },
 ];
+

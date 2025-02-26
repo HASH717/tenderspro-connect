@@ -1,3 +1,4 @@
+
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -225,3 +226,4 @@ const Subscriptions = () => {
 };
 
 export default Subscriptions;
+
