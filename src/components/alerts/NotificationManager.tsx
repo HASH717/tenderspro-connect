@@ -5,187 +5,26 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { 
-  PushNotifications,
-  PushNotificationSchema,
-  ActionPerformed 
-} from '@capacitor/push-notifications';
-import { Device } from '@capacitor/device';
+import { Alert } from "./types";
 
 export const NotificationManager = () => {
   const { toast } = useToast();
   const { session } = useAuth();
   const [notificationsPermission, setNotificationsPermission] = useState<NotificationPermission>("default");
-  const [isNativeDevice, setIsNativeDevice] = useState(false);
-  const [pushToken, setPushToken] = useState<string | null>(null);
 
-  const storePushToken = async (token: string, deviceType: string) => {
+  useEffect(() => {
+    if ("Notification" in window) {
+      setNotificationsPermission(Notification.permission);
+    }
+  }, []);
+
+  useEffect(() => {
     if (!session?.user?.id) {
-      console.error('No user session found when storing push token');
+      console.log('No user session found, skipping notification setup');
       return;
     }
 
-    try {
-      console.log('Storing push token:', token, 'for device type:', deviceType);
-      const { error } = await supabase
-        .from('user_push_tokens')
-        .upsert({
-          user_id: session.user.id,
-          push_token: token,
-          device_type: deviceType,
-          last_updated: new Date().toISOString()
-        }, {
-          onConflict: 'user_id,push_token'
-        });
-
-      if (error) {
-        console.error('Failed to store push token:', error);
-        throw error;
-      }
-      
-      console.log('Successfully stored push token');
-    } catch (error) {
-      console.error('Failed to store push token:', error);
-      throw error;
-    }
-  };
-
-  const setupPushNotifications = async () => {
-    try {
-      console.log('Setting up push notifications...');
-      const deviceInfo = await Device.getInfo();
-      const isNative = deviceInfo.platform === 'android' || deviceInfo.platform === 'ios';
-      setIsNativeDevice(isNative);
-      
-      if (!isNative) {
-        console.log('Not a native mobile platform, skipping push setup');
-        return;
-      }
-
-      console.log('Device platform:', deviceInfo.platform);
-
-      // Create notification channel for Android
-      if (deviceInfo.platform === 'android') {
-        console.log('Creating Android notification channel...');
-        await PushNotifications.createChannel({
-          id: 'tenders',
-          name: 'Tender Notifications',
-          description: 'Notifications for new tender matches',
-          importance: 5,
-          visibility: 1,
-          sound: 'default',
-          vibration: true,
-          lights: true
-        });
-        console.log('Android notification channel created successfully');
-      }
-      
-      console.log('Checking push notification permissions...');
-      const permissionStatus = await PushNotifications.checkPermissions();
-      console.log('Current permission status:', permissionStatus);
-      
-      if (permissionStatus.receive !== 'granted') {
-        console.log('Requesting push notification permissions...');
-        const result = await PushNotifications.requestPermissions();
-        console.log('Permission request result:', result);
-        
-        if (result.receive !== 'granted') {
-          console.log('Push notification permission denied');
-          toast({
-            title: "Permission Required",
-            description: "Please enable push notifications in your device settings",
-            variant: "destructive",
-          });
-          return;
-        }
-      }
-
-      console.log('Registering for push notifications...');
-      await PushNotifications.register();
-
-      // Remove existing listeners before adding new ones
-      console.log('Removing existing listeners...');
-      await PushNotifications.removeAllListeners();
-
-      // Registration success handler
-      console.log('Adding registration success listener...');
-      PushNotifications.addListener('registration', async (token) => {
-        console.log('Push registration success:', token.value);
-        setPushToken(token.value);
-
-        try {
-          await storePushToken(token.value, deviceInfo.platform);
-          toast({
-            title: "Success",
-            description: "Push notifications enabled successfully",
-          });
-        } catch (error) {
-          console.error('Error in registration process:', error);
-          toast({
-            title: "Error",
-            description: "Failed to register for push notifications",
-            variant: "destructive",
-          });
-        }
-      });
-
-      // Registration error handler
-      console.log('Adding registration error listener...');
-      PushNotifications.addListener('registrationError', (error) => {
-        console.error('Push registration error:', error);
-        toast({
-          title: "Registration Error",
-          description: "Failed to register for push notifications",
-          variant: "destructive",
-        });
-      });
-
-      // Notification received handler (foreground)
-      console.log('Adding notification received listener...');
-      PushNotifications.addListener('pushNotificationReceived', 
-        (notification: PushNotificationSchema) => {
-          console.log('Notification received:', notification);
-          toast({
-            title: notification.title || "New Notification",
-            description: notification.body,
-          });
-        }
-      );
-
-      // Notification action handler (background/click)
-      console.log('Adding notification action listener...');
-      PushNotifications.addListener('pushNotificationActionPerformed',
-        (action: ActionPerformed) => {
-          console.log('Notification action performed:', action);
-          const tenderId = action.notification.data?.tenderId;
-          if (tenderId) {
-            const baseUrl = window.location.origin;
-            window.location.href = `${baseUrl}/tenders/${tenderId}`;
-          }
-        }
-      );
-
-    } catch (error) {
-      console.error('Error in setupPushNotifications:', error);
-      toast({
-        title: "Error",
-        description: "Failed to set up push notifications",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Setup push notifications when user session is available
-  useEffect(() => {
-    if (session?.user?.id) {
-      console.log('Setting up push notifications for user:', session.user.id);
-      setupPushNotifications();
-    }
-  }, [session?.user?.id]);
-
-  // Listen for realtime notifications
-  useEffect(() => {
-    if (!session?.user?.id) return;
+    console.log('Setting up real-time notifications for user:', session.user.id);
 
     const channel = supabase
       .channel('schema-db-changes')
@@ -198,29 +37,118 @@ export const NotificationManager = () => {
           filter: `user_id=eq.${session.user.id}`
         },
         async (payload) => {
-          console.log('Received notification payload:', payload);
-          try {
-            const result = await supabase.functions.invoke('send-push-notification', {
-              body: {
-                tender_id: payload.new.tender_id,
-                alert_id: payload.new.alert_id,
-                user_id: session.user.id
-              }
-            });
-            console.log('Push notification function result:', result);
-          } catch (error) {
-            console.error('Error invoking send-push-notification function:', error);
+          console.log('New notification received:', payload);
+          
+          // Fetch the tender details
+          const { data: tender, error: tenderError } = await supabase
+            .from('tenders')
+            .select('*')
+            .eq('id', payload.new.tender_id)
+            .single();
+
+          if (tenderError) {
+            console.error('Error fetching tender:', tenderError);
+            return;
           }
+
+          if (!tender) {
+            console.log('No tender found for id:', payload.new.tender_id);
+            return;
+          }
+
+          console.log('Tender found:', tender);
+
+          // Fetch the alert details to check email preferences
+          const { data: alert, error: alertError } = await supabase
+            .from('alerts')
+            .select('*')
+            .eq('id', payload.new.alert_id)
+            .single();
+
+          if (alertError) {
+            console.error('Error fetching alert:', alertError);
+            return;
+          }
+
+          if (!alert) {
+            console.log('No alert found for id:', payload.new.alert_id);
+            return;
+          }
+
+          console.log('Alert found:', alert);
+          console.log('Alert notification preferences:', alert.notification_preferences);
+
+          const preferences = alert.notification_preferences as Alert['notification_preferences'];
+          const emailEnabled = preferences?.email ?? false;
+
+          console.log('Email notifications enabled:', emailEnabled);
+
+          if (emailEnabled) {
+            console.log('Attempting to send email notification');
+            try {
+              const { data, error } = await supabase.functions.invoke('send-alert-email', {
+                body: {
+                  to: session.user.email,
+                  subject: `New Tender Match: ${tender.title}`,
+                  html: `
+                    <h1>New Tender Match</h1>
+                    <p>A new tender matching your alert "${alert.name}" has been found:</p>
+                    <h2>${tender.title}</h2>
+                    <p><strong>Category:</strong> ${tender.category}</p>
+                    <p><strong>Region:</strong> ${tender.wilaya}</p>
+                    <p><strong>Deadline:</strong> ${new Date(tender.deadline).toLocaleDateString()}</p>
+                    <a href="${window.location.origin}/tenders/${tender.id}">View Tender Details</a>
+                  `,
+                  alertId: alert.id,
+                  tenderId: tender.id,
+                  userId: session.user.id
+                }
+              });
+
+              if (error) {
+                console.error('Error sending email notification:', error);
+                toast({
+                  title: "Failed to Send Email",
+                  description: "There was an error sending the email notification.",
+                  variant: "destructive",
+                });
+              } else {
+                console.log('Email notification sent successfully:', data);
+              }
+            } catch (error) {
+              console.error('Error invoking send-alert-email function:', error);
+            }
+          }
+
+          // Show browser notification if enabled
+          if (notificationsPermission === "granted") {
+            const notification = new Notification("New Tender Match!", {
+              body: `A new tender matching your alert: ${tender.title}`,
+              icon: "/favicon.ico",
+            });
+
+            notification.onclick = () => {
+              window.focus();
+            };
+          }
+
+          // Show toast notification
+          toast({
+            title: "New Tender Match!",
+            description: `A new tender matching your alert: ${tender.title}`,
+          });
         }
       )
       .subscribe();
 
+    console.log('Real-time channel subscribed');
+
     return () => {
+      console.log('Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
-  }, [session?.user?.id]);
+  }, [session?.user?.id, notificationsPermission, toast]);
 
-  // Handle web notifications
   const requestNotificationPermission = async () => {
     if (!("Notification" in window)) {
       toast({
@@ -238,7 +166,7 @@ export const NotificationManager = () => {
       if (permission === "granted") {
         toast({
           title: "Notifications Enabled",
-          description: "You will now receive desktop notifications",
+          description: "You will now receive desktop notifications for new tenders",
         });
       }
     } catch (error) {
@@ -251,9 +179,7 @@ export const NotificationManager = () => {
     }
   };
 
-  const shouldShowButton = !isNativeDevice && notificationsPermission === "default";
-  
-  if (!shouldShowButton) return null;
+  if (notificationsPermission !== "default") return null;
 
   return (
     <Button

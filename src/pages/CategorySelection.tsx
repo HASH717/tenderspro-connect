@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,13 +7,15 @@ import { CategorySelection as CategorySelectionComponent } from "@/components/su
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Browser } from '@capacitor/browser';
-import { Capacitor } from '@capacitor/core';
 
 const CategorySelection = () => {
   const navigate = useNavigate();
   const { session } = useAuth();
   const location = useLocation();
+  
+  const searchParams = new URLSearchParams(location.search);
+  const success = searchParams.get('success');
+  const plan = searchParams.get('plan');
 
   const { data: subscription, isLoading, error } = useQuery({
     queryKey: ['latest-subscription', session?.user?.id],
@@ -42,25 +43,9 @@ const CategorySelection = () => {
   });
 
   useEffect(() => {
-    const init = async () => {
-      // Close browser if coming from payment flow
-      if (Capacitor.isNativePlatform() && location.state?.fromPayment) {
-        try {
-          await Browser.close();
-        } catch (error) {
-          console.error('Error closing browser:', error);
-        }
-      }
-    };
-
-    init();
-  }, [location.state]);
-
-  useEffect(() => {
     if (!session) {
-      console.log('No session, redirecting to auth with return path:', location.pathname + location.search);
+      console.log('No session, redirecting to auth');
       navigate('/auth', { 
-        replace: true,
         state: { 
           returnTo: location.pathname + location.search
         }
@@ -79,14 +64,25 @@ const CategorySelection = () => {
       return;
     }
 
+    if (!subscription && success === 'true') {
+      console.log('Payment successful but no subscription found, retrying...');
+      return; // Let the query retry
+    }
+
     if (!subscription) {
       console.log('No subscription found, redirecting to subscriptions');
       navigate('/subscriptions');
       return;
     }
 
+    if (subscription.plan === 'Enterprise') {
+      console.log('Enterprise plan, redirecting to home');
+      navigate('/');
+      return;
+    }
+
     console.log('Current subscription:', subscription);
-  }, [session, subscription, navigate, isLoading, error, location.pathname, location.search]);
+  }, [session, success, subscription, navigate, isLoading, error, location]);
 
   if (!session || isLoading || !subscription) {
     return null;

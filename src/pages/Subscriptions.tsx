@@ -12,8 +12,6 @@ import { SubscriptionPlans } from "@/components/subscriptions/SubscriptionPlans"
 import { TestModeAlert } from "@/components/subscriptions/TestModeAlert";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { Capacitor } from '@capacitor/core';
-import { Browser } from '@capacitor/browser';
 
 const Subscriptions = () => {
   const { t } = useTranslation();
@@ -24,12 +22,6 @@ const Subscriptions = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [isRefreshing, setIsRefreshing] = useState(false);
-
-  // Function to get the base URL that works in both development and production
-  const getBaseUrl = () => {
-    // Use the Lovable domain in both dev and prod for consistency
-    return 'https://74bd72ef-c253-4d7f-87d7-ab46b197b9e5.lovableproject.com';
-  };
 
   const { data: profile } = useQuery({
     queryKey: ['profile', session?.user?.id],
@@ -86,34 +78,29 @@ const Subscriptions = () => {
     const checkoutId = searchParams.get('checkout_id');
     
     const handleSuccessfulPayment = async () => {
-      if (success === 'true' && plan && checkoutId && session?.user?.id) {
+      if (success === 'true' && plan && checkoutId) {
         setIsRefreshing(true);
         console.log('Payment successful, refreshing subscription data...');
         
         try {
-          if (Capacitor.isNativePlatform()) {
-            try {
-              await Browser.close();
-            } catch (error) {
-              console.error('Error closing browser:', error);
-            }
-          }
-
           await refetchSubscription();
           const { data: latestSubscription } = await supabase
             .from('subscriptions')
             .select('*')
-            .eq('user_id', session.user.id)
+            .eq('user_id', session?.user?.id)
             .eq('status', 'active')
             .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle();
 
           if (latestSubscription) {
-            console.log('Latest subscription found, navigating to categories');
-            navigate('/subscriptions/categories', { 
+            console.log('Latest subscription found:', latestSubscription);
+            navigate('/subscriptions/categories', {
               replace: true,
-              state: { fromPayment: true }
+              state: {
+                subscriptionId: latestSubscription.id,
+                plan: latestSubscription.plan
+              }
             });
           } else {
             console.error('No active subscription found after payment');
@@ -138,15 +125,8 @@ const Subscriptions = () => {
 
     if (session?.user?.id) {
       handleSuccessfulPayment();
-    } else if (success === 'true') {
-      navigate('/auth', {
-        replace: true,
-        state: { 
-          returnTo: location.pathname + location.search
-        }
-      });
     }
-  }, [searchParams, session?.user?.id, navigate, refetchSubscription, toast, location]);
+  }, [searchParams, session?.user?.id, navigate, refetchSubscription, toast]);
 
   const handleSubscribe = async (plan: any) => {
     try {
@@ -174,7 +154,7 @@ const Subscriptions = () => {
           plan: plan.name,
           priceId: plan.priceId,
           userId: session.user.id,
-          backUrl: `${getBaseUrl()}/subscriptions?success=true&plan=${plan.name}`,
+          backUrl: `${window.location.origin}/subscriptions?success=true&plan=${plan.name}`,
           categories: profile.preferred_categories,
           billingInterval: plan.billingInterval
         }
@@ -183,14 +163,7 @@ const Subscriptions = () => {
       if (error) throw error;
 
       if (data?.checkoutUrl) {
-        if (Capacitor.isNativePlatform()) {
-          await Browser.open({ 
-            url: data.checkoutUrl,
-            windowName: '_self'
-          });
-        } else {
-          window.location.href = data.checkoutUrl;
-        }
+        window.location.href = data.checkoutUrl;
       } else {
         throw new Error('No checkout URL received');
       }
@@ -226,4 +199,3 @@ const Subscriptions = () => {
 };
 
 export default Subscriptions;
-

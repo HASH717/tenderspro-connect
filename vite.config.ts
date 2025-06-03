@@ -6,16 +6,17 @@ import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => ({
   define: {
-    'process.env': {},
+    __HMR_CONFIG_NAME__: JSON.stringify("hmr"),
   },
   server: {
-    host: '0.0.0.0',
+    host: "::",
     port: 8080,
-    strictPort: true,
-    cors: true,
+    hmr: {
+      clientPort: 443,
+      protocol: 'wss'
+    },
     allowedHosts: [
       "74bd72ef-c253-4d7f-87d7-ab46b197b9e5.lovableproject.com",
-      "localhost",
     ],
   },
   plugins: [
@@ -27,14 +28,5 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  base: "/",
-  build: {
-    rollupOptions: {
-      onwarn(warning, warn) {
-        // Suppress warnings about unused external imports
-        if (warning.code === 'UNUSED_EXTERNAL_IMPORT') return;
-        warn(warning);
-      }
-    }
-  }
+  base: "/"
 }));

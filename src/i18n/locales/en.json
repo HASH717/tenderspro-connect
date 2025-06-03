@@ -10,27 +10,9 @@
     "home": "Home",
     "favorites": "Favorites",
     "alerts": "Alerts",
-    "profile": "My Profile"
-  },
-  "profile": {
-    "tabs": {
-      "profile": "Personal Info",
-      "subscription": "Subscription",
-      "preferences": "Preferences"
-    },
-    "email": "Email",
-    "newPassword": "New Password",
-    "newPasswordHint": "(optional)",
-    "newPasswordPlaceholder": "Enter new password",
-    "firstName": "First Name",
-    "lastName": "Last Name",
-    "phoneNumber": "Phone Number",
-    "enterPhoneNumber": "Enter phone number",
-    "enterEmail": "Enter email",
-    "saveChanges": "Save Changes",
-    "saving": "Saving...",
-    "language_updated": "Language updated successfully",
-    "logout": "Logout"
+    "profile": "Profile",
+    "noFavorites": "No favorites yet",
+    "noAlerts": "No alerts set"
   },
   "filters": {
     "search": "Search",
