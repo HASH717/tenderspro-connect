@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => ({
     'process.env': {},
   },
   server: {
-    host: '0.0.0.0', // Changed this to allow external connections
+    host: '0.0.0.0',
     port: 8080,
     strictPort: true,
     cors: true,
@@ -27,5 +27,14 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  base: "/"
+  base: "/",
+  build: {
+    rollupOptions: {
+      onwarn(warning, warn) {
+        // Suppress warnings about unused external imports
+        if (warning.code === 'UNUSED_EXTERNAL_IMPORT') return;
+        warn(warning);
+      }
+    }
+  }
 }));
